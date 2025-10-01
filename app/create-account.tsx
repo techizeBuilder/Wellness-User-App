@@ -1,17 +1,14 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, StatusBar, ScrollView } from 'react-native';
-import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors } from '../src/utils/colors';
+import { router } from 'expo-router';
+import React, { useState } from 'react';
+import { Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 
 export default function CreateAccountScreen() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
 
   const handleCreateAccount = () => {
     // Handle account creation logic
@@ -24,121 +21,104 @@ export default function CreateAccountScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
+      <StatusBar barStyle="dark-content" backgroundColor="#A0F0E4" />
       
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Pressable style={styles.backButton} onPress={() => router.back()}>
-            <Text style={styles.backArrow}>←</Text>
-          </Pressable>
-          
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Start your wellness journey with us.</Text>
-        </View>
-
-        <View style={styles.form}>
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Full Name</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="John Doe"
-              placeholderTextColor="#999"
-              value={fullName}
-              onChangeText={setFullName}
-            />
+      <LinearGradient
+        colors={['#A0F0E4', '#C2F8ED']}
+        style={styles.backgroundGradient}
+      >
+        <ScrollView 
+          style={styles.scrollView} 
+          contentContainerStyle={styles.scrollViewContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header Section */}
+          <View style={styles.headerSection}>
+            <Text style={styles.title}>Create Account</Text>
+            <Text style={styles.subtitle}>Start your wellness journey with us.</Text>
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="you@example.com"
-              placeholderTextColor="#999"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Phone Number</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="(123) 456-7890"
-              placeholderTextColor="#999"
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-              keyboardType="phone-pad"
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Password</Text>
-            <View style={styles.passwordContainer}>
+          {/* Form Section */}
+          <View style={styles.formSection}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Full Name</Text>
               <TextInput
-                style={styles.passwordInput}
-                placeholder="••••••••"
+                style={[styles.input, fullName ? styles.inputFilled : null]}
+                placeholder="John Doe"
                 placeholderTextColor="#999"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!isPasswordVisible}
+                value={fullName}
+                onChangeText={setFullName}
               />
-              <Pressable 
-                style={styles.eyeIcon}
-                onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-              >
-                <Text style={styles.eyeIconText}>
-                  {isPasswordVisible ? '🙈' : '👁️'}
-                </Text>
-              </Pressable>
             </View>
-            <Text style={styles.passwordRequirement}>
-              Must be at least 8 characters.
-            </Text>
-          </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Confirm Password</Text>
-            <View style={styles.passwordContainer}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Email</Text>
               <TextInput
-                style={styles.passwordInput}
-                placeholder="••••••••"
+                style={[styles.input, email ? styles.inputFilled : null]}
+                placeholder="you@example.com"
                 placeholderTextColor="#999"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry={!isConfirmPasswordVisible}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
               />
-              <Pressable 
-                style={styles.eyeIcon}
-                onPress={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)}
-              >
-                <Text style={styles.eyeIconText}>
-                  {isConfirmPasswordVisible ? '🙈' : '👁️'}
-                </Text>
-              </Pressable>
             </View>
-          </View>
 
-          <Pressable style={styles.createButton} onPress={handleCreateAccount}>
-            <LinearGradient
-                          colors={[colors.coralAccent, '#E55A50']}
-              style={styles.buttonGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Phone Number</Text>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={[styles.input, phoneNumber ? styles.inputFilled : null]}
+                  placeholder="(123) 456-7890"
+                  placeholderTextColor="#999"
+                  value={phoneNumber}
+                  onChangeText={setPhoneNumber}
+                  keyboardType="phone-pad"
+                />
+                <Pressable style={styles.eyeIcon}>
+                  <Text style={styles.eyeIconText}>👁️</Text>
+                </Pressable>
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Password</Text>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={[styles.passwordInput, password ? styles.inputFilled : null]}
+                  placeholder="••••••••"
+                  placeholderTextColor="#999"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!isPasswordVisible}
+                />
+                <Pressable 
+                  style={styles.eyeIcon}
+                  onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+                >
+                  <Text style={styles.eyeIconText}>
+                    {isPasswordVisible ? '🙈' : '👁️'}
+                  </Text>
+                </Pressable>
+              </View>
+              <Text style={styles.passwordRequirement}>
+                Must be at least 8 characters.
+              </Text>
+            </View>
+
+            <Pressable style={styles.createButton} onPress={handleCreateAccount}>
               <Text style={styles.createButtonText}>Create Account</Text>
-            </LinearGradient>
-          </Pressable>
-
-          <View style={styles.loginContainer}>
-            <Text style={styles.loginText}>Already have an account? </Text>
-            <Pressable onPress={handleLogin}>
-              <Text style={styles.loginLink}>Log In</Text>
             </Pressable>
+
+            <View style={styles.loginContainer}>
+              <Text style={styles.loginText}>Already have an account? </Text>
+              <Pressable onPress={handleLogin}>
+                <Text style={styles.loginLink}>Log In</Text>
+              </Pressable>
+            </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </LinearGradient>
     </View>
   );
 }
@@ -146,77 +126,88 @@ export default function CreateAccountScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.white,
+  },
+  backgroundGradient: {
+    flex: 1,
   },
   scrollView: {
     flex: 1,
   },
-  header: {
-    paddingTop: 40,
+  scrollViewContent: {
+    flexGrow: 1,
+    paddingTop: 80,
     paddingHorizontal: 24,
-    paddingBottom: 25,
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F8F9FA',
+  headerSection: {
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  backArrow: {
-    fontSize: 20,
-    color: colors.deepTeal,
-    fontWeight: 'bold',
+    marginBottom: 40,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: '#333',
     marginBottom: 8,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
     color: '#666',
-    lineHeight: 22,
+    textAlign: 'center',
+    maxWidth: 280,
   },
-  form: {
-    paddingHorizontal: 24,
-    paddingBottom: 40,
+  formSection: {
+    flex: 1,
   },
-  inputContainer: {
-    marginBottom: 16,
+  inputGroup: {
+    marginBottom: 20,
   },
   inputLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.deepTeal,
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#fff',
     borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    padding: 16,
     fontSize: 16,
-    color: colors.deepTeal,
+    color: '#333',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
     borderWidth: 1,
-    borderColor: '#E1E5E9',
+    borderColor: '#E5E5E5',
+  },
+  inputFilled: {
+    borderColor: '#00C6A7',
+    borderWidth: 2,
   },
   passwordContainer: {
     position: 'relative',
   },
   passwordInput: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#fff',
     borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    padding: 16,
     paddingRight: 50,
     fontSize: 16,
-    color: colors.deepTeal,
+    color: '#333',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
     borderWidth: 1,
-    borderColor: '#E1E5E9',
+    borderColor: '#E5E5E5',
   },
   eyeIcon: {
     position: 'absolute',
@@ -225,38 +216,41 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   eyeIconText: {
-    fontSize: 16,
+    fontSize: 18,
   },
   passwordRequirement: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#666',
     marginTop: 4,
   },
   createButton: {
-    marginTop: 8,
-    marginBottom: 20,
+    marginTop: 20,
+    marginBottom: 30,
     borderRadius: 12,
     overflow: 'hidden',
-    shadowColor: colors.deepTeal,
-    shadowOffset: { width: 0, height: 4 },
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 6,
-  },
-  buttonGradient: {
+    elevation: 8,
+    backgroundColor: '#00C6A7',
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   createButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.white,
-    letterSpacing: 0.5,
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
   },
   loginText: {
     fontSize: 16,
@@ -264,7 +258,7 @@ const styles = StyleSheet.create({
   },
   loginLink: {
     fontSize: 16,
-    color: colors.royalGold,
+    color: '#00C6A7',
     fontWeight: '600',
   },
 });

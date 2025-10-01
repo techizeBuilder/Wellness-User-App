@@ -1,11 +1,14 @@
+﻿import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, StatusBar } from 'react-native';
-import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { colors } from '../src/utils/colors';
+import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-export default function UserTypeSelectionScreen() {
+const { width, height } = Dimensions.get('window');
+
+export default function UserTypeSelection() {
   const [selectedType, setSelectedType] = useState<'user' | 'expert' | null>(null);
+  const router = useRouter();
 
   const handleContinue = () => {
     if (selectedType === 'user') {
@@ -15,220 +18,233 @@ export default function UserTypeSelectionScreen() {
     }
   };
 
-  const handleLogin = () => {
-    router.push('/login');
-  };
-
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
-      
-      <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backArrow}>←</Text>
-        </Pressable>
-      </View>
+    <LinearGradient
+      colors={["#3EE0C0", "#6DECB9"]}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.container}
+    >
+      <SafeAreaView style={styles.safeArea}>
+  <View style={styles.content}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.title}>Join Zenovia</Text>
+            <Text style={styles.subtitle}>How would you like to join?</Text>
+          </View>
+          
+          {/* Options Container */}
+          <View style={styles.optionsContainer}>
+            {/* User Option */}
+            <TouchableOpacity
+              style={[styles.optionUser, selectedType === 'user' && styles.selectedOption]}
+              onPress={() => setSelectedType('user')}
+              activeOpacity={0.8}
+            >
+              <View style={styles.emojiIconContainer}>
+                <Text style={styles.emojiIcon}>👩‍🦰</Text>
+              </View>
+              <Text style={styles.optionTitleUser}>I'm a User</Text>
+              <Text style={styles.optionDescriptionUser}>
+                Join classes and find wellness experts.
+              </Text>
+            </TouchableOpacity>
 
-      <View style={styles.content}>
-        <Text style={styles.title}>Join Zenovia</Text>
-        <Text style={styles.subtitle}>How would you like to join?</Text>
+            {/* Expert Option */}
+            <TouchableOpacity
+              style={[styles.optionExpert, selectedType === 'expert' && styles.selectedOption]}
+              onPress={() => setSelectedType('expert')}
+              activeOpacity={0.8}
+            >
+              <View style={styles.emojiIconContainerExpert}>
+                <Text style={styles.emojiIconExpert}>⭐</Text>
+              </View>
+              <Text style={styles.optionTitleExpert}>I'm an Expert</Text>
+              <Text style={styles.optionDescriptionExpert}>
+                Offer your services as certified provider.
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-        <View style={styles.optionsContainer}>
-          <Pressable
-            style={[
-              styles.optionCard,
-              selectedType === 'user' && styles.selectedCard
-            ]}
-            onPress={() => setSelectedType('user')}
+          {/* Continue Button */}
+          <TouchableOpacity
+            style={[styles.continueButton, !selectedType && styles.disabledButton]}
+            onPress={handleContinue}
+            disabled={!selectedType}
+            activeOpacity={0.8}
           >
-            <View style={styles.iconContainer}>
-              <Text style={styles.userIcon}>🧘‍♀️</Text>
-            </View>
-            <Text style={styles.optionTitle}>I'm a User</Text>
-            <Text style={styles.optionDescription}>
-              Join classes and find wellness experts.
-            </Text>
-          </Pressable>
+            <LinearGradient
+              colors={selectedType ? ["#00C6A7", "#1D976C"] : ["#ccc", "#999"]}
+              style={styles.buttonGradient}
+            >
+              <Text style={styles.buttonText}>Continue</Text>
+            </LinearGradient>
+          </TouchableOpacity>
 
-          <Pressable
-            style={[
-              styles.optionCard,
-              selectedType === 'expert' && styles.selectedCard
-            ]}
-            onPress={() => setSelectedType('expert')}
-          >
-            <View style={styles.iconContainer}>
-              <Text style={styles.expertIcon}>🌟</Text>
-            </View>
-            <Text style={styles.optionTitle}>I'm an Expert</Text>
-            <Text style={styles.optionDescription}>
-              Offer your services as a certified provider.
-            </Text>
-          </Pressable>
+          {/* Login Link */}
+          <View style={styles.loginContainer}>
+            <Text style={styles.loginText}>Already have an account? <Text style={styles.loginLink} onPress={() => router.push('/login')}>Log In</Text></Text>
+          </View>
         </View>
-
-        <Pressable 
-          style={[styles.continueButton, !selectedType && styles.disabledButton]}
-          onPress={handleContinue}
-          disabled={!selectedType}
-        >
-          <LinearGradient
-            colors={selectedType ? [colors.coralAccent, '#E55A50'] : ['#E1E5E9', '#E1E5E9']}
-            style={styles.buttonGradient}
-          >
-            <Text style={[
-              styles.continueButtonText,
-              !selectedType && styles.disabledButtonText
-            ]}>
-              Continue
-            </Text>
-          </LinearGradient>
-        </Pressable>
-
-        <View style={styles.loginContainer}>
-          <Text style={styles.loginText}>Already have an account? </Text>
-          <Pressable onPress={handleLogin}>
-            <Text style={styles.loginLink}>Log In</Text>
-          </Pressable>
-        </View>
-      </View>
-
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          By continuing, you agree to our Terms of Service and Privacy Policy.
-        </Text>
-      </View>
-    </View>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.white,
   },
-  header: {
-    paddingTop: 40,
-    paddingHorizontal: 24,
-    paddingBottom: 20,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F8F9FA',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backArrow: {
-    fontSize: 20,
-    color: colors.deepTeal,
-    fontWeight: 'bold',
+  safeArea: {
+    flex: 1,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 20,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 30,
+    paddingTop: 20,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: '#fff',
     textAlign: 'center',
     marginBottom: 8,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 30,
-  },
-  optionsContainer: {
-    gap: 16,
-    marginBottom: 32,
-  },
-  optionCard: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 24,
-    borderWidth: 2,
-    borderColor: '#E1E5E9',
-    alignItems: 'center',
-  },
-  selectedCard: {
-    borderColor: colors.royalGold,
-    backgroundColor: colors.royalGold + '10',
-  },
-  iconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: colors.royalGold + '20',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  userIcon: {
-    fontSize: 32,
-  },
-  expertIcon: {
-    fontSize: 32,
-  },
-  optionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.deepTeal,
-    marginBottom: 8,
-  },
-  optionDescription: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 18,
+    color: '#fff',
     textAlign: 'center',
     lineHeight: 22,
+    paddingHorizontal: 10,
+    marginBottom: 10,
+  },
+  optionsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    gap: 18,
+    paddingHorizontal: 0,
+  },
+  optionUser: {
+    backgroundColor: '#3EE0C0',
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 16,
+    borderWidth: 0,
+    minHeight: 140,
+    shadowColor: '#3EE0C0',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  optionExpert: {
+    backgroundColor: '#FFE066',
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 16,
+    borderWidth: 0,
+    minHeight: 140,
+    shadowColor: '#FFE066',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  selectedOption: {
+    borderWidth: 3,
+    borderColor: '#fff',
+    transform: [{ scale: 1.03 }],
+  },
+  emojiIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  emojiIcon: {
+    fontSize: 40,
+  },
+  emojiIconContainerExpert: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  emojiIconExpert: {
+    fontSize: 40,
+  },
+  optionTitleUser: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#fff',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  optionDescriptionUser: {
+    fontSize: 16,
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  optionTitleExpert: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#A68A00',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  optionDescriptionExpert: {
+    fontSize: 16,
+    color: '#A68A00',
+    textAlign: 'center',
+    marginBottom: 4,
   },
   continueButton: {
-    borderRadius: 12,
+    marginTop: 20,
+    borderRadius: 16,
     overflow: 'hidden',
-    marginBottom: 24,
+    marginHorizontal: 0,
   },
   disabledButton: {
-    opacity: 0.5,
+    opacity: 0.6,
   },
   buttonGradient: {
     paddingVertical: 16,
+    paddingHorizontal: 32,
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  continueButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.white,
+  buttonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '700',
     letterSpacing: 0.5,
   },
-  disabledButtonText: {
-    color: '#999',
-  },
   loginContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 20,
+    marginTop: 24,
+    alignItems: 'center',
   },
   loginText: {
     fontSize: 16,
-    color: '#666',
+    color: '#fff',
   },
   loginLink: {
-    fontSize: 16,
-    color: colors.royalGold,
-    fontWeight: '600',
-  },
-  footer: {
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-  },
-  footerText: {
-    fontSize: 12,
-    color: '#999',
-    textAlign: 'center',
-    lineHeight: 18,
+    color: '#FFC300',
+    fontWeight: 'bold',
+    textDecorationLine: 'underline',
   },
 });

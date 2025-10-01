@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, StatusBar } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors } from '../src/utils/colors';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useState } from 'react';
+import { Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 
 export default function ExpertDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -11,20 +10,26 @@ export default function ExpertDetailScreen() {
 
   // Mock expert data - in a real app this would come from an API
   const expert = {
-    id: 1,
+    id: 1, 
     name: 'Dr. Anya Sharma',
-    specialty: 'Yoga',
+    title: 'Certified Yoga Master & Wellness Expert',
+    specialty: 'Yoga & Meditation',
     experience: '5 years experience',
     rating: 4.9,
     reviews: 156,
     price: '$75',
+    sessionPrice: '₹800/session',
     image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&h=300&fit=crop&crop=face',
     verified: true,
-    about: 'Dr. Anya Sharma is a certified Yoga master with over 5 years of experience dedicated to helping individuals find inner peace and physical well-being through ancient practices. She specializes in Hatha Yoga, Vinyasa Flow, and meditation techniques.',
-    specialties: ['Hatha Yoga', 'Vinyasa Flow', 'Meditation', 'Pranayama'],
+    about: 'Dr. Anya Sharma is a certified Yoga master with over 5 years of experience dedicated to helping individuals find inner peace and physical well-being through ancient practices. She specializes in Hatha Yoga, Vinyasa Flow, and meditation techniques that transform both body and mind.',
+    specialties: ['Hatha Yoga', 'Vinyasa Flow', 'Meditation', 'Pranayama', 'Stress Management'],
     languages: ['English', 'Hindi', 'Sanskrit'],
-    education: 'RYT 500-Hour Certified, Masters in Yoga Philosophy',
-    achievements: ['Featured in Yoga Journal', '1000+ students taught', 'Wellness retreat leader']
+    education: 'RYT 500-Hour Certified, Masters in Yoga Philosophy from Rishikesh Yoga Institute',
+    certifications: ['RYT 500-Hour Certified', 'Meditation Teacher Training', 'Ayurveda Wellness Coach'],
+    sessionTypes: ['1-on-1 Private Sessions', 'Group Classes', 'Online Consultations', 'Workshop Facilitation'],
+    achievements: ['Featured in Yoga Journal', '1000+ students taught', 'Wellness retreat leader', 'TEDx Speaker on Mindfulness'],
+    consultationAreas: ['Stress & Anxiety Management', 'Physical Flexibility', 'Mental Clarity', 'Spiritual Growth', 'Pain Relief'],
+    availabilityNote: 'Available Mon-Sat, 9 AM - 6 PM IST'
   };
 
   const timeSlots = [
@@ -90,7 +95,12 @@ export default function ExpertDetailScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <LinearGradient
+      colors={['#4DD0E1', '#81C784', '#BA68C8']}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.container}
+    >
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -98,7 +108,8 @@ export default function ExpertDetailScreen() {
         <View style={styles.headerContainer}>
           <Image source={{ uri: expert.image }} style={styles.headerImage} />
           <LinearGradient
-            colors={['transparent', 'rgba(0,0,0,0.7)']}
+            colors={['rgba(0,0,0,0.2)', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.8)']}
+            locations={[0, 0.5, 1]}
             style={styles.headerGradient}
           >
             <Pressable style={styles.backButton} onPress={handleBackPress}>
@@ -106,6 +117,10 @@ export default function ExpertDetailScreen() {
             </Pressable>
             <View style={styles.headerInfo}>
               <Text style={styles.expertName}>{expert.name}</Text>
+              <Text style={styles.expertTitle}>{expert.title}</Text>
+              <Text style={styles.headerDescription}>
+                Certified yoga instructor specializing in Hatha and Vinyasa Flow with 5+ years of experience helping students find inner peace.
+              </Text>
               <View style={styles.expertMeta}>
                 <Text style={styles.expertSpecialty}>{expert.specialty}</Text>
                 {expert.verified && (
@@ -114,6 +129,18 @@ export default function ExpertDetailScreen() {
                   </View>
                 )}
               </View>
+              
+              {/* Netflix-style Action Buttons */}
+              <View style={styles.actionButtons}>
+                <Pressable style={styles.playButton} onPress={handleBookSession}>
+                  <Text style={styles.playIcon}>▶</Text>
+                  <Text style={styles.playText}>Book Session</Text>
+                </Pressable>
+                <Pressable style={styles.infoButton}>
+                  <Text style={styles.infoIcon}>ⓘ</Text>
+                  <Text style={styles.infoText}>More Info</Text>
+                </Pressable>
+              </View>
             </View>
           </LinearGradient>
         </View>
@@ -121,17 +148,26 @@ export default function ExpertDetailScreen() {
         {/* Stats Card */}
         <View style={styles.statsCard}>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>⭐ {expert.rating}</Text>
+            <View style={styles.statIconContainer}>
+              <Text style={styles.statIcon}>⭐</Text>
+            </View>
+            <Text style={styles.statNumber}>{expert.rating}</Text>
             <Text style={styles.statLabel}>{expert.reviews} reviews</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{expert.experience}</Text>
+            <View style={styles.statIconContainer}>
+              <Text style={styles.statIcon}>🎯</Text>
+            </View>
+            <Text style={styles.statNumber}>5 years</Text>
             <Text style={styles.statLabel}>Experience</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{expert.price}</Text>
+            <View style={styles.statIconContainer}>
+              <Text style={styles.statIcon}>💰</Text>
+            </View>
+            <Text style={styles.statNumber}>{expert.sessionPrice}</Text>
             <Text style={styles.statLabel}>Per session</Text>
           </View>
         </View>
@@ -153,6 +189,22 @@ export default function ExpertDetailScreen() {
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Education:</Text>
               <Text style={styles.detailValue}>{expert.education}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Certifications:</Text>
+              <Text style={styles.detailValue}>{expert.certifications.join(', ')}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Session Types:</Text>
+              <Text style={styles.detailValue}>{expert.sessionTypes.join(', ')}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Consultation Areas:</Text>
+              <Text style={styles.detailValue}>{expert.consultationAreas.join(', ')}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Availability:</Text>
+              <Text style={styles.detailValue}>{expert.availabilityNote}</Text>
             </View>
           </View>
         </View>
@@ -262,36 +314,26 @@ export default function ExpertDetailScreen() {
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
-
-      {/* Book Session Button */}
-      <View style={styles.bookingFooter}>
-        <Pressable
-          style={[styles.bookButton, (!selectedDate || !selectedTime) && styles.bookButtonDisabled]}
-          onPress={handleBookSession}
-        >
-          <LinearGradient
-            colors={selectedDate && selectedTime ? [colors.sageGreen, '#8BB085'] : ['#CCC', '#AAA']}
-            style={styles.bookButtonGradient}
-          >
-            <Text style={styles.bookButtonText}>Book Session</Text>
-          </LinearGradient>
-        </Pressable>
-      </View>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.white,
   },
   scrollView: {
     flex: 1,
   },
   headerContainer: {
-    height: 300,
+    height: 500,
     position: 'relative',
+    marginBottom: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
   headerImage: {
     width: '100%',
@@ -301,31 +343,57 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'space-between',
     paddingTop: 50,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
+    paddingBottom: 40,
+    paddingHorizontal: 24,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.3)',
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.4)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
   },
   backArrow: {
-    fontSize: 18,
-    color: colors.white,
+    fontSize: 20,
+    color: '#FFFFFF',
     fontWeight: 'bold',
   },
   headerInfo: {
     alignItems: 'flex-start',
   },
   expertName: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: colors.white,
+    color: '#FFFFFF',
+    marginBottom: 6,
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 6,
+  },
+  expertTitle: {
+    fontSize: 18,
+    color: 'rgba(255, 255, 255, 0.95)',
+    fontWeight: '600',
     marginBottom: 8,
+    textShadowColor: 'rgba(0, 0, 0, 0.6)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  headerDescription: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.9)',
+    lineHeight: 22,
+    marginBottom: 12,
+    maxWidth: '90%',
   },
   expertMeta: {
     flexDirection: 'row',
@@ -333,55 +401,118 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   expertSpecialty: {
-    fontSize: 16,
-    color: colors.royalGold,
+    fontSize: 18,
+    color: '#FFFFFF',
     fontWeight: '600',
+    textShadowColor: 'rgba(0, 0, 0, 0.6)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   verifiedBadge: {
-    backgroundColor: colors.sageGreen,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
   },
   verifiedText: {
     fontSize: 12,
-    color: colors.white,
+    color: '#FFFFFF',
     fontWeight: 'bold',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 20,
+    gap: 16,
+  },
+  playButton: {
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 6,
+    minWidth: 140,
+    justifyContent: 'center',
+  },
+  playIcon: {
+    fontSize: 16,
+    color: '#000000',
+    marginRight: 8,
+  },
+  playText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  infoButton: {
+    backgroundColor: 'rgba(109, 109, 110, 0.7)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 6,
+    minWidth: 120,
+    justifyContent: 'center',
+  },
+  infoIcon: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    marginRight: 8,
+  },
+  infoText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   statsCard: {
     flexDirection: 'row',
-    backgroundColor: colors.white,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     marginHorizontal: 20,
-    marginTop: -30,
-    borderRadius: 16,
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-    shadowColor: colors.charcoalGray,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 6,
+    marginTop: 20,
+    borderRadius: 20,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    shadowColor: '#4DD0E1',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 12,
     zIndex: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
   },
   statItem: {
     flex: 1,
     alignItems: 'center',
   },
+  statIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  statIcon: {
+    fontSize: 16,
+  },
   statNumber: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: colors.charcoalGray,
+    color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
   },
   statDivider: {
     width: 1,
     height: 30,
-    backgroundColor: colors.lightMistTeal,
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
     marginHorizontal: 16,
   },
   section: {
@@ -397,24 +528,26 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: '#FFFFFF',
     marginBottom: 16,
   },
   seeAllText: {
     fontSize: 14,
-    color: colors.royalGold,
+    color: '#FFFFFF',
     fontWeight: '600',
   },
   aboutText: {
     fontSize: 16,
-    color: colors.charcoalGray,
+    color: 'rgba(255, 255, 255, 0.9)',
     lineHeight: 24,
     marginBottom: 20,
   },
   detailsContainer: {
-    backgroundColor: colors.lightMistTeal,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     borderRadius: 12,
     padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   detailRow: {
     marginBottom: 12,
@@ -422,18 +555,18 @@ const styles = StyleSheet.create({
   detailLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.deepTeal,
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   detailValue: {
     fontSize: 14,
-    color: colors.charcoalGray,
+    color: 'rgba(255, 255, 255, 0.8)',
     lineHeight: 20,
   },
   subTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.deepTeal,
+    color: '#FFFFFF',
     marginBottom: 12,
     marginTop: 8,
   },
@@ -441,7 +574,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   dateCard: {
-    backgroundColor: colors.warmGray,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -449,32 +582,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minWidth: 70,
     borderWidth: 1,
-    borderColor: colors.lightMistTeal,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
   },
   dateCardDisabled: {
-    backgroundColor: colors.lightMistTeal,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     opacity: 0.5,
   },
   dateCardSelected: {
-    backgroundColor: colors.sageGreen,
-    borderColor: colors.sageGreen,
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    borderColor: 'rgba(255, 255, 255, 0.6)',
   },
   dateNumber: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   dateDay: {
     fontSize: 12,
-    color: colors.charcoalGray,
+    color: 'rgba(255, 255, 255, 0.8)',
     fontWeight: '500',
   },
   dateTextDisabled: {
-    color: colors.charcoalGray,
+    color: 'rgba(255, 255, 255, 0.4)',
   },
   dateTextSelected: {
-    color: colors.white,
+    color: '#FFFFFF',
   },
   timeSlotsContainer: {
     flexDirection: 'row',
@@ -482,30 +615,32 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   timeSlot: {
-    backgroundColor: colors.warmGray,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: colors.lightMistTeal,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
   },
   timeSlotSelected: {
-    backgroundColor: colors.sageGreen,
-    borderColor: colors.sageGreen,
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    borderColor: 'rgba(255, 255, 255, 0.6)',
   },
   timeSlotText: {
     fontSize: 14,
-    color: colors.charcoalGray,
+    color: '#FFFFFF',
     fontWeight: '500',
   },
   timeSlotTextSelected: {
-    color: colors.white,
+    color: '#FFFFFF',
   },
   reviewCard: {
-    backgroundColor: colors.warmGray,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   reviewHeader: {
     flexDirection: 'row',
@@ -524,7 +659,7 @@ const styles = StyleSheet.create({
   reviewerName: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.deepTeal,
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   reviewMeta: {
@@ -534,25 +669,27 @@ const styles = StyleSheet.create({
   },
   reviewRating: {
     fontSize: 12,
-    color: colors.royalGold,
+    color: '#FFD700',
     fontWeight: 'bold',
   },
   reviewDate: {
     fontSize: 12,
-    color: colors.charcoalGray,
+    color: 'rgba(255, 255, 255, 0.7)',
   },
   reviewComment: {
     fontSize: 14,
-    color: colors.charcoalGray,
+    color: 'rgba(255, 255, 255, 0.8)',
     lineHeight: 20,
   },
   suggestedCard: {
-    backgroundColor: colors.warmGray,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     borderRadius: 12,
     padding: 16,
     marginRight: 16,
     alignItems: 'center',
     width: 120,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   suggestedImage: {
     width: 60,
@@ -563,30 +700,30 @@ const styles = StyleSheet.create({
   suggestedName: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 4,
   },
   suggestedSpecialty: {
     fontSize: 12,
-    color: colors.charcoalGray,
+    color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
     marginBottom: 8,
   },
   suggestedRating: {
     fontSize: 12,
-    color: colors.royalGold,
+    color: '#FFD700',
     fontWeight: 'bold',
   },
   bottomSpacer: {
     height: 100,
   },
   bookingFooter: {
-    backgroundColor: colors.white,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderTopWidth: 1,
-    borderTopColor: colors.lightMistTeal,
+    borderTopColor: 'rgba(255, 255, 255, 0.3)',
   },
   bookButton: {
     borderRadius: 12,
@@ -599,10 +736,12 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#4DD0E1',
+    borderRadius: 12,
   },
   bookButtonText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: colors.white,
+    color: '#FFFFFF',
   },
 });

@@ -1,13 +1,17 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, TextInput, StatusBar } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { colors } from '../src/utils/colors';
+import React, { useState } from 'react';
+import { Dimensions, Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import Footer from '../src/components/Footer';
+
+const { width } = Dimensions.get('window');
 
 export default function ExpertsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedRating, setSelectedRating] = useState('All');
   const [selectedPrice, setSelectedPrice] = useState('All');
+  const [showFilters, setShowFilters] = useState(false);
 
   const categories = ['All', 'Yoga', 'Ayurveda', 'Diet', 'Meditation', 'Fitness'];
   const ratingFilters = ['All', '4.5+', '4.0+', '3.5+'];
@@ -101,110 +105,112 @@ export default function ExpertsScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
+    <LinearGradient
+      colors={['#4DD0E1', '#81C784', '#BA68C8']}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.container}
+    >
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
-      {/* Header */}
-      <View style={styles.header}>
+      {/* Compact Header */}
+      <View style={styles.compactHeader}>
         <Pressable style={styles.backButton} onPress={handleBackPress}>
           <Text style={styles.backArrow}>←</Text>
         </Pressable>
         <Text style={styles.headerTitle}>Experts</Text>
-        <View style={styles.headerRight} />
+        <Pressable 
+          style={styles.filterToggle}
+          onPress={() => setShowFilters(!showFilters)}
+        >
+          <Text style={styles.filterIcon}>⚙️</Text>
+        </Pressable>
       </View>
 
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
+      {/* Compact Search */}
+      <View style={styles.compactSearchContainer}>
+        <View style={styles.compactSearchBar}>
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
             style={styles.searchInput}
             placeholder="Search for experts"
-            placeholderTextColor="#999"
+            placeholderTextColor="rgba(255,255,255,0.7)"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
         </View>
       </View>
 
-      {/* Filters */}
-      <View style={styles.filtersContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {/* Rating Filter */}
-          <View style={styles.filterGroup}>
-            <Text style={styles.filterLabel}>Rating</Text>
-            <View style={styles.filterOptions}>
-              {ratingFilters.map((rating) => (
-                <Pressable
-                  key={rating}
-                  style={[
-                    styles.filterChip,
-                    selectedRating === rating && styles.filterChipActive
-                  ]}
-                  onPress={() => setSelectedRating(rating)}
-                >
-                  <Text style={[
-                    styles.filterChipText,
-                    selectedRating === rating && styles.filterChipTextActive
-                  ]}>
-                    {rating}
-                  </Text>
-                </Pressable>
-              ))}
+      {/* Collapsible Filters */}
+      {showFilters && (
+        <View style={styles.filtersContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {/* Rating Filter */}
+            <View style={styles.filterGroup}>
+              <Text style={styles.filterLabel}>Rating</Text>
+              <View style={styles.filterOptions}>
+                {ratingFilters.map((rating) => (
+                  <Pressable
+                    key={rating}
+                    style={[
+                      styles.filterChip,
+                      selectedRating === rating && styles.filterChipActive
+                    ]}
+                    onPress={() => setSelectedRating(rating)}
+                  >
+                    <Text style={[
+                      styles.filterChipText,
+                      selectedRating === rating && styles.filterChipTextActive
+                    ]}>
+                      {rating}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
             </View>
-          </View>
 
-          {/* Price Filter */}
-          <View style={styles.filterGroup}>
-            <Text style={styles.filterLabel}>Price</Text>
-            <View style={styles.filterOptions}>
-              {priceFilters.map((price) => (
-                <Pressable
-                  key={price}
-                  style={[
-                    styles.filterChip,
-                    selectedPrice === price && styles.filterChipActive
-                  ]}
-                  onPress={() => setSelectedPrice(price)}
-                >
-                  <Text style={[
-                    styles.filterChipText,
-                    selectedPrice === price && styles.filterChipTextActive
-                  ]}>
-                    {price}
-                  </Text>
-                </Pressable>
-              ))}
+            {/* Price Filter */}
+            <View style={styles.filterGroup}>
+              <Text style={styles.filterLabel}>Price</Text>
+              <View style={styles.filterOptions}>
+                {priceFilters.map((price) => (
+                  <Pressable
+                    key={price}
+                    style={[
+                      styles.filterChip,
+                      selectedPrice === price && styles.filterChipActive
+                    ]}
+                    onPress={() => setSelectedPrice(price)}
+                  >
+                    <Text style={[
+                      styles.filterChipText,
+                      selectedPrice === price && styles.filterChipTextActive
+                    ]}>
+                      {price}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
             </View>
-          </View>
+          </ScrollView>
+        </View>
+      )}
 
-          {/* Category Filter */}
-          <View style={styles.filterGroup}>
-            <Text style={styles.filterLabel}>Language</Text>
-            <View style={styles.filterOptions}>
-              <Pressable style={styles.filterChip}>
-                <Text style={styles.filterChipText}>All</Text>
-              </Pressable>
-            </View>
-          </View>
-        </ScrollView>
-      </View>
-
-      {/* Categories */}
-      <View style={styles.categoriesContainer}>
+      {/* Compact Categories */}
+      <View style={styles.compactCategoriesContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {categories.map((category) => (
             <Pressable
               key={category}
               style={[
-                styles.categoryChip,
-                selectedCategory === category && styles.categoryChipActive
+                styles.compactCategoryChip,
+                selectedCategory === category && styles.compactCategoryChipActive
               ]}
               onPress={() => setSelectedCategory(category)}
             >
               <Text style={[
-                styles.categoryChipText,
-                selectedCategory === category && styles.categoryChipTextActive
+                styles.compactCategoryChipText,
+                selectedCategory === category && styles.compactCategoryChipTextActive
               ]}>
                 {category}
               </Text>
@@ -215,75 +221,156 @@ export default function ExpertsScreen() {
 
       {/* Experts List */}
       <ScrollView style={styles.expertsContainer} showsVerticalScrollIndicator={false}>
-        {filteredExperts.map((expert) => (
-          <Pressable
-            key={expert.id}
-            style={styles.expertCard}
-            onPress={() => handleExpertPress(expert.id)}
-          >
-            <Image source={{ uri: expert.image }} style={styles.expertImage} />
-            <View style={styles.expertInfo}>
-              <View style={styles.expertHeader}>
-                <Text style={styles.expertName}>{expert.name}</Text>
-                {expert.verified && (
-                  <View style={styles.verifiedBadge}>
-                    <Text style={styles.verifiedText}>✓</Text>
+        {filteredExperts.map((expert, index) => {
+          const gradients = [
+            ['rgba(186, 168, 255, 0.9)', 'rgba(225, 213, 255, 0.9)'], // Purple gradient
+            ['rgba(168, 230, 207, 0.9)', 'rgba(200, 247, 197, 0.9)'], // Green gradient  
+            ['rgba(255, 182, 193, 0.9)', 'rgba(255, 192, 203, 0.9)']  // Pink gradient
+          ];
+          return (
+            <LinearGradient
+              key={expert.id}
+              colors={gradients[index % gradients.length]}
+              style={styles.expertCard}
+            >
+              <Pressable
+                style={styles.expertCardPressable}
+                onPress={() => handleExpertPress(expert.id)}
+              >
+                <Image source={{ uri: expert.image }} style={styles.expertImage} />
+                <View style={styles.expertInfo}>
+                  <View style={styles.expertHeader}>
+                    <Text style={styles.expertName}>{expert.name}</Text>
+                    {expert.verified && (
+                      <View style={styles.verifiedBadge}>
+                        <Text style={styles.verifiedText}>✓</Text>
+                      </View>
+                    )}
                   </View>
-                )}
-              </View>
-              <Text style={styles.expertSpecialty}>{expert.specialty}</Text>
-              <Text style={styles.expertExperience}>{expert.experience}</Text>
-              <Text style={styles.expertDescription} numberOfLines={2}>
-                {expert.description}
-              </Text>
-              <View style={styles.expertFooter}>
-                <View style={styles.ratingContainer}>
-                  <Text style={styles.rating}>⭐ {expert.rating}</Text>
-                  <Text style={styles.price}>{expert.price}</Text>
+                  <Text style={styles.expertSpecialty}>{expert.specialty}</Text>
+                  <Text style={styles.expertExperience}>{expert.experience}</Text>
+                  <Text style={styles.expertDescription} numberOfLines={2}>
+                    {expert.description}
+                  </Text>
+                  <View style={styles.expertFooter}>
+                    <View style={styles.ratingContainer}>
+                      <Text style={styles.rating}>⭐ {expert.rating}</Text>
+                      <Text style={styles.price}>{expert.price}</Text>
+                    </View>
+                    <LinearGradient
+                      colors={['#4DD0E1', '#00CED1']}
+                      style={styles.viewProfileButton}
+                    >
+                      <Text style={styles.viewProfileText}>View Profile</Text>
+                    </LinearGradient>
+                  </View>
                 </View>
-                <Pressable style={styles.viewProfileButton}>
-                  <Text style={styles.viewProfileText}>View Profile</Text>
-                </Pressable>
-              </View>
-            </View>
-          </Pressable>
-        ))}
+              </Pressable>
+            </LinearGradient>
+          );
+        })}
       </ScrollView>
-    </View>
+      <Footer activeRoute="experts" />
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.white,
   },
-  header: {
+  // Compact Header Styles
+  compactHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingTop: 50,
     paddingHorizontal: 20,
+    paddingBottom: 12,
+  },
+  filterToggle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  filterIcon: {
+    fontSize: 16,
+    color: '#ffffff',
+  },
+  // Compact Search Styles
+  compactSearchContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 12,
+  },
+  compactSearchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 25,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  // Compact Categories Styles
+  compactCategoriesContainer: {
+    paddingLeft: 20,
+    marginBottom: 16,
+  },
+  compactCategoryChip: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  compactCategoryChipActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    borderColor: 'rgba(255, 255, 255, 0.6)',
+  },
+  compactCategoryChipText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.9)',
+  },
+  compactCategoryChipTextActive: {
+    color: '#ffffff',
+  },
+  // Keep existing styles but update some measurements
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 60,
+    paddingHorizontal: 20,
     paddingBottom: 16,
-    backgroundColor: colors.white,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.lightMistTeal,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   backArrow: {
     fontSize: 18,
-    color: colors.deepTeal,
+    color: '#ffffff',
     fontWeight: 'bold',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: '#ffffff',
   },
   headerRight: {
     width: 40,
@@ -295,24 +382,31 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.warmGray,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   searchIcon: {
     fontSize: 16,
     marginRight: 12,
-    color: '#666',
+    color: 'rgba(255, 255, 255, 0.8)',
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: colors.charcoalGray,
+    color: '#ffffff',
   },
   filtersContainer: {
     paddingLeft: 20,
-    marginBottom: 16,
+    marginBottom: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingVertical: 12,
   },
   filterGroup: {
     marginRight: 24,
@@ -320,7 +414,7 @@ const styles = StyleSheet.create({
   filterLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.deepTeal,
+    color: '#ffffff',
     marginBottom: 8,
   },
   filterOptions: {
@@ -328,71 +422,75 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   filterChip: {
-    backgroundColor: colors.warmGray,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.lightMistTeal,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   filterChipActive: {
-    backgroundColor: colors.sageGreen,
-    borderColor: colors.sageGreen,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderColor: 'rgba(255, 255, 255, 0.9)',
   },
   filterChipText: {
     fontSize: 12,
-    color: colors.charcoalGray,
+    color: '#ffffff',
     fontWeight: '500',
   },
   filterChipTextActive: {
-    color: colors.white,
+    color: '#333',
   },
   categoriesContainer: {
     paddingLeft: 20,
     marginBottom: 16,
   },
   categoryChip: {
-    backgroundColor: colors.warmGray,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     marginRight: 12,
     borderWidth: 1,
-    borderColor: colors.lightMistTeal,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   categoryChipActive: {
-    backgroundColor: colors.deepTeal,
-    borderColor: colors.deepTeal,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderColor: 'rgba(255, 255, 255, 0.9)',
   },
   categoryChipText: {
     fontSize: 14,
-    color: colors.charcoalGray,
+    color: '#ffffff',
     fontWeight: '500',
   },
   categoryChipTextActive: {
-    color: colors.white,
+    color: '#333',
   },
   expertsContainer: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
   expertCard: {
-    flexDirection: 'row',
-    backgroundColor: colors.warmGray,
     borderRadius: 16,
-    padding: 16,
     marginBottom: 16,
-    shadowColor: colors.charcoalGray,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  expertCardPressable: {
+    flexDirection: 'row',
+    padding: 12,
   },
   expertImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginRight: 16,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    marginRight: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
   },
   expertInfo: {
     flex: 1,
@@ -403,40 +501,40 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   expertName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: '#333',
     flex: 1,
   },
   verifiedBadge: {
-    backgroundColor: colors.sageGreen,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    backgroundColor: 'rgba(34, 139, 34, 0.9)',
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
   },
   verifiedText: {
-    fontSize: 12,
-    color: colors.white,
+    fontSize: 10,
+    color: '#ffffff',
     fontWeight: 'bold',
   },
   expertSpecialty: {
-    fontSize: 14,
-    color: colors.royalGold,
+    fontSize: 12,
+    color: '#666',
     fontWeight: '600',
     marginBottom: 2,
   },
   expertExperience: {
-    fontSize: 12,
-    color: colors.charcoalGray,
-    marginBottom: 8,
+    fontSize: 11,
+    color: '#555',
+    marginBottom: 6,
   },
   expertDescription: {
-    fontSize: 12,
-    color: '#666',
-    lineHeight: 16,
-    marginBottom: 12,
+    fontSize: 11,
+    color: '#444',
+    lineHeight: 14,
+    marginBottom: 8,
   },
   expertFooter: {
     flexDirection: 'row',
@@ -449,24 +547,28 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   rating: {
-    fontSize: 12,
-    color: colors.royalGold,
+    fontSize: 11,
+    color: '#B8860B',
     fontWeight: 'bold',
   },
   price: {
-    fontSize: 14,
-    color: colors.coralAccent,
+    fontSize: 12,
+    color: '#333',
     fontWeight: 'bold',
   },
   viewProfileButton: {
-    backgroundColor: colors.sageGreen,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    shadowColor: '#4DD0E1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 2,
   },
   viewProfileText: {
-    fontSize: 12,
-    color: colors.white,
+    fontSize: 11,
+    color: '#ffffff',
     fontWeight: '600',
   },
 });

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, StatusBar, Image } from 'react-native';
-import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+import React, { useState } from 'react';
+import { Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import { colors } from '../src/utils/colors';
 
 export default function ContactInfoScreen() {
@@ -25,8 +25,13 @@ export default function ContactInfoScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
+    <LinearGradient
+      colors={['#4DD0E1', '#81C784', '#BA68C8']}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.container}
+    >
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
       {/* Header */}
       <View style={styles.header}>
@@ -46,7 +51,10 @@ export default function ContactInfoScreen() {
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Profile Image Section */}
-        <View style={styles.profileSection}>
+        <LinearGradient
+          colors={['rgba(255, 255, 255, 0.15)', 'rgba(255, 255, 255, 0.1)']}
+          style={styles.profileSection}
+        >
           <View style={styles.profileImageContainer}>
             <Image
               source={{ uri: 'https://images.unsplash.com/photo-1494790108755-2616b612b2e5?w=150&h=150&fit=crop&crop=face' }}
@@ -60,13 +68,16 @@ export default function ContactInfoScreen() {
           </View>
           <Text style={styles.profileName}>{fullName}</Text>
           <Text style={styles.profileSubtitle}>Yoga & Meditation Enthusiast</Text>
-        </View>
+        </LinearGradient>
 
         {/* Contact Information */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Personal Information</Text>
           
-          <View style={styles.infoCard}>
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+            style={styles.infoCard}
+          >
             <View style={styles.infoItem}>
               <View style={styles.infoHeader}>
                 <View style={styles.iconContainer}>
@@ -150,14 +161,17 @@ export default function ContactInfoScreen() {
                 <Text style={styles.infoValue}>{dateOfBirth}</Text>
               )}
             </View>
-          </View>
+          </LinearGradient>
         </View>
 
         {/* Address Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Address Information</Text>
           
-          <View style={styles.infoCard}>
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+            style={styles.infoCard}
+          >
             <View style={styles.infoItem}>
               <View style={styles.infoHeader}>
                 <View style={styles.iconContainer}>
@@ -178,14 +192,17 @@ export default function ContactInfoScreen() {
                 <Text style={styles.infoValue}>{address}</Text>
               )}
             </View>
-          </View>
+          </LinearGradient>
         </View>
 
         {/* Emergency Contact */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Emergency Contact</Text>
           
-          <View style={styles.infoCard}>
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+            style={styles.infoCard}
+          >
             <View style={styles.infoItem}>
               <View style={styles.infoHeader}>
                 <View style={styles.iconContainer}>
@@ -204,12 +221,15 @@ export default function ContactInfoScreen() {
                 <Text style={styles.infoValue}>{emergencyContact}</Text>
               )}
             </View>
-          </View>
+          </LinearGradient>
         </View>
 
         {/* Privacy Notice */}
         <View style={styles.privacySection}>
-          <View style={styles.privacyCard}>
+          <LinearGradient
+            colors={['rgba(129, 199, 132, 0.1)', 'rgba(200, 230, 201, 0.2)']}
+            style={styles.privacyCard}
+          >
             <Text style={styles.privacyIcon}>🔒</Text>
             <View style={styles.privacyContent}>
               <Text style={styles.privacyTitle}>Privacy Protected</Text>
@@ -217,7 +237,7 @@ export default function ContactInfoScreen() {
                 Your personal information is encrypted and secure. We never share your data with third parties.
               </Text>
             </View>
-          </View>
+          </LinearGradient>
         </View>
 
         {/* Save Button */}
@@ -238,7 +258,7 @@ export default function ContactInfoScreen() {
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -254,35 +274,34 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 16,
-    backgroundColor: colors.white,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.lightMistTeal,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   backArrow: {
     fontSize: 18,
-    color: colors.deepTeal,
+    color: colors.white,
     fontWeight: 'bold',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: colors.white,
   },
   editButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 16,
-    backgroundColor: colors.royalGold + '20',
+    backgroundColor: 'rgba(255, 215, 0, 0.3)',
   },
   editButtonText: {
     fontSize: 14,
-    color: colors.royalGold,
+    color: colors.white,
     fontWeight: '600',
   },
   scrollView: {
@@ -291,7 +310,9 @@ const styles = StyleSheet.create({
   profileSection: {
     alignItems: 'center',
     paddingVertical: 32,
-    backgroundColor: colors.white,
+    marginHorizontal: 20,
+    marginTop: 16,
+    borderRadius: 20,
   },
   profileImageContainer: {
     position: 'relative',
@@ -302,7 +323,7 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     borderWidth: 4,
-    borderColor: colors.lightMistTeal,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   changePhotoButton: {
     position: 'absolute',
@@ -315,7 +336,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: colors.white,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
   },
   changePhotoText: {
     fontSize: 16,
@@ -323,12 +344,15 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: 'white',
     marginBottom: 4,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   profileSubtitle: {
     fontSize: 16,
-    color: colors.charcoalGray,
+    color: 'rgba(255, 255, 255, 0.8)',
   },
   section: {
     paddingHorizontal: 20,
@@ -337,18 +361,19 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: 'rgba(255, 255, 255, 0.9)',
     marginBottom: 16,
+    paddingLeft: 4,
   },
   infoCard: {
-    backgroundColor: colors.white,
     borderRadius: 16,
     padding: 20,
-    shadowColor: colors.charcoalGray,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowColor: 'rgba(0, 0, 0, 0.15)',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 4,
+    marginBottom: 8,
   },
   infoItem: {
     marginVertical: 8,
@@ -362,7 +387,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: colors.lightMistTeal,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -372,23 +397,26 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 14,
-    color: colors.deepTeal,
+    color: 'white',
     fontWeight: '600',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
   infoValue: {
     fontSize: 16,
-    color: colors.charcoalGray,
+    color: 'rgba(255, 255, 255, 0.9)',
     lineHeight: 22,
   },
   editInput: {
-    backgroundColor: colors.warmGray,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    color: colors.charcoalGray,
-    borderWidth: 2,
-    borderColor: colors.lightMistTeal,
+    color: 'white',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   multilineInput: {
     minHeight: 80,
@@ -396,7 +424,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: colors.lightMistTeal,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     marginVertical: 16,
   },
   privacySection: {
@@ -421,12 +449,15 @@ const styles = StyleSheet.create({
   privacyTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: 'white',
     marginBottom: 8,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
   privacyText: {
     fontSize: 14,
-    color: colors.charcoalGray,
+    color: 'rgba(255, 255, 255, 0.8)',
     lineHeight: 20,
   },
   actionSection: {

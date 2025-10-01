@@ -1,12 +1,18 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, StatusBar } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import React from 'react';
+import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../src/utils/colors';
 
 export default function HelpSupportScreen() {
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
+    <LinearGradient
+      colors={['#4DD0E1', '#81C784', '#BA68C8']}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.container}
+    >
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
       <View style={styles.header}>
         <Pressable style={styles.backButton} onPress={() => router.back()}>
@@ -20,35 +26,50 @@ export default function HelpSupportScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>How can we help you?</Text>
           
-          <Pressable style={styles.helpItem}>
-            <Text style={styles.helpIcon}>❓</Text>
-            <View style={styles.helpInfo}>
-              <Text style={styles.helpTitle}>FAQs</Text>
-              <Text style={styles.helpSubtitle}>Find answers to common questions</Text>
-            </View>
-            <Text style={styles.helpArrow}>→</Text>
-          </Pressable>
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+            style={styles.helpItem}
+          >
+            <Pressable style={styles.helpContent}>
+              <Text style={styles.helpIcon}>❓</Text>
+              <View style={styles.helpInfo}>
+                <Text style={styles.helpTitle}>FAQs</Text>
+                <Text style={styles.helpSubtitle}>Find answers to common questions</Text>
+              </View>
+              <Text style={styles.helpArrow}>→</Text>
+            </Pressable>
+          </LinearGradient>
           
-          <Pressable style={styles.helpItem}>
-            <Text style={styles.helpIcon}>💬</Text>
-            <View style={styles.helpInfo}>
-              <Text style={styles.helpTitle}>Live Chat</Text>
-              <Text style={styles.helpSubtitle}>Chat with our support team</Text>
-            </View>
-            <Text style={styles.helpArrow}>→</Text>
-          </Pressable>
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+            style={styles.helpItem}
+          >
+            <Pressable style={styles.helpContent}>
+              <Text style={styles.helpIcon}>💬</Text>
+              <View style={styles.helpInfo}>
+                <Text style={styles.helpTitle}>Live Chat</Text>
+                <Text style={styles.helpSubtitle}>Chat with our support team</Text>
+              </View>
+              <Text style={styles.helpArrow}>→</Text>
+            </Pressable>
+          </LinearGradient>
           
-          <Pressable style={styles.helpItem}>
-            <Text style={styles.helpIcon}>📧</Text>
-            <View style={styles.helpInfo}>
-              <Text style={styles.helpTitle}>Contact Us</Text>
-              <Text style={styles.helpSubtitle}>Send us an email</Text>
-            </View>
-            <Text style={styles.helpArrow}>→</Text>
-          </Pressable>
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+            style={styles.helpItem}
+          >
+            <Pressable style={styles.helpContent}>
+              <Text style={styles.helpIcon}>📧</Text>
+              <View style={styles.helpInfo}>
+                <Text style={styles.helpTitle}>Contact Us</Text>
+                <Text style={styles.helpSubtitle}>Send us an email</Text>
+              </View>
+              <Text style={styles.helpArrow}>→</Text>
+            </Pressable>
+          </LinearGradient>
         </View>
       </ScrollView>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -64,25 +85,30 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 16,
-    backgroundColor: colors.white,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.lightMistTeal,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   backArrow: {
     fontSize: 18,
-    color: colors.deepTeal,
+    color: 'white',
     fontWeight: 'bold',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: 'white',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   headerRight: {
     width: 40,
@@ -97,21 +123,25 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: 'white',
     marginBottom: 16,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   helpItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.white,
     borderRadius: 16,
-    padding: 20,
     marginBottom: 12,
     shadowColor: colors.charcoalGray,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
+  },
+  helpContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
   },
   helpIcon: {
     fontSize: 24,
@@ -123,15 +153,18 @@ const styles = StyleSheet.create({
   helpTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.deepTeal,
+    color: 'white',
     marginBottom: 4,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   helpSubtitle: {
     fontSize: 14,
-    color: colors.charcoalGray,
+    color: 'rgba(255, 255, 255, 0.8)',
   },
   helpArrow: {
     fontSize: 16,
-    color: colors.deepTeal,
+    color: 'white',
   },
 });

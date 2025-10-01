@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, StatusBar, ScrollView } from 'react-native';
-import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors } from '../src/utils/colors';
+import { router } from 'expo-router';
+import React, { useState } from 'react';
+import { Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -29,95 +28,101 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
+      <StatusBar barStyle="dark-content" backgroundColor="#A0F0E4" />
       
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Welcome to Zenovia</Text>
-          <Text style={styles.subtitle}>
-            Join our community of wellness enthusiasts and experts.
-          </Text>
-        </View>
-
-        <View style={styles.form}>
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Email or Phone"
-              placeholderTextColor="#999"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
+      <LinearGradient
+        colors={['#A0F0E4', '#C2F8ED']}
+        style={styles.backgroundGradient}
+      >
+        <ScrollView 
+          style={styles.scrollView} 
+          contentContainerStyle={styles.scrollViewContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header Section */}
+          <View style={styles.headerSection}>
+            <Text style={styles.title}>Welcome to Zenovia</Text>
+            <Text style={styles.subtitle}>
+              Join our community of wellness{'\n'}enthusiasts and experts.
+            </Text>
           </View>
 
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor="#999"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!isPasswordVisible}
-            />
-            <Pressable 
-              style={styles.eyeIcon}
-              onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-            >
-              <Text style={styles.eyeIconText}>
-                {isPasswordVisible ? '🙈' : '👁️'}
-              </Text>
+          {/* Form Section */}
+          <View style={styles.formSection}>
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Email or Phone"
+                placeholderTextColor="#999"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Password"
+                placeholderTextColor="#999"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!isPasswordVisible}
+              />
+              <Pressable 
+                style={styles.eyeIcon}
+                onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+              >
+                <Text style={styles.eyeIconText}>
+                  {isPasswordVisible ? '🙈' : '👁️'}
+                </Text>
+              </Pressable>
+            </View>
+
+            <Pressable style={styles.continueButton} onPress={handleLogin}>
+              <LinearGradient
+                colors={['#00C6A7', '#1D976C']}
+                style={styles.buttonGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <Text style={styles.continueButtonText}>Continue</Text>
+              </LinearGradient>
             </Pressable>
-          </View>
 
-          <Pressable style={styles.continueButton} onPress={handleLogin}>
-            <LinearGradient
-              colors={[colors.coralAccent, '#E55A50']}
-              style={styles.buttonGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              <Text style={styles.continueButtonText}>Continue</Text>
-            </LinearGradient>
-          </Pressable>
-
-          <Pressable style={styles.forgotPassword} onPress={handleForgotPassword}>
-            <Text style={styles.forgotPasswordText}>Forgot password?</Text>
-          </Pressable>
-
-          <View style={styles.dividerContainer}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>Or continue with</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <View style={styles.socialButtons}>
-            <Pressable style={styles.socialButton}>
-              <Text style={styles.socialIcon}>G</Text>
-              <Text style={styles.socialText}>Google</Text>
+            <Pressable style={styles.forgotPasswordContainer} onPress={handleForgotPassword}>
+              <Text style={styles.forgotPasswordText}>Forgot password?</Text>
             </Pressable>
-            
-            <Pressable style={styles.socialButton}>
-              <Text style={styles.socialIcon}>🍎</Text>
-              <Text style={styles.socialText}>Apple</Text>
-            </Pressable>
+
+            <View style={styles.socialButtonsContainer}>
+              <Pressable style={styles.socialButton}>
+                <Text style={styles.socialIcon}>G</Text>
+                <Text style={styles.socialText}>Google</Text>
+              </Pressable>
+              
+              <Pressable style={styles.socialButton}>
+                <Text style={styles.appleIcon}>🍎</Text>
+                <Text style={styles.socialText}>Apple</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.signUpContainer}>
+              <Text style={styles.signUpText}>Don't have an account? </Text>
+              <Pressable onPress={handleSignUp}>
+                <Text style={styles.signUpLink}>Sign Up</Text>
+              </Pressable>
+            </View>
           </View>
 
-          <View style={styles.signUpContainer}>
-            <Text style={styles.signUpText}>Don't have an account? </Text>
-            <Pressable onPress={handleSignUp}>
-              <Text style={styles.signUpLink}>Sign Up</Text>
-            </Pressable>
+          {/* Footer Section */}
+          <View style={styles.footerSection}>
+            <Text style={styles.footerText}>
+              By continuing, you agree to our Terms of Service and Privacy Policy.
+            </Text>
           </View>
-        </View>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            By continuing, you agree to our Terms of Service and Privacy Policy.
-          </Text>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </LinearGradient>
     </View>
   );
 }
@@ -125,106 +130,115 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.white,
+  },
+  backgroundGradient: {
+    flex: 1,
   },
   scrollView: {
     flex: 1,
-    paddingHorizontal: 24,
   },
-  header: {
-    paddingTop: 50,
-    paddingBottom: 32,
+  scrollViewContent: {
+    flexGrow: 1,
+    paddingHorizontal: 32,
+    paddingTop: 80,
+    paddingBottom: 40,
+  },
+  headerSection: {
     alignItems: 'center',
+    marginBottom: 60,
   },
   title: {
-    fontSize: 24,
+    fontSize: 36,
     fontWeight: 'bold',
-    color: colors.deepTeal,
-    marginBottom: 10,
+    color: '#1A5D5D',
     textAlign: 'center',
+    marginBottom: 16,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: '#4A7575',
     textAlign: 'center',
     lineHeight: 24,
-    paddingHorizontal: 20,
+    fontWeight: '400',
   },
-  form: {
+  formSection: {
     flex: 1,
+    justifyContent: 'center',
   },
   inputContainer: {
-    position: 'relative',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   input: {
-    backgroundColor: colors.warmGray,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 30,
+    paddingHorizontal: 24,
+    paddingVertical: 20,
     fontSize: 16,
-    color: colors.charcoalGray,
-    borderWidth: 1,
-    borderColor: '#E1E5E9',
+    color: '#333333',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  passwordInput: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 30,
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    paddingRight: 60,
+    fontSize: 16,
+    color: '#333333',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
   },
   eyeIcon: {
     position: 'absolute',
-    right: 16,
-    top: 16,
+    right: 24,
+    top: 20,
     padding: 4,
   },
   eyeIconText: {
-    fontSize: 16,
+    fontSize: 20,
+    color: '#666666',
   },
   continueButton: {
-    marginTop: 8,
-    marginBottom: 20,
-    borderRadius: 12,
+    marginTop: 16,
+    marginBottom: 32,
+    borderRadius: 30,
     overflow: 'hidden',
-    shadowColor: colors.coralAccent,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
   },
   buttonGradient: {
-    paddingVertical: 16,
+    paddingVertical: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
   continueButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.white,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
     letterSpacing: 0.5,
   },
-  forgotPassword: {
+  forgotPasswordContainer: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 40,
   },
   forgotPasswordText: {
     fontSize: 16,
-    color: colors.royalGold,
+    color: '#1A5D5D',
     fontWeight: '500',
   },
-  dividerContainer: {
+  socialButtonsContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E1E5E9',
-  },
-  dividerText: {
-    fontSize: 14,
-    color: '#666',
-    paddingHorizontal: 16,
-  },
-  socialButtons: {
-    flexDirection: 'row',
-    gap: 12,
+    gap: 16,
     marginBottom: 32,
   },
   socialButton: {
@@ -232,21 +246,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.warmGray,
-    borderRadius: 12,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: '#E1E5E9',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 30,
+    paddingVertical: 16,
     gap: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   socialIcon: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
+    color: '#333333',
+  },
+  appleIcon: {
+    fontSize: 18,
   },
   socialText: {
     fontSize: 16,
-    color: colors.charcoalGray,
-    fontWeight: '500',
+    color: '#333333',
+    fontWeight: 'bold',
   },
   signUpContainer: {
     flexDirection: 'row',
@@ -255,20 +278,23 @@ const styles = StyleSheet.create({
   },
   signUpText: {
     fontSize: 16,
-    color: '#666',
+    color: '#666666',
+    fontWeight: '400',
   },
   signUpLink: {
     fontSize: 16,
-    color: colors.royalGold,
-    fontWeight: '600',
+    color: '#F4B400',
+    fontWeight: 'bold',
   },
-  footer: {
-    paddingBottom: 40,
+  footerSection: {
+    marginTop: 'auto',
+    paddingTop: 20,
   },
   footerText: {
     fontSize: 12,
-    color: '#999',
+    color: '#666666',
     textAlign: 'center',
     lineHeight: 18,
+    opacity: 0.8,
   },
 });

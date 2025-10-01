@@ -1,6 +1,8 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, StatusBar } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import React from 'react';
+import { Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import Footer from '../src/components/Footer';
 import { colors } from '../src/utils/colors';
 
 export default function ProfileScreen() {
@@ -85,8 +87,13 @@ export default function ProfileScreen() {
   ];
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
+    <LinearGradient
+      colors={['#4DD0E1', '#81C784', '#BA68C8']}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.container}
+    >
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
       {/* Header */}
       <View style={styles.header}>
@@ -99,7 +106,10 @@ export default function ProfileScreen() {
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Profile Info */}
-        <View style={styles.profileSection}>
+        <LinearGradient
+          colors={['rgba(255, 255, 255, 0.15)', 'rgba(255, 255, 255, 0.1)']}
+          style={styles.profileSection}
+        >
           <View style={styles.profileImageContainer}>
             <Image
               source={{ uri: 'https://images.unsplash.com/photo-1494790108755-2616b612b2e5?w=120&h=120&fit=crop&crop=face' }}
@@ -112,7 +122,10 @@ export default function ProfileScreen() {
           <Text style={styles.profileName}>Sophia Bennett</Text>
           <Text style={styles.profileSubtitle}>Yoga & Meditation Enthusiast</Text>
           
-          <View style={styles.statsContainer}>
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.3)']}
+            style={styles.statsContainer}
+          >
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>24</Text>
               <Text style={styles.statLabel}>Sessions</Text>
@@ -127,44 +140,55 @@ export default function ProfileScreen() {
               <Text style={styles.statNumber}>3</Text>
               <Text style={styles.statLabel}>Experts</Text>
             </View>
-          </View>
-        </View>
+          </LinearGradient>
+        </LinearGradient>
 
         {/* Profile Sections */}
         {profileSections.map((section, sectionIndex) => (
           <View key={sectionIndex} style={styles.section}>
             <Text style={styles.sectionTitle}>{section.title}</Text>
-            {section.items.map((item, itemIndex) => (
-              <Pressable
-                key={itemIndex}
-                style={[
-                  styles.menuItem,
-                  itemIndex === section.items.length - 1 && styles.menuItemLast
-                ]}
-                onPress={item.action}
-              >
-                <View style={styles.menuItemLeft}>
-                  <View style={styles.iconContainer}>
-                    <Text style={styles.menuIcon}>{item.icon}</Text>
+            <LinearGradient
+              colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+              style={styles.menuContainer}
+            >
+              {section.items.map((item, itemIndex) => (
+                <Pressable
+                  key={itemIndex}
+                  style={[
+                    styles.menuItem,
+                    itemIndex === section.items.length - 1 && styles.menuItemLast
+                  ]}
+                  onPress={item.action}
+                >
+                  <View style={styles.menuItemLeft}>
+                    <View style={styles.iconContainer}>
+                      <Text style={styles.menuIcon}>{item.icon}</Text>
+                    </View>
+                    <View style={styles.menuItemContent}>
+                      <Text style={styles.menuItemTitle}>{item.title}</Text>
+                      <Text style={styles.menuItemSubtitle}>{item.subtitle}</Text>
+                    </View>
                   </View>
-                  <View style={styles.menuItemContent}>
-                    <Text style={styles.menuItemTitle}>{item.title}</Text>
-                    <Text style={styles.menuItemSubtitle}>{item.subtitle}</Text>
-                  </View>
-                </View>
-                <Text style={styles.menuArrow}>›</Text>
-              </Pressable>
-            ))}
+                  <Text style={styles.menuArrow}>›</Text>
+                </Pressable>
+              ))}
+            </LinearGradient>
           </View>
         ))}
 
         {/* Premium Badge */}
         <View style={styles.premiumSection}>
-          <View style={styles.premiumCard}>
+          <LinearGradient
+            colors={['rgba(255, 215, 0, 0.2)', 'rgba(255, 248, 220, 0.3)']}
+            style={styles.premiumCard}
+          >
             <View style={styles.premiumHeader}>
-              <View style={styles.premiumIconContainer}>
+              <LinearGradient
+                colors={['#FFD700', '#FFA500']}
+                style={styles.premiumIconContainer}
+              >
                 <Text style={styles.premiumIcon}>👑</Text>
-              </View>
+              </LinearGradient>
               <View style={styles.premiumInfo}>
                 <Text style={styles.premiumTitle}>Premium Member</Text>
                 <Text style={styles.premiumSubtitle}>Unlimited access to all features</Text>
@@ -176,47 +200,36 @@ export default function ProfileScreen() {
               <Text style={styles.benefitItem}>✅ Exclusive content</Text>
               <Text style={styles.benefitItem}>✅ Personal wellness tracker</Text>
             </View>
-            <Pressable style={styles.manageButton}>
+            <LinearGradient
+              colors={['#FFD700', '#FFA500']}
+              style={styles.manageButton}
+            >
               <Text style={styles.manageButtonText}>Manage Subscription</Text>
-            </Pressable>
-          </View>
+            </LinearGradient>
+          </LinearGradient>
         </View>
 
         {/* Logout Button */}
         <View style={styles.logoutSection}>
-          <Pressable style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutIcon}>🚪</Text>
-            <Text style={styles.logoutText}>Log Out</Text>
-          </Pressable>
+          <LinearGradient
+            colors={['rgba(255, 99, 71, 0.1)', 'rgba(255, 160, 122, 0.2)']}
+            style={styles.logoutButton}
+          >
+            <Pressable
+              style={styles.logoutPressable}
+              onPress={handleLogout}
+            >
+              <Text style={styles.logoutIcon}>🚪</Text>
+              <Text style={styles.logoutText}>Log Out</Text>
+            </Pressable>
+          </LinearGradient>
         </View>
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
 
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <Pressable style={styles.navItem} onPress={() => router.push('/dashboard')}>
-          <Text style={styles.navIcon}>🏠</Text>
-          <Text style={styles.navLabel}>Home</Text>
-        </Pressable>
-        <Pressable style={styles.navItem} onPress={() => router.push('/experts')}>
-          <Text style={styles.navIcon}>👥</Text>
-          <Text style={styles.navLabel}>Experts</Text>
-        </Pressable>
-        <Pressable style={styles.navItem}>
-          <Text style={styles.navIcon}>📅</Text>
-          <Text style={styles.navLabel}>Sessions</Text>
-        </Pressable>
-        <Pressable style={styles.navItem} onPress={() => router.push('/content')}>
-          <Text style={styles.navIcon}>📱</Text>
-          <Text style={styles.navLabel}>Content</Text>
-        </Pressable>
-        <Pressable style={styles.navItem}>
-          <Text style={[styles.navIcon, styles.navIconActive]}>👤</Text>
-          <Text style={[styles.navLabel, styles.navLabelActive]}>Profile</Text>
-        </Pressable>
-      </View>
-    </View>
+      <Footer activeRoute="profile" />
+    </LinearGradient>
   );
 }
 
@@ -237,19 +250,19 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.lightMistTeal,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   backArrow: {
     fontSize: 18,
-    color: colors.deepTeal,
+    color: colors.white,
     fontWeight: 'bold',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: colors.white,
   },
   headerRight: {
     width: 40,
@@ -260,7 +273,14 @@ const styles = StyleSheet.create({
   profileSection: {
     alignItems: 'center',
     paddingVertical: 32,
-    backgroundColor: colors.lightMistTeal,
+    marginHorizontal: 20,
+    marginTop: 20,
+    borderRadius: 20,
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   profileImageContainer: {
     position: 'relative',
@@ -290,24 +310,29 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: colors.white,
     marginBottom: 4,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   profileSubtitle: {
     fontSize: 16,
-    color: colors.charcoalGray,
+    color: 'rgba(255, 255, 255, 0.9)',
     marginBottom: 24,
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
   statsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.white,
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 32,
-    shadowColor: colors.charcoalGray,
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
   },
@@ -323,39 +348,49 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    color: colors.charcoalGray,
+    color: 'rgba(0, 0, 0, 0.7)',
     fontWeight: '500',
   },
   statDivider: {
     width: 1,
     height: 30,
-    backgroundColor: colors.lightMistTeal,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
     marginHorizontal: 20,
   },
   section: {
-    paddingTop: 32,
+    paddingTop: 24,
     paddingHorizontal: 20,
+    marginBottom: 8,
   },
   sectionTitle: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: colors.charcoalGray,
+    color: 'rgba(255, 255, 255, 0.9)',
     letterSpacing: 1,
     marginBottom: 16,
+    paddingLeft: 4,
+  },
+  menuContainer: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: 'rgba(0, 0, 0, 0.15)',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 4,
+    marginBottom: 8,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.warmGray,
     paddingVertical: 16,
     paddingHorizontal: 16,
-    borderTopWidth: 1,
-    borderTopColor: colors.lightMistTeal,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   menuItemLast: {
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
+    borderBottomWidth: 0,
   },
   menuItemLeft: {
     flexDirection: 'row',
@@ -366,10 +401,15 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.lightMistTeal,
+    backgroundColor: 'rgba(77, 208, 225, 0.3)',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
+    shadowColor: 'rgba(77, 208, 225, 0.4)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.6,
+    shadowRadius: 3,
+    elevation: 3,
   },
   menuIcon: {
     fontSize: 16,
@@ -385,11 +425,11 @@ const styles = StyleSheet.create({
   },
   menuItemSubtitle: {
     fontSize: 14,
-    color: colors.charcoalGray,
+    color: 'rgba(0, 0, 0, 0.6)',
   },
   menuArrow: {
     fontSize: 20,
-    color: colors.charcoalGray,
+    color: 'rgba(0, 0, 0, 0.4)',
     fontWeight: 'bold',
   },
   premiumSection: {
@@ -462,11 +502,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.coralAccent + '10',
     paddingVertical: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.coralAccent + '30',
+    borderColor: 'rgba(255, 99, 71, 0.3)',
+  },
+  logoutPressable: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   logoutIcon: {
     fontSize: 16,
@@ -475,40 +519,9 @@ const styles = StyleSheet.create({
   logoutText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.coralAccent,
+    color: colors.white,
   },
   bottomSpacer: {
-    height: 90,
-  },
-  bottomNav: {
-    flexDirection: 'row',
-    backgroundColor: colors.white,
-    borderTopWidth: 1,
-    borderTopColor: colors.lightMistTeal,
-    paddingTop: 8,
-    paddingBottom: 25,
-    paddingHorizontal: 20,
-  },
-  navItem: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  navIcon: {
-    fontSize: 20,
-    marginBottom: 4,
-    color: colors.charcoalGray,
-  },
-  navIconActive: {
-    color: colors.deepTeal,
-  },
-  navLabel: {
-    fontSize: 11,
-    color: colors.charcoalGray,
-    fontWeight: '500',
-  },
-  navLabelActive: {
-    color: colors.deepTeal,
-    fontWeight: '600',
+    height: 100,
   },
 });

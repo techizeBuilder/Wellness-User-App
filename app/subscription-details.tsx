@@ -1,12 +1,18 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, StatusBar } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import React from 'react';
+import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../src/utils/colors';
 
 export default function SubscriptionDetailsScreen() {
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
+    <LinearGradient
+      colors={['#4DD0E1', '#81C784', '#BA68C8']}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.container}
+    >
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
       <View style={styles.header}>
         <Pressable style={styles.backButton} onPress={() => router.back()}>
@@ -18,14 +24,17 @@ export default function SubscriptionDetailsScreen() {
 
       <ScrollView style={styles.scrollView}>
         <View style={styles.section}>
-          <View style={styles.planCard}>
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+            style={styles.planCard}
+          >
             <Text style={styles.planTitle}>Premium Plan</Text>
             <Text style={styles.planPrice}>$29.99/month</Text>
             <Text style={styles.planStatus}>Active until Dec 15, 2025</Text>
-          </View>
+          </LinearGradient>
         </View>
       </ScrollView>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -41,25 +50,30 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 16,
-    backgroundColor: colors.white,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.lightMistTeal,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   backArrow: {
     fontSize: 18,
-    color: colors.deepTeal,
+    color: 'white',
     fontWeight: 'bold',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: 'white',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   headerRight: {
     width: 40,
@@ -72,7 +86,6 @@ const styles = StyleSheet.create({
     paddingTop: 24,
   },
   planCard: {
-    backgroundColor: colors.white,
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
@@ -80,17 +93,23 @@ const styles = StyleSheet.create({
   planTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: 'white',
     marginBottom: 8,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   planPrice: {
     fontSize: 18,
-    color: colors.coralAccent,
+    color: '#FFD700',
     fontWeight: '600',
     marginBottom: 8,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   planStatus: {
     fontSize: 14,
-    color: colors.charcoalGray,
+    color: 'rgba(255, 255, 255, 0.8)',
   },
 });

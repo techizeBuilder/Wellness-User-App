@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, StatusBar, Switch } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import React, { useState } from 'react';
+import { Pressable, ScrollView, StatusBar, StyleSheet, Switch, Text, View } from 'react-native';
 import { colors } from '../src/utils/colors';
 
 export default function NotificationsScreen() {
@@ -15,8 +16,13 @@ export default function NotificationsScreen() {
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
+    <LinearGradient
+      colors={['#4DD0E1', '#81C784', '#BA68C8']}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.container}
+    >
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
       {/* Header */}
       <View style={styles.header}>
@@ -32,7 +38,10 @@ export default function NotificationsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>🔔 Push Notifications</Text>
           
-          <View style={styles.settingCard}>
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+            style={styles.settingCard}
+          >
             <View style={styles.settingItem}>
               <View style={styles.settingInfo}>
                 <Text style={styles.settingTitle}>Push Notifications</Text>
@@ -90,14 +99,17 @@ export default function NotificationsScreen() {
                 thumbColor={contentUpdates ? colors.sageGreen : colors.charcoalGray}
               />
             </View>
-          </View>
+          </LinearGradient>
         </View>
 
         {/* Email Notifications */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>📧 Email Notifications</Text>
           
-          <View style={styles.settingCard}>
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+            style={styles.settingCard}
+          >
             <View style={styles.settingItem}>
               <View style={styles.settingInfo}>
                 <Text style={styles.settingTitle}>Email Notifications</Text>
@@ -140,14 +152,17 @@ export default function NotificationsScreen() {
                 thumbColor={promotionalEmails ? colors.sageGreen : colors.charcoalGray}
               />
             </View>
-          </View>
+          </LinearGradient>
         </View>
 
         {/* Sound & Vibration */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>🔊 Sound & Vibration</Text>
           
-          <View style={styles.settingCard}>
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+            style={styles.settingCard}
+          >
             <View style={styles.settingItem}>
               <View style={styles.settingInfo}>
                 <Text style={styles.settingTitle}>Sound</Text>
@@ -175,14 +190,17 @@ export default function NotificationsScreen() {
                 thumbColor={vibrationEnabled ? colors.sageGreen : colors.charcoalGray}
               />
             </View>
-          </View>
+          </LinearGradient>
         </View>
 
         {/* Notification Schedule */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>⏰ Notification Schedule</Text>
           
-          <View style={styles.scheduleCard}>
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+            style={styles.scheduleCard}
+          >
             <Pressable style={styles.scheduleItem}>
               <Text style={styles.scheduleIcon}>🌅</Text>
               <View style={styles.scheduleInfo}>
@@ -191,12 +209,12 @@ export default function NotificationsScreen() {
               </View>
               <Text style={styles.scheduleArrow}>→</Text>
             </Pressable>
-          </View>
+          </LinearGradient>
         </View>
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -212,25 +230,30 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 16,
-    backgroundColor: colors.white,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.lightMistTeal,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   backArrow: {
     fontSize: 18,
-    color: colors.deepTeal,
+    color: 'white',
     fontWeight: 'bold',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: 'white',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   headerRight: {
     width: 40,
@@ -245,11 +268,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: 'white',
     marginBottom: 16,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   settingCard: {
-    backgroundColor: colors.white,
     borderRadius: 16,
     padding: 20,
     shadowColor: colors.charcoalGray,
@@ -271,12 +296,15 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.deepTeal,
+    color: 'white',
     marginBottom: 4,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   settingDescription: {
     fontSize: 14,
-    color: colors.charcoalGray,
+    color: 'rgba(255, 255, 255, 0.8)',
     lineHeight: 18,
   },
   divider: {
@@ -285,7 +313,6 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
   scheduleCard: {
-    backgroundColor: colors.white,
     borderRadius: 16,
     shadowColor: colors.charcoalGray,
     shadowOffset: { width: 0, height: 2 },
@@ -308,16 +335,19 @@ const styles = StyleSheet.create({
   scheduleTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.deepTeal,
+    color: 'white',
     marginBottom: 4,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   scheduleTime: {
     fontSize: 14,
-    color: colors.charcoalGray,
+    color: 'rgba(255, 255, 255, 0.8)',
   },
   scheduleArrow: {
     fontSize: 16,
-    color: colors.deepTeal,
+    color: 'white',
   },
   bottomSpacer: {
     height: 40,

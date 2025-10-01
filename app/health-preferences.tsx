@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, StatusBar } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import React, { useState } from 'react';
+import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../src/utils/colors';
 
 export default function HealthPreferencesScreen() {
   const [selectedGoals, setSelectedGoals] = useState(['Weight Management', 'Stress Relief']);
   const [fitnessLevel, setFitnessLevel] = useState('Intermediate');
   const [dietaryRestrictions, setDietaryRestrictions] = useState(['Vegetarian']);
-  const [medicalConditions, setMedicalConditions] = useState([]);
+  const [medicalConditions, setMedicalConditions] = useState<string[]>([]);
   const [activityLevel, setActivityLevel] = useState('Moderately Active');
 
   const wellnessGoals = [
@@ -53,8 +54,13 @@ export default function HealthPreferencesScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
+    <LinearGradient
+      colors={['#4DD0E1', '#81C784', '#BA68C8']}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.container}
+    >
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
       {/* Header */}
       <View style={styles.header}>
@@ -77,21 +83,24 @@ export default function HealthPreferencesScreen() {
             {wellnessGoals.map((goal) => (
               <Pressable
                 key={goal}
-                style={[
-                  styles.optionCard,
-                  selectedGoals.includes(goal) && styles.optionCardSelected
-                ]}
                 onPress={() => toggleSelection(goal, selectedGoals, setSelectedGoals)}
               >
-                <Text style={[
-                  styles.optionText,
-                  selectedGoals.includes(goal) && styles.optionTextSelected
-                ]}>
-                  {goal}
-                </Text>
-                {selectedGoals.includes(goal) && (
-                  <Text style={styles.checkmark}>✓</Text>
-                )}
+                <LinearGradient
+                  colors={selectedGoals.includes(goal) 
+                    ? ['#4DD0E1', '#BA68C8'] 
+                    : ['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+                  style={styles.optionCard}
+                >
+                  <Text style={[
+                    styles.optionText,
+                    selectedGoals.includes(goal) && styles.optionTextSelected
+                  ]}>
+                    {goal}
+                  </Text>
+                  {selectedGoals.includes(goal) && (
+                    <Text style={styles.checkmark}>✓</Text>
+                  )}
+                </LinearGradient>
               </Pressable>
             ))}
           </View>
@@ -106,24 +115,27 @@ export default function HealthPreferencesScreen() {
             {fitnessLevels.map((level) => (
               <Pressable
                 key={level}
-                style={[
-                  styles.optionRow,
-                  fitnessLevel === level && styles.optionRowSelected
-                ]}
                 onPress={() => setFitnessLevel(level)}
               >
-                <View style={[
-                  styles.radioButton,
-                  fitnessLevel === level && styles.radioButtonSelected
-                ]}>
-                  {fitnessLevel === level && <View style={styles.radioButtonInner} />}
-                </View>
-                <Text style={[
-                  styles.optionRowText,
-                  fitnessLevel === level && styles.optionRowTextSelected
-                ]}>
-                  {level}
-                </Text>
+                <LinearGradient
+                  colors={fitnessLevel === level 
+                    ? ['#81C784', '#4DD0E1'] 
+                    : ['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+                  style={styles.optionRow}
+                >
+                  <View style={[
+                    styles.radioButton,
+                    fitnessLevel === level && styles.radioButtonSelected
+                  ]}>
+                    {fitnessLevel === level && <View style={styles.radioButtonInner} />}
+                  </View>
+                  <Text style={[
+                    styles.optionRowText,
+                    fitnessLevel === level && styles.optionRowTextSelected
+                  ]}>
+                    {level}
+                  </Text>
+                </LinearGradient>
               </Pressable>
             ))}
           </View>
@@ -138,24 +150,27 @@ export default function HealthPreferencesScreen() {
             {activityLevels.map((level) => (
               <Pressable
                 key={level}
-                style={[
-                  styles.optionRow,
-                  activityLevel === level && styles.optionRowSelected
-                ]}
                 onPress={() => setActivityLevel(level)}
               >
-                <View style={[
-                  styles.radioButton,
-                  activityLevel === level && styles.radioButtonSelected
-                ]}>
-                  {activityLevel === level && <View style={styles.radioButtonInner} />}
-                </View>
-                <Text style={[
-                  styles.optionRowText,
-                  activityLevel === level && styles.optionRowTextSelected
-                ]}>
-                  {level}
-                </Text>
+                <LinearGradient
+                  colors={activityLevel === level 
+                    ? ['#81C784', '#4DD0E1'] 
+                    : ['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+                  style={styles.optionRow}
+                >
+                  <View style={[
+                    styles.radioButton,
+                    activityLevel === level && styles.radioButtonSelected
+                  ]}>
+                    {activityLevel === level && <View style={styles.radioButtonInner} />}
+                  </View>
+                  <Text style={[
+                    styles.optionRowText,
+                    activityLevel === level && styles.optionRowTextSelected
+                  ]}>
+                    {level}
+                  </Text>
+                </LinearGradient>
               </Pressable>
             ))}
           </View>
@@ -170,21 +185,24 @@ export default function HealthPreferencesScreen() {
             {dietaryOptions.map((diet) => (
               <Pressable
                 key={diet}
-                style={[
-                  styles.optionCard,
-                  dietaryRestrictions.includes(diet) && styles.optionCardSelected
-                ]}
                 onPress={() => toggleSelection(diet, dietaryRestrictions, setDietaryRestrictions)}
               >
-                <Text style={[
-                  styles.optionText,
-                  dietaryRestrictions.includes(diet) && styles.optionTextSelected
-                ]}>
-                  {diet}
-                </Text>
-                {dietaryRestrictions.includes(diet) && (
-                  <Text style={styles.checkmark}>✓</Text>
-                )}
+                <LinearGradient
+                  colors={dietaryRestrictions.includes(diet) 
+                    ? ['#81C784', '#4DD0E1'] 
+                    : ['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+                  style={styles.optionCard}
+                >
+                  <Text style={[
+                    styles.optionText,
+                    dietaryRestrictions.includes(diet) && styles.optionTextSelected
+                  ]}>
+                    {diet}
+                  </Text>
+                  {dietaryRestrictions.includes(diet) && (
+                    <Text style={styles.checkmark}>✓</Text>
+                  )}
+                </LinearGradient>
               </Pressable>
             ))}
           </View>
@@ -199,21 +217,24 @@ export default function HealthPreferencesScreen() {
             {medicalOptions.map((condition) => (
               <Pressable
                 key={condition}
-                style={[
-                  styles.optionCard,
-                  medicalConditions.includes(condition) && styles.optionCardSelected
-                ]}
                 onPress={() => toggleSelection(condition, medicalConditions, setMedicalConditions)}
               >
-                <Text style={[
-                  styles.optionText,
-                  medicalConditions.includes(condition) && styles.optionTextSelected
-                ]}>
-                  {condition}
-                </Text>
-                {medicalConditions.includes(condition) && (
-                  <Text style={styles.checkmark}>✓</Text>
-                )}
+                <LinearGradient
+                  colors={medicalConditions.includes(condition) 
+                    ? ['#81C784', '#4DD0E1'] 
+                    : ['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+                  style={styles.optionCard}
+                >
+                  <Text style={[
+                    styles.optionText,
+                    medicalConditions.includes(condition) && styles.optionTextSelected
+                  ]}>
+                    {condition}
+                  </Text>
+                  {medicalConditions.includes(condition) && (
+                    <Text style={styles.checkmark}>✓</Text>
+                  )}
+                </LinearGradient>
               </Pressable>
             ))}
           </View>
@@ -241,7 +262,7 @@ export default function HealthPreferencesScreen() {
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -257,31 +278,30 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 16,
-    backgroundColor: colors.white,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.lightMistTeal,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   backArrow: {
     fontSize: 18,
-    color: colors.deepTeal,
+    color: colors.white,
     fontWeight: 'bold',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: colors.white,
   },
   saveHeaderButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 16,
-    backgroundColor: colors.coralAccent,
+    backgroundColor: 'rgba(129, 199, 132, 0.3)',
   },
   saveHeaderText: {
     fontSize: 14,
@@ -298,14 +318,20 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: 'rgba(255, 255, 255, 0.9)',
     marginBottom: 8,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   sectionSubtitle: {
     fontSize: 14,
-    color: colors.charcoalGray,
+    color: 'rgba(255, 255, 255, 0.8)',
     marginBottom: 16,
     lineHeight: 20,
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
   optionsGrid: {
     flexDirection: 'row',
@@ -313,13 +339,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   optionCard: {
-    backgroundColor: colors.white,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderWidth: 2,
-    borderColor: colors.lightMistTeal,
-    shadowColor: colors.charcoalGray,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -329,22 +354,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     minWidth: '45%',
   },
-  optionCardSelected: {
-    backgroundColor: colors.sageGreen,
-    borderColor: colors.sageGreen,
-  },
-  optionText: {
-    fontSize: 14,
-    color: colors.deepTeal,
-    fontWeight: '500',
-    flex: 1,
-  },
-  optionTextSelected: {
-    color: colors.white,
-  },
   checkmark: {
     fontSize: 16,
-    color: colors.white,
+    color: 'white',
     fontWeight: 'bold',
     marginLeft: 8,
   },
@@ -354,48 +366,46 @@ const styles = StyleSheet.create({
   optionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.white,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 16,
-    borderWidth: 2,
-    borderColor: colors.lightMistTeal,
-    shadowColor: colors.charcoalGray,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
-  },
-  optionRowSelected: {
-    backgroundColor: colors.sageGreen + '20',
-    borderColor: colors.sageGreen,
   },
   radioButton: {
     width: 20,
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: colors.lightMistTeal,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
   },
   radioButtonSelected: {
-    borderColor: colors.sageGreen,
+    borderColor: 'white',
   },
   radioButtonInner: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: colors.sageGreen,
+    backgroundColor: 'white',
   },
   optionRowText: {
     fontSize: 16,
-    color: colors.deepTeal,
+    color: 'white',
     fontWeight: '500',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
   optionRowTextSelected: {
-    color: colors.deepTeal,
+    color: 'white',
     fontWeight: '600',
   },
   recommendationCard: {

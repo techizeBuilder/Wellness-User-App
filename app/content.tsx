@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, TextInput, StatusBar } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import React, { useState } from 'react';
+import { Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import Footer from '../src/components/Footer';
 import { colors } from '../src/utils/colors';
 
 export default function ContentScreen() {
@@ -122,8 +124,13 @@ export default function ContentScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
+    <LinearGradient
+      colors={['#4DD0E1', '#81C784', '#BA68C8']}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.container}
+    >
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
       {/* Header */}
       <View style={styles.header}>
@@ -205,75 +212,65 @@ export default function ContentScreen() {
           <Text style={styles.sectionTitle}>
             {selectedCategory === 'All' ? 'All Content' : `${selectedCategory} Content`}
           </Text>
-          {filteredContent.map((item) => (
-            <Pressable key={item.id} style={styles.contentCard}>
-              <Image source={{ uri: item.image }} style={styles.contentImage} />
-              <View style={styles.contentInfo}>
-                <View style={styles.contentHeader}>
-                  <View style={[styles.categoryBadge, { backgroundColor: getTypeColor(item.type) + '20' }]}>
-                    <Text style={[styles.categoryBadgeText, { color: getTypeColor(item.type) }]}>
-                      {item.category}
+          {filteredContent.map((item, index) => {
+            const gradients = [
+              ['rgba(186, 168, 255, 0.9)', 'rgba(225, 213, 255, 0.9)'], // Purple gradient
+              ['rgba(168, 230, 207, 0.9)', 'rgba(200, 247, 197, 0.9)'], // Green gradient  
+              ['rgba(255, 182, 193, 0.9)', 'rgba(255, 192, 203, 0.9)']  // Pink gradient
+            ];
+            return (
+              <LinearGradient
+                key={item.id}
+                colors={gradients[index % gradients.length]}
+                style={styles.contentCard}
+              >
+                <Pressable style={styles.contentCardPressable}>
+                  <Image source={{ uri: item.image }} style={styles.contentImage} />
+                  <View style={styles.contentInfo}>
+                    <View style={styles.contentHeader}>
+                      <View style={[styles.categoryBadge, { backgroundColor: getTypeColor(item.type) + '20' }]}>
+                        <Text style={[styles.categoryBadgeText, { color: getTypeColor(item.type) }]}>
+                          {item.category}
+                        </Text>
+                      </View>
+                      <View style={[styles.typeIndicator, { backgroundColor: getTypeColor(item.type) }]}>
+                        <Text style={styles.typeIcon}>{getTypeIcon(item.type)}</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.contentTitle}>{item.title}</Text>
+                    <Text style={styles.contentDescription} numberOfLines={2}>
+                      {item.description}
                     </Text>
+                    <View style={styles.contentFooter}>
+                      <Text style={styles.contentDuration}>{item.duration}</Text>
+                      <View style={styles.bookmarkButton}>
+                        <Text style={styles.bookmarkIcon}>🔖</Text>
+                      </View>
+                    </View>
                   </View>
-                  <View style={[styles.typeIndicator, { backgroundColor: getTypeColor(item.type) }]}>
-                    <Text style={styles.typeIcon}>{getTypeIcon(item.type)}</Text>
-                  </View>
-                </View>
-                <Text style={styles.contentTitle}>{item.title}</Text>
-                <Text style={styles.contentDescription} numberOfLines={2}>
-                  {item.description}
-                </Text>
-                <View style={styles.contentFooter}>
-                  <Text style={styles.contentDuration}>{item.duration}</Text>
-                  <View style={styles.bookmarkButton}>
-                    <Text style={styles.bookmarkIcon}>🔖</Text>
-                  </View>
-                </View>
-              </View>
-            </Pressable>
-          ))}
+                </Pressable>
+              </LinearGradient>
+            );
+          })}
         </View>
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
 
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <Pressable style={styles.navItem} onPress={() => router.push('/dashboard')}>
-          <Text style={styles.navIcon}>🏠</Text>
-          <Text style={styles.navLabel}>Home</Text>
-        </Pressable>
-        <Pressable style={styles.navItem} onPress={() => router.push('/experts')}>
-          <Text style={styles.navIcon}>👥</Text>
-          <Text style={styles.navLabel}>Experts</Text>
-        </Pressable>
-        <Pressable style={styles.navItem}>
-          <Text style={styles.navIcon}>📅</Text>
-          <Text style={styles.navLabel}>Sessions</Text>
-        </Pressable>
-        <Pressable style={styles.navItem}>
-          <Text style={[styles.navIcon, styles.navIconActive]}>📱</Text>
-          <Text style={[styles.navLabel, styles.navLabelActive]}>Content</Text>
-        </Pressable>
-        <Pressable style={styles.navItem} onPress={() => router.push('/profile')}>
-          <Text style={styles.navIcon}>👤</Text>
-          <Text style={styles.navLabel}>Profile</Text>
-        </Pressable>
-      </View>
-    </View>
+      <Footer activeRoute="content" />
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.white,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 50,
+    paddingTop: 60,
     paddingHorizontal: 20,
     paddingBottom: 16,
   },
@@ -281,30 +278,35 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.lightMistTeal,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   backArrow: {
     fontSize: 18,
-    color: colors.deepTeal,
+    color: '#ffffff',
     fontWeight: 'bold',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: '#ffffff',
   },
   searchButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.lightMistTeal,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   searchIcon: {
     fontSize: 16,
+    color: '#ffffff',
   },
   scrollView: {
     flex: 1,
@@ -314,37 +316,42 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   searchInput: {
-    backgroundColor: colors.warmGray,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    color: colors.charcoalGray,
+    color: '#333',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   categoriesContainer: {
     paddingLeft: 20,
     marginBottom: 24,
   },
   categoryChip: {
-    backgroundColor: colors.warmGray,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     marginRight: 12,
     borderWidth: 1,
-    borderColor: colors.lightMistTeal,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   categoryChipActive: {
-    backgroundColor: colors.sageGreen,
-    borderColor: colors.sageGreen,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderColor: 'rgba(255, 255, 255, 0.9)',
   },
   categoryChipText: {
     fontSize: 14,
-    color: colors.charcoalGray,
+    color: '#ffffff',
     fontWeight: '500',
   },
   categoryChipTextActive: {
-    color: colors.white,
+    color: '#333',
   },
   section: {
     marginBottom: 32,
@@ -352,7 +359,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: '#ffffff',
     paddingHorizontal: 20,
     marginBottom: 16,
   },
@@ -411,23 +418,26 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   contentCard: {
-    flexDirection: 'row',
-    backgroundColor: colors.warmGray,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 20,
     marginHorizontal: 20,
     marginBottom: 16,
-    shadowColor: colors.charcoalGray,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  contentCardPressable: {
+    flexDirection: 'row',
+    padding: 16,
   },
   contentImage: {
     width: 80,
     height: 80,
     borderRadius: 12,
     marginRight: 16,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
   },
   contentInfo: {
     flex: 1,
@@ -460,12 +470,12 @@ const styles = StyleSheet.create({
   contentTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: '#333',
     marginBottom: 4,
   },
   contentDescription: {
     fontSize: 12,
-    color: '#666',
+    color: '#555',
     lineHeight: 16,
     marginBottom: 12,
   },
@@ -476,7 +486,7 @@ const styles = StyleSheet.create({
   },
   contentDuration: {
     fontSize: 12,
-    color: colors.charcoalGray,
+    color: '#666',
     fontWeight: '500',
   },
   bookmarkButton: {
@@ -486,37 +496,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   bottomSpacer: {
-    height: 90,
-  },
-  bottomNav: {
-    flexDirection: 'row',
-    backgroundColor: colors.white,
-    borderTopWidth: 1,
-    borderTopColor: colors.lightMistTeal,
-    paddingTop: 8,
-    paddingBottom: 25,
-    paddingHorizontal: 20,
-  },
-  navItem: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  navIcon: {
-    fontSize: 20,
-    marginBottom: 4,
-    color: colors.charcoalGray,
-  },
-  navIconActive: {
-    color: colors.deepTeal,
-  },
-  navLabel: {
-    fontSize: 11,
-    color: colors.charcoalGray,
-    fontWeight: '500',
-  },
-  navLabelActive: {
-    color: colors.deepTeal,
-    fontWeight: '600',
+    height: 100,
   },
 });

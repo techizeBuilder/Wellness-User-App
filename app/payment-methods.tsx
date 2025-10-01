@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, StatusBar, Alert } from 'react-native';
-import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+import React, { useState } from 'react';
+import { Alert, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import { colors } from '../src/utils/colors';
 
 export default function PaymentMethodsScreen() {
@@ -86,8 +86,13 @@ export default function PaymentMethodsScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
+    <LinearGradient
+      colors={['#4DD0E1', '#81C784', '#BA68C8']}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.container}
+    >
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
       {/* Header */}
       <View style={styles.header}>
@@ -120,7 +125,10 @@ export default function PaymentMethodsScreen() {
         {/* Add Card Form */}
         {showAddForm && (
           <View style={styles.section}>
-            <View style={styles.addCardForm}>
+            <LinearGradient
+              colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+              style={styles.addCardForm}
+            >
               <Text style={styles.formTitle}>Add New Card</Text>
               
               <View style={styles.inputContainer}>
@@ -189,7 +197,7 @@ export default function PaymentMethodsScreen() {
                   <Text style={styles.saveButtonText}>Add Card</Text>
                 </Pressable>
               </View>
-            </View>
+            </LinearGradient>
           </View>
         )}
 
@@ -198,7 +206,11 @@ export default function PaymentMethodsScreen() {
           <Text style={styles.sectionTitle}>Saved Payment Methods</Text>
           
           {savedCards.map((card) => (
-            <View key={card.id} style={styles.cardContainer}>
+            <LinearGradient
+              key={card.id}
+              colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+              style={styles.cardContainer}
+            >
               <View style={styles.cardContent}>
                 <View style={styles.cardLeft}>
                   <Text style={styles.cardIcon}>{getCardIcon(card.type)}</Text>
@@ -230,7 +242,7 @@ export default function PaymentMethodsScreen() {
                   <Text style={styles.setDefaultText}>Set as Default</Text>
                 </Pressable>
               )}
-            </View>
+            </LinearGradient>
           ))}
         </View>
 
@@ -238,7 +250,10 @@ export default function PaymentMethodsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Billing Information</Text>
           
-          <View style={styles.billingCard}>
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+            style={styles.billingCard}
+          >
             <View style={styles.billingItem}>
               <View style={styles.billingHeader}>
                 <Text style={styles.billingIcon}>🏠</Text>
@@ -253,7 +268,7 @@ export default function PaymentMethodsScreen() {
                 <Text style={styles.editBillingText}>Edit Address</Text>
               </Pressable>
             </View>
-          </View>
+          </LinearGradient>
         </View>
 
         {/* Payment Security */}
@@ -271,7 +286,7 @@ export default function PaymentMethodsScreen() {
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -287,25 +302,24 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 16,
-    backgroundColor: colors.white,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.lightMistTeal,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   backArrow: {
     fontSize: 18,
-    color: colors.deepTeal,
+    color: colors.white,
     fontWeight: 'bold',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: colors.white,
   },
   headerRight: {
     width: 40,
@@ -351,10 +365,9 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   addCardForm: {
-    backgroundColor: colors.white,
     borderRadius: 16,
     padding: 20,
-    shadowColor: colors.charcoalGray,
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -363,28 +376,34 @@ const styles = StyleSheet.create({
   formTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: 'white',
     marginBottom: 20,
     textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   inputContainer: {
     marginBottom: 16,
   },
   inputLabel: {
     fontSize: 14,
-    color: colors.deepTeal,
+    color: 'white',
     fontWeight: '600',
     marginBottom: 8,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
   input: {
-    backgroundColor: colors.warmGray,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    color: colors.charcoalGray,
+    color: 'white',
     borderWidth: 1,
-    borderColor: colors.lightMistTeal,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   rowContainer: {
     flexDirection: 'row',
@@ -420,11 +439,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   cardContainer: {
-    backgroundColor: colors.white,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
-    shadowColor: colors.charcoalGray,
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -455,8 +473,11 @@ const styles = StyleSheet.create({
   cardType: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: 'white',
     marginRight: 12,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
   defaultBadge: {
     backgroundColor: colors.royalGold + '20',
@@ -471,18 +492,18 @@ const styles = StyleSheet.create({
   },
   cardNumber: {
     fontSize: 16,
-    color: colors.charcoalGray,
+    color: 'rgba(255, 255, 255, 0.9)',
     marginBottom: 2,
     fontFamily: 'monospace',
   },
   cardExpiry: {
     fontSize: 14,
-    color: '#666',
+    color: 'rgba(255, 255, 255, 0.8)',
     marginBottom: 2,
   },
   cardHolder: {
     fontSize: 14,
-    color: '#666',
+    color: 'rgba(255, 255, 255, 0.8)',
   },
   deleteButton: {
     width: 36,
@@ -504,14 +525,16 @@ const styles = StyleSheet.create({
   },
   setDefaultText: {
     fontSize: 14,
-    color: colors.deepTeal,
+    color: 'white',
     fontWeight: '600',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
   billingCard: {
-    backgroundColor: colors.white,
     borderRadius: 16,
     padding: 20,
-    shadowColor: colors.charcoalGray,
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -532,11 +555,14 @@ const styles = StyleSheet.create({
   billingLabel: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: 'white',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
   billingValue: {
     fontSize: 14,
-    color: colors.charcoalGray,
+    color: 'rgba(255, 255, 255, 0.9)',
     lineHeight: 20,
     marginBottom: 16,
   },

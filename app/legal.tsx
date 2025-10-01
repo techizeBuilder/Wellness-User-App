@@ -1,12 +1,18 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, StatusBar } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import React from 'react';
+import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../src/utils/colors';
 
 export default function LegalScreen() {
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
+    <LinearGradient
+      colors={['#4DD0E1', '#81C784', '#BA68C8']}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.container}
+    >
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
       <View style={styles.header}>
         <Pressable style={styles.backButton} onPress={() => router.back()}>
@@ -18,35 +24,50 @@ export default function LegalScreen() {
 
       <ScrollView style={styles.scrollView}>
         <View style={styles.section}>
-          <Pressable style={styles.legalItem}>
-            <Text style={styles.legalIcon}>📋</Text>
-            <View style={styles.legalInfo}>
-              <Text style={styles.legalTitle}>Terms of Service</Text>
-              <Text style={styles.legalSubtitle}>Read our terms and conditions</Text>
-            </View>
-            <Text style={styles.legalArrow}>→</Text>
-          </Pressable>
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+            style={styles.legalItem}
+          >
+            <Pressable style={styles.legalContent}>
+              <Text style={styles.legalIcon}>📋</Text>
+              <View style={styles.legalInfo}>
+                <Text style={styles.legalTitle}>Terms of Service</Text>
+                <Text style={styles.legalSubtitle}>Read our terms and conditions</Text>
+              </View>
+              <Text style={styles.legalArrow}>→</Text>
+            </Pressable>
+          </LinearGradient>
           
-          <Pressable style={styles.legalItem}>
-            <Text style={styles.legalIcon}>🔒</Text>
-            <View style={styles.legalInfo}>
-              <Text style={styles.legalTitle}>Privacy Policy</Text>
-              <Text style={styles.legalSubtitle}>How we protect your data</Text>
-            </View>
-            <Text style={styles.legalArrow}>→</Text>
-          </Pressable>
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+            style={styles.legalItem}
+          >
+            <Pressable style={styles.legalContent}>
+              <Text style={styles.legalIcon}>🔒</Text>
+              <View style={styles.legalInfo}>
+                <Text style={styles.legalTitle}>Privacy Policy</Text>
+                <Text style={styles.legalSubtitle}>How we protect your data</Text>
+              </View>
+              <Text style={styles.legalArrow}>→</Text>
+            </Pressable>
+          </LinearGradient>
           
-          <Pressable style={styles.legalItem}>
-            <Text style={styles.legalIcon}>🍪</Text>
-            <View style={styles.legalInfo}>
-              <Text style={styles.legalTitle}>Cookie Policy</Text>
-              <Text style={styles.legalSubtitle}>How we use cookies</Text>
-            </View>
-            <Text style={styles.legalArrow}>→</Text>
-          </Pressable>
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+            style={styles.legalItem}
+          >
+            <Pressable style={styles.legalContent}>
+              <Text style={styles.legalIcon}>🍪</Text>
+              <View style={styles.legalInfo}>
+                <Text style={styles.legalTitle}>Cookie Policy</Text>
+                <Text style={styles.legalSubtitle}>How we use cookies</Text>
+              </View>
+              <Text style={styles.legalArrow}>→</Text>
+            </Pressable>
+          </LinearGradient>
         </View>
       </ScrollView>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -62,25 +83,30 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 16,
-    backgroundColor: colors.white,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.lightMistTeal,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   backArrow: {
     fontSize: 18,
-    color: colors.deepTeal,
+    color: 'white',
     fontWeight: 'bold',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: 'white',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   headerRight: {
     width: 40,
@@ -93,17 +119,18 @@ const styles = StyleSheet.create({
     paddingTop: 24,
   },
   legalItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.white,
     borderRadius: 16,
-    padding: 20,
     marginBottom: 12,
     shadowColor: colors.charcoalGray,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
+  },
+  legalContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
   },
   legalIcon: {
     fontSize: 24,
@@ -115,15 +142,18 @@ const styles = StyleSheet.create({
   legalTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.deepTeal,
+    color: 'white',
     marginBottom: 4,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   legalSubtitle: {
     fontSize: 14,
-    color: colors.charcoalGray,
+    color: 'rgba(255, 255, 255, 0.8)',
   },
   legalArrow: {
     fontSize: 16,
-    color: colors.deepTeal,
+    color: 'white',
   },
 });

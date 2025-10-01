@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, StatusBar } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import React, { useState } from 'react';
+import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../src/utils/colors';
 
 export default function LanguageScreen() {
@@ -18,8 +19,13 @@ export default function LanguageScreen() {
   ];
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
+    <LinearGradient
+      colors={['#4DD0E1', '#81C784', '#BA68C8']}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.container}
+    >
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
       <View style={styles.header}>
         <Pressable style={styles.backButton} onPress={() => router.back()}>
@@ -34,24 +40,33 @@ export default function LanguageScreen() {
           {languages.map((language) => (
             <Pressable
               key={language.code}
-              style={[
-                styles.languageItem,
-                selectedLanguage === language.name && styles.languageItemSelected
-              ]}
               onPress={() => setSelectedLanguage(language.name)}
             >
-              <View style={styles.languageInfo}>
-                <Text style={styles.languageName}>{language.name}</Text>
-                <Text style={styles.languageNative}>{language.nativeName}</Text>
-              </View>
-              {selectedLanguage === language.name && (
-                <Text style={styles.checkmark}>✓</Text>
-              )}
+              <LinearGradient
+                colors={selectedLanguage === language.name 
+                  ? ['#81C784', '#4DD0E1'] 
+                  : ['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+                style={styles.languageItem}
+              >
+                <View style={styles.languageInfo}>
+                  <Text style={[
+                    styles.languageName,
+                    selectedLanguage === language.name && styles.languageNameSelected
+                  ]}>{language.name}</Text>
+                  <Text style={[
+                    styles.languageNative,
+                    selectedLanguage === language.name && styles.languageNativeSelected
+                  ]}>{language.nativeName}</Text>
+                </View>
+                {selectedLanguage === language.name && (
+                  <Text style={styles.checkmark}>✓</Text>
+                )}
+              </LinearGradient>
             </Pressable>
           ))}
         </View>
       </ScrollView>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -67,25 +82,30 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 16,
-    backgroundColor: colors.white,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.lightMistTeal,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   backArrow: {
     fontSize: 18,
-    color: colors.deepTeal,
+    color: 'white',
     fontWeight: 'bold',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: 'white',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   headerRight: {
     width: 40,
@@ -101,20 +121,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.white,
     borderRadius: 16,
     padding: 20,
     marginBottom: 12,
-    shadowColor: colors.charcoalGray,
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
-  },
-  languageItemSelected: {
-    backgroundColor: colors.sageGreen + '20',
-    borderWidth: 2,
-    borderColor: colors.sageGreen,
   },
   languageInfo: {
     flex: 1,
@@ -122,16 +136,26 @@ const styles = StyleSheet.create({
   languageName: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.deepTeal,
+    color: 'white',
     marginBottom: 4,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
+  },
+  languageNameSelected: {
+    color: 'white',
+    fontWeight: 'bold',
   },
   languageNative: {
     fontSize: 14,
-    color: colors.charcoalGray,
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+  languageNativeSelected: {
+    color: 'rgba(255, 255, 255, 0.9)',
   },
   checkmark: {
     fontSize: 18,
-    color: colors.sageGreen,
+    color: 'white',
     fontWeight: 'bold',
   },
 });

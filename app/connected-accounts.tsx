@@ -1,12 +1,18 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, StatusBar } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import React from 'react';
+import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../src/utils/colors';
 
 export default function ConnectedAccountsScreen() {
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
+    <LinearGradient
+      colors={['#4DD0E1', '#81C784', '#BA68C8']}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.container}
+    >
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
       <View style={styles.header}>
         <Pressable style={styles.backButton} onPress={() => router.back()}>
@@ -20,26 +26,36 @@ export default function ConnectedAccountsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Social Media</Text>
           
-          <Pressable style={styles.accountItem}>
-            <Text style={styles.accountIcon}>📱</Text>
-            <View style={styles.accountInfo}>
-              <Text style={styles.accountName}>Google</Text>
-              <Text style={styles.accountStatus}>Connected</Text>
-            </View>
-            <Text style={styles.accountAction}>Disconnect</Text>
-          </Pressable>
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+            style={styles.accountItem}
+          >
+            <Pressable style={styles.accountContent}>
+              <Text style={styles.accountIcon}>📱</Text>
+              <View style={styles.accountInfo}>
+                <Text style={styles.accountName}>Google</Text>
+                <Text style={styles.accountStatus}>Connected</Text>
+              </View>
+              <Text style={styles.accountAction}>Disconnect</Text>
+            </Pressable>
+          </LinearGradient>
           
-          <Pressable style={styles.accountItem}>
-            <Text style={styles.accountIcon}>🍎</Text>
-            <View style={styles.accountInfo}>
-              <Text style={styles.accountName}>Apple Health</Text>
-              <Text style={styles.accountStatus}>Connected</Text>
-            </View>
-            <Text style={styles.accountAction}>Disconnect</Text>
-          </Pressable>
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+            style={styles.accountItem}
+          >
+            <Pressable style={styles.accountContent}>
+              <Text style={styles.accountIcon}>🍎</Text>
+              <View style={styles.accountInfo}>
+                <Text style={styles.accountName}>Apple Health</Text>
+                <Text style={styles.accountStatus}>Connected</Text>
+              </View>
+              <Text style={styles.accountAction}>Disconnect</Text>
+            </Pressable>
+          </LinearGradient>
         </View>
       </ScrollView>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -55,25 +71,30 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 16,
-    backgroundColor: colors.white,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.lightMistTeal,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   backArrow: {
     fontSize: 18,
-    color: colors.deepTeal,
+    color: 'white',
     fontWeight: 'bold',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: 'white',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   headerRight: {
     width: 40,
@@ -88,21 +109,25 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: 'white',
     marginBottom: 16,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   accountItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.white,
     borderRadius: 16,
-    padding: 20,
     marginBottom: 12,
     shadowColor: colors.charcoalGray,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
+  },
+  accountContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
   },
   accountIcon: {
     fontSize: 24,
@@ -114,16 +139,25 @@ const styles = StyleSheet.create({
   accountName: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.deepTeal,
+    color: 'white',
     marginBottom: 4,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   accountStatus: {
     fontSize: 14,
-    color: colors.sageGreen,
+    color: '#81C784',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
   accountAction: {
     fontSize: 14,
-    color: colors.coralAccent,
+    color: '#FF6B6B',
     fontWeight: '600',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
 });
