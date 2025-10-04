@@ -31,7 +31,7 @@ export default function LoginScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="#A0F0E4" />
       
       <LinearGradient
-        colors={['#A0F0E4', '#C2F8ED']}
+        colors={['#2da898ff', '#abeee6ff']}
         style={styles.backgroundGradient}
       >
         <ScrollView 
@@ -82,7 +82,7 @@ export default function LoginScreen() {
 
             <Pressable style={styles.continueButton} onPress={handleLogin}>
               <LinearGradient
-                colors={['#00C6A7', '#1D976C']}
+                colors={['#14B8A6', '#0D9488']}
                 style={styles.buttonGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
@@ -150,13 +150,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: '#1A5D5D',
+    color: '#f3f3f3ff',
     textAlign: 'center',
     marginBottom: 16,
   },
   subtitle: {
     fontSize: 16,
-    color: '#4A7575',
+    color: '#f3f3f3ff',
     textAlign: 'center',
     lineHeight: 24,
     fontWeight: '400',
@@ -175,6 +175,8 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     fontSize: 16,
     color: '#333333',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -189,6 +191,8 @@ const styles = StyleSheet.create({
     paddingRight: 60,
     fontSize: 16,
     color: '#333333',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -283,7 +287,7 @@ const styles = StyleSheet.create({
   },
   signUpLink: {
     fontSize: 16,
-    color: '#F4B400',
+    color: '#575623ff',
     fontWeight: 'bold',
   },
   footerSection: {

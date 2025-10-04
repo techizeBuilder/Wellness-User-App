@@ -19,7 +19,7 @@ export default function ForgotPasswordScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="#4DD0E1" />
       
       <LinearGradient
-        colors={['#4DD0E1', '#26C6DA', '#00BCD4']}
+        colors={['#2DD4BF', '#14B8A6', '#0D9488']}
         style={styles.backgroundGradient}
       >
         {/* Back Button */}
@@ -54,7 +54,7 @@ export default function ForgotPasswordScreen() {
 
             <Pressable style={styles.sendButton} onPress={handleSendOTP}>
               <LinearGradient
-                colors={['#26C6DA', '#00ACC1']}
+                colors={['#14B8A6', '#0D9488']}
                 style={styles.buttonGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
@@ -140,6 +140,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 18,
     marginBottom: 24,
+    borderWidth: 2,
+    borderColor: '#F59E0B',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -149,7 +151,7 @@ const styles = StyleSheet.create({
   inputIcon: {
     fontSize: 20,
     marginRight: 12,
-    color: '#26C6DA',
+    color: '#F59E0B',
   },
   input: {
     flex: 1,
@@ -189,7 +191,7 @@ const styles = StyleSheet.create({
   },
   loginLink: {
     fontSize: 16,
-    color: '#FFD700',
+    color: '#F59E0B',
     fontWeight: '600',
   },
 });

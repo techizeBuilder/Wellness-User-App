@@ -59,10 +59,11 @@ export default function DashboardScreen() {
   }, []);
 
   const categories = [
-    { name: 'Yoga', icon: '🧘‍♀️', backgroundColor: '#C8A8FF' },
-    { name: 'Ayurveda', icon: '🌿', backgroundColor: '#A8E6CF' },
-    { name: 'Diet', icon: '🥗', backgroundColor: '#FFB6C1' },
-    { name: 'Meditation', icon: '🕯️', backgroundColor: '#FFE5B4' },
+    { name: 'Yoga', icon: '🧘‍♀️', backgroundColor: '#edebf0ff' },
+    { name: 'Ayurveda', icon: '🌿', backgroundColor: '#edebf0ff' },
+    { name: 'Diet', icon: '🥗', backgroundColor: '#edebf0ff' },
+    { name: 'Astro Health', icon: '🔮', backgroundColor: '#edebf0ff' },
+    { name: 'Meditation', icon: '🕯️', backgroundColor: '#edebf0ff' },
   ];
 
   const experts = [
@@ -100,7 +101,7 @@ export default function DashboardScreen() {
 
   return (
     <LinearGradient
-      colors={['#4DD0E1', '#81C784', '#BA68C8']}
+      colors={['#23a897ff', '#269184ff', '#188d83ff']}
       start={{ x: 0.5, y: 0 }}
       end={{ x: 0.5, y: 1 }}
       style={styles.container}
@@ -163,7 +164,7 @@ export default function DashboardScreen() {
             {sliderData.map((_, index) => (
               <LinearGradient
                 key={index}
-                colors={currentSlide === index ? ['#4DD0E1', '#81C784'] : ['rgba(255,255,255,0.3)', 'rgba(255,255,255,0.3)']}
+                colors={currentSlide === index ? ['#2DD4BF', '#14B8A6'] : ['rgba(255,255,255,0.3)', 'rgba(255,255,255,0.3)']}
                 style={[styles.dot, { opacity: currentSlide === index ? 1 : 0.5 }]}
               />
             ))}
@@ -206,9 +207,9 @@ export default function DashboardScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.expertsScroll}>
             {experts.map((expert, index) => {
               const gradients: [string, string][] = [
-                ['rgba(186, 168, 255, 0.9)', 'rgba(225, 213, 255, 0.9)'], // Purple gradient
-                ['rgba(168, 230, 207, 0.9)', 'rgba(200, 247, 197, 0.9)'], // Green gradient  
-                ['rgba(255, 182, 193, 0.9)', 'rgba(255, 192, 203, 0.9)']  // Pink gradient
+                ['rgba(247, 246, 250, 0.9)', 'rgba(248, 248, 248, 0.9)'], // Purple gradient
+                ['rgba(247, 246, 250, 0.9)', 'rgba(248, 248, 248, 0.9)'], // Green gradient  
+                ['rgba(247, 246, 250, 0.9)', 'rgba(248, 248, 248, 0.9)'],// Pink gradient
               ];
               return (
                 <LinearGradient
@@ -243,7 +244,7 @@ export default function DashboardScreen() {
                       </View>
                       
                       <LinearGradient
-                        colors={['#4DD0E1', '#00CED1']}
+                        colors={['#14B8A6', '#0D9488']}
                         style={styles.bookButton}
                       >
                         <Text style={styles.bookButtonText}>Book Now</Text>
@@ -259,7 +260,7 @@ export default function DashboardScreen() {
         {/* Upcoming Session */}
         <View style={styles.section}>
           <LinearGradient
-            colors={['rgba(168, 230, 207, 0.95)', 'rgba(200, 247, 197, 0.95)']}
+            colors={['rgba(241, 245, 243, 0.95)', 'rgba(241, 245, 241, 0.95)']}
             style={styles.sessionCard}
           >
             <Image
@@ -271,7 +272,7 @@ export default function DashboardScreen() {
               <Text style={styles.sessionTime}>Today, at 8:00 AM</Text>
             </View>
             <LinearGradient
-              colors={['#4DD0E1', '#00CED1']}
+              colors={['#14B8A6', '#0D9488']}
               style={styles.joinButton}
             >
               <Text style={styles.joinButtonText}>Join</Text>
@@ -282,7 +283,7 @@ export default function DashboardScreen() {
         {/* Daily Wellness Tip */}
         <View style={styles.section}>
           <LinearGradient
-            colors={['rgba(255, 229, 180, 0.9)', 'rgba(255, 248, 220, 0.9)']}
+            colors={['rgba(248, 248, 248, 0.9)', 'rgba(255, 248, 220, 0.9)']}
             style={styles.tipCard}
           >
             <View style={styles.tipIconContainer}>
@@ -329,7 +330,7 @@ export default function DashboardScreen() {
         </View>
 
         {/* Weekly Goals */}
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Weekly Goals</Text>
             <Pressable style={styles.seeAllButton}>
@@ -347,7 +348,7 @@ export default function DashboardScreen() {
               </View>
               <View style={styles.progressBar}>
                 <LinearGradient
-                  colors={['#4DD0E1', '#81C784']}
+                  colors={['#2DD4BF', '#14B8A6']}
                   style={[styles.progressFill, { width: '60%' }]}
                 />
               </View>
@@ -360,13 +361,13 @@ export default function DashboardScreen() {
               </View>
               <View style={styles.progressBar}>
                 <LinearGradient
-                  colors={['#4DD0E1', '#81C784']}
+                  colors={['#2DD4BF', '#14B8A6']}
                   style={[styles.progressFill, { width: '75%' }]}
                 />
               </View>
             </View>
           </LinearGradient>
-        </View>
+        </View> */}
 
         {/* Quick Actions */}
         <View style={styles.section}>
@@ -415,7 +416,7 @@ export default function DashboardScreen() {
         </View>
 
         {/* Recent Articles */}
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Latest Wellness Articles</Text>
             <Pressable style={styles.seeAllButton} onPress={handleContentPress}>
@@ -461,10 +462,10 @@ export default function DashboardScreen() {
               </Pressable>
             ))}
           </ScrollView>
-        </View>
+        </View> */}
 
         {/* Community Highlights */}
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <Text style={styles.sectionTitle}>Community Highlights</Text>
           <LinearGradient
             colors={['rgba(255, 255, 255, 0.25)', 'rgba(255, 255, 255, 0.15)']}
@@ -486,14 +487,14 @@ export default function DashboardScreen() {
             </View>
             <Pressable style={styles.joinCommunityButton}>
               <LinearGradient
-                colors={['#4DD0E1', '#81C784']}
+                colors={['#2DD4BF', '#14B8A6']}
                 style={styles.joinCommunityGradient}
               >
                 <Text style={styles.joinCommunityText}>Join Discussion</Text>
               </LinearGradient>
             </Pressable>
           </LinearGradient>
-        </View>
+        </View> */}
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
@@ -523,12 +524,12 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#FFD54F',
     marginBottom: 4,
   },
   subGreeting: {
     fontSize: 16,
-    color: '#ffffff',
+    color: '#ffffffff',
     opacity: 0.9,
   },
   profileButton: {
@@ -641,13 +642,13 @@ const styles = StyleSheet.create({
     textShadowRadius: 3,
   },
   sliderButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: '#F59E0B',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 25,
     alignSelf: 'flex-start',
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
+    borderColor: '#D97706',
     shadowColor: 'rgba(255, 255, 255, 0.3)',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.8,
@@ -725,6 +726,8 @@ const styles = StyleSheet.create({
     height: 220,
     marginRight: 16,
     borderRadius: 24,
+    borderWidth: 2,
+    borderColor: '#F59E0B',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.2,
@@ -746,7 +749,7 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     borderWidth: 3,
-    borderColor: 'rgba(255, 255, 255, 0.9)',
+    borderColor: '#F59E0B',
     marginBottom: 8,
   },
   expertSpecialtyBadge: {
@@ -801,12 +804,12 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   expertRating: {
-    backgroundColor: 'rgba(255, 248, 220, 0.95)',
+    backgroundColor: '#F59E0B',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(184, 134, 11, 0.3)',
+    borderColor: '#D97706',
     shadowColor: '#FFD700',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -815,7 +818,7 @@ const styles = StyleSheet.create({
   },
   expertRatingText: {
     fontSize: 12,
-    color: '#B8860B',
+    color: '#FFFFFF',
     fontWeight: 'bold',
   },
   expertPrice: {
@@ -846,6 +849,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 20,
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -869,7 +874,7 @@ const styles = StyleSheet.create({
   },
   sessionTime: {
     fontSize: 14,
-    color: '#666',
+    color: '#F15A29',
   },
   joinButton: {
     backgroundColor: '#4DD0E1',
@@ -1035,8 +1040,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   articleCardGradient: {
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
     borderRadius: 16,
   },
   articleImage: {

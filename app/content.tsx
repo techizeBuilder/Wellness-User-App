@@ -125,7 +125,7 @@ export default function ContentScreen() {
 
   return (
     <LinearGradient
-      colors={['#4DD0E1', '#81C784', '#BA68C8']}
+      colors={['#2DD4BF', '#14B8A6', '#0D9488']}
       start={{ x: 0.5, y: 0 }}
       end={{ x: 0.5, y: 1 }}
       style={styles.container}
@@ -322,6 +322,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
     color: '#333',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -342,8 +344,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   categoryChipActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: '#F59E0B',
+    borderColor: '#D97706',
   },
   categoryChipText: {
     fontSize: 14,
@@ -351,7 +353,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   categoryChipTextActive: {
-    color: '#333',
+    color: '#ffffff',
   },
   section: {
     marginBottom: 32,
@@ -371,6 +373,8 @@ const styles = StyleSheet.create({
     height: 180,
     marginRight: 16,
     borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#F59E0B',
     overflow: 'hidden',
   },
   featuredImage: {
@@ -384,7 +388,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   featuredBadge: {
-    backgroundColor: colors.royalGold,
+    backgroundColor: '#F59E0B',
     alignSelf: 'flex-start',
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -421,6 +425,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginHorizontal: 20,
     marginBottom: 16,
+    borderWidth: 2,
+    borderColor: '#F59E0B',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
@@ -437,7 +443,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginRight: 16,
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.8)',
+    borderColor: '#F59E0B',
   },
   contentInfo: {
     flex: 1,

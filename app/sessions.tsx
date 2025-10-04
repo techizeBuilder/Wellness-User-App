@@ -241,7 +241,7 @@ export default function SessionsScreen() {
 
   return (
     <LinearGradient
-      colors={['#4DD0E1', '#81C784', '#BA68C8']}
+      colors={['#2DD4BF', '#14B8A6', '#0D9488']}
       start={{ x: 0.5, y: 0 }}
       end={{ x: 0.5, y: 1 }}
       style={styles.container}
@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   activeTab: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: '#F59E0B',
   },
   tabText: {
     color: 'rgba(255, 255, 255, 0.7)',
@@ -376,8 +376,8 @@ const styles = StyleSheet.create({
   },
   sessionCardGradient: {
     padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
     borderRadius: 16,
   },
   sessionHeader: {
@@ -390,6 +390,8 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     marginRight: 16,
+    borderWidth: 2,
+    borderColor: '#F59E0B',
   },
   sessionInfo: {
     flex: 1,
@@ -504,7 +506,7 @@ const styles = StyleSheet.create({
   },
   joinButton: {
     flex: 1,
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#14B8A6',
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -516,7 +518,7 @@ const styles = StyleSheet.create({
   },
   rescheduleButton: {
     flex: 1,
-    backgroundColor: 'rgba(255, 193, 7, 0.8)',
+    backgroundColor: '#F59E0B',
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -540,7 +542,7 @@ const styles = StyleSheet.create({
   },
   rateButton: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: '#F59E0B',
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -574,7 +576,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   bookButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: '#F59E0B',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 25,

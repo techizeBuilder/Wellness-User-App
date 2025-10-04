@@ -7,7 +7,7 @@ import { colors } from '../src/utils/colors';
 export default function HelpSupportScreen() {
   return (
     <LinearGradient
-      colors={['#4DD0E1', '#81C784', '#BA68C8']}
+      colors={['#2DD4BF', '#14B8A6', '#0D9488']}
       start={{ x: 0.5, y: 0 }}
       end={{ x: 0.5, y: 1 }}
       style={styles.container}

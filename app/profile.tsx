@@ -20,18 +20,21 @@ export default function ProfileScreen() {
       items: [
         { 
           icon: '📧', 
+          iconColor: '#2DD4BF',
           title: 'Contact Info', 
           subtitle: 'sophia.bennett@gmail.com', 
           action: () => router.push('/contact-info')
         },
         { 
           icon: '💖', 
+          iconColor: '#2DD4BF',
           title: 'Health Preferences', 
           subtitle: 'Manage your wellness goals', 
           action: () => router.push('/health-preferences')
         },
         { 
           icon: '💳', 
+          iconColor: '#2DD4BF',
           title: 'Payment Methods', 
           subtitle: 'Cards and billing info', 
           action: () => router.push('/payment-methods')
@@ -88,7 +91,7 @@ export default function ProfileScreen() {
 
   return (
     <LinearGradient
-      colors={['#4DD0E1', '#81C784', '#BA68C8']}
+      colors={['#2DD4BF', '#14B8A6', '#0D9488']}
       start={{ x: 0.5, y: 0 }}
       end={{ x: 0.5, y: 1 }}
       style={styles.container}
@@ -106,14 +109,12 @@ export default function ProfileScreen() {
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Profile Info */}
-        <LinearGradient
-          colors={['rgba(255, 255, 255, 0.15)', 'rgba(255, 255, 255, 0.1)']}
-          style={styles.profileSection}
-        >
+        <View style={styles.profileSection}>
           <View style={styles.profileImageContainer}>
             <Image
-              source={{ uri: 'https://images.unsplash.com/photo-1494790108755-2616b612b2e5?w=120&h=120&fit=crop&crop=face' }}
+              source={{ uri: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&crop=face' }}
               style={styles.profileImage}
+              resizeMode="cover"
             />
             <Pressable style={styles.editButton}>
               <Text style={styles.editIcon}>✏️</Text>
@@ -122,10 +123,7 @@ export default function ProfileScreen() {
           <Text style={styles.profileName}>Sophia Bennett</Text>
           <Text style={styles.profileSubtitle}>Yoga & Meditation Enthusiast</Text>
           
-          <LinearGradient
-            colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.3)']}
-            style={styles.statsContainer}
-          >
+          <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>24</Text>
               <Text style={styles.statLabel}>Sessions</Text>
@@ -140,17 +138,14 @@ export default function ProfileScreen() {
               <Text style={styles.statNumber}>3</Text>
               <Text style={styles.statLabel}>Experts</Text>
             </View>
-          </LinearGradient>
-        </LinearGradient>
+          </View>
+        </View>
 
         {/* Profile Sections */}
         {profileSections.map((section, sectionIndex) => (
           <View key={sectionIndex} style={styles.section}>
             <Text style={styles.sectionTitle}>{section.title}</Text>
-            <LinearGradient
-              colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
-              style={styles.menuContainer}
-            >
+            <View style={styles.menuContainer}>
               {section.items.map((item, itemIndex) => (
                 <Pressable
                   key={itemIndex}
@@ -172,7 +167,7 @@ export default function ProfileScreen() {
                   <Text style={styles.menuArrow}>›</Text>
                 </Pressable>
               ))}
-            </LinearGradient>
+            </View>
           </View>
         ))}
 
@@ -272,26 +267,20 @@ const styles = StyleSheet.create({
   },
   profileSection: {
     alignItems: 'center',
-    paddingVertical: 32,
-    marginHorizontal: 20,
-    marginTop: 20,
-    borderRadius: 20,
-    shadowColor: 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    paddingVertical: 40,
+    marginHorizontal: 0,
+    marginTop: 0,
   },
   profileImageContainer: {
     position: 'relative',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     borderWidth: 4,
-    borderColor: colors.white,
+    borderColor: '#F59E0B',
   },
   editButton: {
     position: 'absolute',
@@ -300,55 +289,54 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: colors.royalGold,
+    backgroundColor: '#F59E0B',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.white,
   },
   editIcon: {
     fontSize: 14,
+    color: colors.white,
   },
   profileName: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: colors.white,
+    color: '#333333',
     marginBottom: 4,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
   profileSubtitle: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
-    marginBottom: 24,
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 1,
+    color: '#666666',
+    marginBottom: 32,
   },
   statsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 16,
-    paddingVertical: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 20,
+    paddingVertical: 20,
     paddingHorizontal: 32,
+    marginHorizontal: 20,
     shadowColor: 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   statItem: {
     alignItems: 'center',
     minWidth: 60,
   },
   statNumber: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: '#F59E0B',
     marginBottom: 4,
   },
   statLabel: {
-    fontSize: 12,
-    color: 'rgba(0, 0, 0, 0.7)',
+    fontSize: 14,
+    color: '#666666',
     fontWeight: '500',
   },
   statDivider: {
@@ -363,21 +351,22 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: 'bold',
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: '#F59E0B',
     letterSpacing: 1,
     marginBottom: 16,
     paddingLeft: 4,
   },
   menuContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: 'rgba(0, 0, 0, 0.15)',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
-    elevation: 4,
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
     marginBottom: 8,
   },
   menuItem: {
@@ -387,7 +376,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   menuItemLast: {
     borderBottomWidth: 0,
@@ -401,18 +390,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(77, 208, 225, 0.3)',
+    backgroundColor: '#2DD4BF',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
-    shadowColor: 'rgba(77, 208, 225, 0.4)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.6,
-    shadowRadius: 3,
-    elevation: 3,
   },
   menuIcon: {
     fontSize: 16,
+    color: colors.white,
   },
   menuItemContent: {
     flex: 1,
@@ -420,16 +405,16 @@ const styles = StyleSheet.create({
   menuItemTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.deepTeal,
+    color: '#F59E0B',
     marginBottom: 4,
   },
   menuItemSubtitle: {
     fontSize: 14,
-    color: 'rgba(0, 0, 0, 0.6)',
+    color: '#666666',
   },
   menuArrow: {
     fontSize: 20,
-    color: 'rgba(0, 0, 0, 0.4)',
+    color: '#F59E0B',
     fontWeight: 'bold',
   },
   premiumSection: {

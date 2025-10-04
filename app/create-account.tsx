@@ -24,7 +24,7 @@ export default function CreateAccountScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="#A0F0E4" />
       
       <LinearGradient
-        colors={['#A0F0E4', '#C2F8ED']}
+        colors={['#2DD4BF', '#14B8A6']}
         style={styles.backgroundGradient}
       >
         <ScrollView 
@@ -181,11 +181,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
   },
   inputFilled: {
-    borderColor: '#00C6A7',
+    borderColor: '#14B8A6',
     borderWidth: 2,
   },
   passwordContainer: {
@@ -206,8 +206,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
   },
   eyeIcon: {
     position: 'absolute',
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
-    backgroundColor: '#00C6A7',
+    backgroundColor: '#14B8A6',
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   },
   loginLink: {
     fontSize: 16,
-    color: '#00C6A7',
+    color: '#F59E0B',
     fontWeight: '600',
   },
 });

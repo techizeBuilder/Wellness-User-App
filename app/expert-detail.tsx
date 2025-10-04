@@ -78,6 +78,34 @@ export default function ExpertDetailScreen() {
       specialty: 'Meditation',
       rating: 4.7,
       image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face'
+    },
+    {
+      id: 4,
+      name: 'Dr. Priya Singh',
+      specialty: 'Nutrition',
+      rating: 4.9,
+      image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=80&h=80&fit=crop&crop=face'
+    },
+    {
+      id: 5,
+      name: 'Rahul Sharma',
+      specialty: 'Fitness',
+      rating: 4.6,
+      image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=80&h=80&fit=crop&crop=face'
+    },
+    {
+      id: 6,
+      name: 'Dr. Meera Joshi',
+      specialty: 'Mental Health',
+      rating: 4.8,
+      image: 'https://images.unsplash.com/photo-1594824475520-b1de9d1b7a34?w=80&h=80&fit=crop&crop=face'
+    },
+    {
+      id: 7,
+      name: 'Vikram Kumar',
+      specialty: 'Yoga Therapy',
+      rating: 4.5,
+      image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=face'
     }
   ];
 
@@ -96,7 +124,7 @@ export default function ExpertDetailScreen() {
 
   return (
     <LinearGradient
-      colors={['#4DD0E1', '#81C784', '#BA68C8']}
+      colors={['#FFFFFF', '#F5F5F5', '#EEEEEE']}
       start={{ x: 0.5, y: 0 }}
       end={{ x: 0.5, y: 1 }}
       style={styles.container}
@@ -116,7 +144,10 @@ export default function ExpertDetailScreen() {
               <Text style={styles.backArrow}>←</Text>
             </Pressable>
             <View style={styles.headerInfo}>
-              <Text style={styles.expertName}>{expert.name}</Text>
+              <View style={styles.expertNameContainer}>
+                <Text style={styles.expertNameWhite}>Dr. Anya </Text>
+                <Text style={styles.expertNameYellow}>Sharma</Text>
+              </View>
               <Text style={styles.expertTitle}>{expert.title}</Text>
               <Text style={styles.headerDescription}>
                 Certified yoga instructor specializing in Hatha and Vinyasa Flow with 5+ years of experience helping students find inner peace.
@@ -296,7 +327,15 @@ export default function ExpertDetailScreen() {
         {/* Suggested Experts */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Suggested Experts</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            pagingEnabled={false}
+            decelerationRate="fast"
+            snapToInterval={140}
+            snapToAlignment="start"
+            contentContainerStyle={styles.suggestedScrollContainer}
+          >
             {suggestedExperts.map((suggestedExpert) => (
               <Pressable
                 key={suggestedExpert.id}
@@ -373,15 +412,36 @@ const styles = StyleSheet.create({
   expertName: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#F59E0B',
     marginBottom: 6,
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 6,
+  },
+  expertNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  expertNameWhite: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 6,
+  },
+  expertNameYellow: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#F59E0B',
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
     textShadowOffset: { width: 0, height: 3 },
     textShadowRadius: 6,
   },
   expertTitle: {
     fontSize: 18,
-    color: 'rgba(255, 255, 255, 0.95)',
+    color: '#F59E0B',
     fontWeight: '600',
     marginBottom: 8,
     textShadowColor: 'rgba(0, 0, 0, 0.6)',
@@ -402,14 +462,14 @@ const styles = StyleSheet.create({
   },
   expertSpecialty: {
     fontSize: 18,
-    color: '#FFFFFF',
+    color: '#F59E0B',
     fontWeight: '600',
     textShadowColor: 'rgba(0, 0, 0, 0.6)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
   },
   verifiedBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: '#F59E0B',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -426,24 +486,26 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   playButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#14B8A6',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#F59E0B',
     minWidth: 140,
     justifyContent: 'center',
   },
   playIcon: {
     fontSize: 16,
-    color: '#000000',
+    color: '#FFFFFF',
     marginRight: 8,
   },
   playText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#000000',
+    color: '#FFFFFF',
   },
   infoButton: {
     backgroundColor: 'rgba(109, 109, 110, 0.7)',
@@ -452,6 +514,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#F59E0B',
     minWidth: 120,
     justifyContent: 'center',
   },
@@ -467,20 +531,20 @@ const styles = StyleSheet.create({
   },
   statsCard: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     marginHorizontal: 20,
     marginTop: 20,
     borderRadius: 20,
     paddingVertical: 24,
     paddingHorizontal: 20,
-    shadowColor: '#4DD0E1',
+    shadowColor: '#F59E0B',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
+    shadowOpacity: 0.3,
     shadowRadius: 20,
     elevation: 12,
     zIndex: 1,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
   },
   statItem: {
     flex: 1,
@@ -501,12 +565,12 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#F59E0B',
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#666666',
     textAlign: 'center',
   },
   statDivider: {
@@ -528,26 +592,26 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#F59E0B',
     marginBottom: 16,
   },
   seeAllText: {
     fontSize: 14,
-    color: '#FFFFFF',
+    color: '#F59E0B',
     fontWeight: '600',
   },
   aboutText: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: '#333333',
     lineHeight: 24,
     marginBottom: 20,
   },
   detailsContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 12,
     padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
   },
   detailRow: {
     marginBottom: 12,
@@ -555,18 +619,18 @@ const styles = StyleSheet.create({
   detailLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#F59E0B',
     marginBottom: 4,
   },
   detailValue: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#333333',
     lineHeight: 20,
   },
   subTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#F59E0B',
     marginBottom: 12,
     marginTop: 8,
   },
@@ -574,33 +638,33 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   dateCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 16,
     marginRight: 12,
     alignItems: 'center',
     minWidth: 70,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
   },
   dateCardDisabled: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     opacity: 0.5,
   },
   dateCardSelected: {
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
-    borderColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: '#F59E0B',
+    borderColor: '#D97706',
   },
   dateNumber: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#333333',
     marginBottom: 4,
   },
   dateDay: {
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#666666',
     fontWeight: '500',
   },
   dateTextDisabled: {
@@ -615,32 +679,32 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   timeSlot: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
   },
   timeSlotSelected: {
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
-    borderColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: '#F59E0B',
+    borderColor: '#D97706',
   },
   timeSlotText: {
     fontSize: 14,
-    color: '#FFFFFF',
+    color: '#333333',
     fontWeight: '500',
   },
   timeSlotTextSelected: {
     color: '#FFFFFF',
   },
   reviewCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
   },
   reviewHeader: {
     flexDirection: 'row',
@@ -652,6 +716,8 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     marginRight: 12,
+    borderWidth: 2,
+    borderColor: '#F59E0B',
   },
   reviewInfo: {
     flex: 1,
@@ -659,7 +725,7 @@ const styles = StyleSheet.create({
   reviewerName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#333333',
     marginBottom: 4,
   },
   reviewMeta: {
@@ -674,39 +740,41 @@ const styles = StyleSheet.create({
   },
   reviewDate: {
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: '#666666',
   },
   reviewComment: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#333333',
     lineHeight: 20,
   },
   suggestedCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 12,
     padding: 16,
     marginRight: 16,
     alignItems: 'center',
     width: 120,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
   },
   suggestedImage: {
     width: 60,
     height: 60,
     borderRadius: 30,
     marginBottom: 12,
+    borderWidth: 2,
+    borderColor: '#F59E0B',
   },
   suggestedName: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#333333',
     textAlign: 'center',
     marginBottom: 4,
   },
   suggestedSpecialty: {
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#666666',
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -714,6 +782,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#FFD700',
     fontWeight: 'bold',
+  },
+  suggestedScrollContainer: {
+    paddingRight: 20,
   },
   bottomSpacer: {
     height: 100,
@@ -736,7 +807,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#4DD0E1',
+    backgroundColor: '#F59E0B',
     borderRadius: 12,
   },
   bookButtonText: {

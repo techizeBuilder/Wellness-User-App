@@ -106,7 +106,7 @@ export default function ExpertsScreen() {
 
   return (
     <LinearGradient
-      colors={['#4DD0E1', '#81C784', '#BA68C8']}
+     colors={['#23a897ff', '#269184ff', '#188d83ff']}
       start={{ x: 0.5, y: 0 }}
       end={{ x: 0.5, y: 1 }}
       style={styles.container}
@@ -223,9 +223,9 @@ export default function ExpertsScreen() {
       <ScrollView style={styles.expertsContainer} showsVerticalScrollIndicator={false}>
         {filteredExperts.map((expert, index) => {
           const gradients = [
-            ['rgba(186, 168, 255, 0.9)', 'rgba(225, 213, 255, 0.9)'], // Purple gradient
-            ['rgba(168, 230, 207, 0.9)', 'rgba(200, 247, 197, 0.9)'], // Green gradient  
-            ['rgba(255, 182, 193, 0.9)', 'rgba(255, 192, 203, 0.9)']  // Pink gradient
+                 ['rgba(247, 246, 250, 0.9)', 'rgba(248, 248, 248, 0.9)'], // Purple gradient
+                ['rgba(247, 246, 250, 0.9)', 'rgba(248, 248, 248, 0.9)'], // Green gradient  
+                ['rgba(247, 246, 250, 0.9)', 'rgba(248, 248, 248, 0.9)'],// Pink gradient
           ];
           return (
             <LinearGradient
@@ -314,8 +314,8 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
   },
   // Compact Categories Styles
   compactCategoriesContainer: {
@@ -332,8 +332,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   compactCategoryChipActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
-    borderColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: '#F59E0B',
+    borderColor: '#D97706',
   },
   compactCategoryChipText: {
     fontSize: 14,
@@ -430,8 +430,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   filterChipActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: '#F59E0B',
+    borderColor: '#D97706',
   },
   filterChipText: {
     fontSize: 12,
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   filterChipTextActive: {
-    color: '#333',
+    color: '#ffffff',
   },
   categoriesContainer: {
     paddingLeft: 20,
@@ -474,6 +474,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginBottom: 16,
     padding: 16,
+    borderWidth: 2,
+    borderColor: '#F59E0B',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
@@ -489,8 +491,8 @@ const styles = StyleSheet.create({
     height: 70,
     borderRadius: 35,
     marginRight: 12,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.8)',
+    borderWidth: 3,
+    borderColor: '#F59E0B',
   },
   expertInfo: {
     flex: 1,
@@ -507,7 +509,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   verifiedBadge: {
-    backgroundColor: 'rgba(34, 139, 34, 0.9)',
+    backgroundColor: '#F59E0B',
     width: 18,
     height: 18,
     borderRadius: 9,

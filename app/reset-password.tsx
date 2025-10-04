@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, StatusBar } from 'react-native';
-import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+import React, { useState } from 'react';
+import { Pressable, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import { colors } from '../src/utils/colors';
 
 export default function ResetPasswordScreen() {
@@ -81,7 +81,7 @@ export default function ResetPasswordScreen() {
       <View style={styles.footer}>
         <Pressable style={styles.resetButton} onPress={handleResetPassword}>
           <LinearGradient
-            colors={[colors.deepTeal, '#003D3D']}
+            colors={['#14B8A6', '#0D9488']}
             style={styles.buttonGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
@@ -101,7 +101,7 @@ export default function ResetPasswordScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.white,
+    backgroundColor: '#2DD4BF',
   },
   header: {
     paddingTop: 50,
@@ -150,14 +150,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   input: {
-    backgroundColor: colors.warmGray,
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 16,
     fontSize: 16,
-    color: colors.charcoalGray,
-    borderWidth: 1,
-    borderColor: '#E1E5E9',
+    color: '#333333',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
   },
   eyeIcon: {
     position: 'absolute',
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   },
   backToLoginText: {
     fontSize: 16,
-    color: colors.royalGold,
+    color: '#F59E0B',
     fontWeight: '600',
   },
 });
