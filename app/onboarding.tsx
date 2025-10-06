@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, StatusBar, Image, Dimensions } from 'react-native';
-import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors } from '../src/utils/colors';
+import { router } from 'expo-router';
+import React, { useState } from 'react';
+import { Dimensions, Image, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -11,28 +10,19 @@ export default function OnboardingScreen() {
 
   const steps = [
     {
-      title: "Embrace Your Journey",
-      subtitle: "Discover yourself as you physically start your wellness journey with personalized guidance.",
-      icon: "🧘‍♀️",
-      imageUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop&q=80"
+      title: "WELCOME TO ZENOVIA",
+      subtitle: "Your personal wellness companion for yoga, meditation, and healthy living.",
+      image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&h=600&fit=crop&q=80"
     },
     {
-      title: "Your Journey to Wellness",
-      subtitle: "Just a few simple steps to personalize your experience and connect with certified experts.",
-      icon: "🌱",
-      imageUrl: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=300&fit=crop&q=80"
+      title: "Connect with Experts",
+      subtitle: "Access certified professionals in Yoga, Ayurveda, Diet, Meditation, and Fitness.",
+      image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop&q=80"
     },
     {
-      title: "Find Your Flow",
-      subtitle: "Strengthen your inner connection to wellness through yoga, meditation, and mindful living.",
-      icon: "🧘‍♂️",
-      imageUrl: "https://images.unsplash.com/photo-1545389336-cf090694435e?w=400&h=300&fit=crop&q=80"
-    },
-    {
-      title: "You're All Set ✨",
-      subtitle: "Start exploring expert guidance and transform your lifestyle with Zenovia's comprehensive wellness program.",
-      icon: "🚀",
-      imageUrl: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop&q=80"
+      title: "Personalized Experience",
+      subtitle: "Get customized wellness plans tailored to your unique goals and preferences.",
+      image: "https://images.unsplash.com/photo-1545389336-cf090694435e?w=800&h=600&fit=crop&q=80"
     }
   ];
 
@@ -40,70 +30,98 @@ export default function OnboardingScreen() {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      router.push('/login');
+      router.push('/user-type-selection');
     }
   };
 
-  const currentStepData = steps[currentStep];
+  const currentStepData = steps[currentStep] || steps[0];
+
+  // Zenovia Logo Component
+  const ZenoviaLogo = () => (
+    <View style={styles.logoContainer}>
+      <Image 
+        source={require('../assets/images/logo.png')}
+        style={styles.logoImage}
+        resizeMode="contain"
+      />
+      <Text style={styles.logoText}>ZENOVIA</Text>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.deepTeal} translucent />
+      <StatusBar barStyle="light-content" backgroundColor="#0A4A4A" translucent />
       
       <LinearGradient
-        colors={[colors.deepTeal, '#003333']}
+        colors={['#0A4A4A', '#1A5A5A', '#2A6A6A']}
         style={styles.backgroundGradient}
-      />
-
-      {/* Decorative Background Elements */}
-      <View style={styles.decorativeElements}>
-        <View style={[styles.circle1, { backgroundColor: 'rgba(255, 215, 0, 0.08)' }]} />
-        <View style={[styles.circle2, { backgroundColor: 'rgba(163, 201, 168, 0.12)' }]} />
-      </View>
-
-      <View style={styles.contentContainer}>
-        <View style={styles.progressContainer}>
-          {steps.map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.progressDot,
-                {
-                  backgroundColor: index <= currentStep ? colors.royalGold : 'rgba(255, 255, 255, 0.3)',
-                  width: index <= currentStep ? 32 : 8,
-                }
-              ]}
-            />
-          ))}
+      >
+        {/* Header with Logo */}
+        <View style={styles.header}>
+          <ZenoviaLogo />
         </View>
 
+        {/* Main Content */}
         <View style={styles.mainContent}>
+          {/* Image Container */}
           <View style={styles.imageContainer}>
-            <Image 
-              source={{ uri: currentStepData.imageUrl }}
-              style={styles.stepImage}
-              resizeMode="cover"
-            />
-            <View style={styles.iconOverlay}>
-              <Text style={styles.iconEmoji}>{currentStepData.icon}</Text>
+            {currentStepData?.image && (
+              <Image 
+                source={{ uri: currentStepData.image }}
+                style={styles.mainImage}
+                resizeMode="cover"
+              />
+            )}
+            <View style={styles.imageOverlay}>
+              <View style={styles.overlayIcon}>
+                <Image 
+                  source={require('../assets/images/logo.png')}
+                  style={styles.overlayLogoImage}
+                  resizeMode="contain"
+                />
+              </View>
             </View>
           </View>
 
-          <Text style={styles.title}>{currentStepData.title}</Text>
-          <Text style={styles.subtitle}>{currentStepData.subtitle}</Text>
+          {/* Text Content */}
+          <View style={styles.textContent}>
+            <Text style={styles.title}>{currentStepData?.title || 'Welcome'}</Text>
+            <Text style={styles.subtitle}>{currentStepData?.subtitle || 'Loading...'}</Text>
+          </View>
         </View>
 
-        <Pressable style={styles.nextButton} onPress={handleNext}>
-          <LinearGradient
-            colors={[colors.royalGold, '#E6C200']}
-            style={styles.buttonGradient}
-          >
-            <Text style={styles.buttonText}>
-              {currentStep === steps.length - 1 ? 'Get Started' : 'Next'}
-            </Text>
-          </LinearGradient>
-        </Pressable>
-      </View>
+        {/* Bottom Section */}
+        <View style={styles.bottomSection}>
+          {/* Progress Indicators */}
+          <View style={styles.progressContainer}>
+            {steps.map((_, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.progressDot,
+                  {
+                    backgroundColor: index === currentStep ? '#F59E0B' : 'rgba(255, 255, 255, 0.3)',
+                    width: index === currentStep ? 24 : 8,
+                  }
+                ]}
+              />
+            ))}
+          </View>
+
+          {/* Next Button */}
+          <Pressable style={styles.nextButton} onPress={handleNext}>
+            <LinearGradient
+              colors={['#F59E0B', '#D97706']}
+              style={styles.buttonGradient}
+            >
+              <Text style={styles.buttonText}>
+                {currentStep === steps.length - 1 ? 'Get Started' : 'Next'}
+              </Text>
+              <Text style={styles.buttonArrow}>→</Text>
+            </LinearGradient>
+          </Pressable>
+        </View>
+      </LinearGradient>
     </View>
   );
 }
@@ -111,121 +129,132 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.deepTeal,
+    backgroundColor: '#0A4A4A',
   },
   backgroundGradient: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
+    flex: 1,
   },
-  decorativeElements: {
-    position: 'absolute',
+  header: {
+    paddingTop: 60,
+    paddingBottom: 30,
+    alignItems: 'center',
+  },
+  logoContainer: {
+    alignItems: 'center',
+  },
+  logoImage: {
+    width: 80,
+    height: 80,
+    marginBottom: 12,
+  },
+  logoText: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#F59E0B',
+    letterSpacing: 2,
+  },
+  mainContent: {
+    flex: 1,
+    paddingHorizontal: 24,
+    justifyContent: 'center',
+  },
+  imageContainer: {
+    width: '100%',
+    height: 280,
+    borderRadius: 24,
+    overflow: 'hidden',
+    marginBottom: 40,
+    position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  mainImage: {
     width: '100%',
     height: '100%',
   },
-  circle1: {
+  imageOverlay: {
     position: 'absolute',
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    top: -100,
-    right: -100,
+    bottom: 20,
+    right: 20,
   },
-  circle2: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    bottom: 100,
-    left: -50,
+  overlayIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(10, 74, 74, 0.95)',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  contentContainer: {
-    flex: 1,
-    paddingTop: 60,
+  overlayLogoImage: {
+    width: 32,
+    height: 32,
+    tintColor: '#F59E0B',
+  },
+  textContent: {
+    alignItems: 'center',
+    paddingHorizontal: 12,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#F59E0B',
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 38,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.85)',
+    textAlign: 'center',
+    lineHeight: 24,
+    paddingHorizontal: 8,
+  },
+  bottomSection: {
+    paddingHorizontal: 24,
+    paddingBottom: 50,
   },
   progressContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 60,
+    marginBottom: 40,
   },
   progressDot: {
     height: 4,
     borderRadius: 2,
     marginHorizontal: 4,
-  },
-  mainContent: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 32,
-    justifyContent: 'center',
-  },
-  imageContainer: {
-    width: width * 0.8,
-    height: 200,
-    borderRadius: 20,
-    overflow: 'hidden',
-    marginBottom: 40,
-    position: 'relative',
-    shadowColor: 'rgba(0, 0, 0, 0.3)',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  stepImage: {
-    width: '100%',
-    height: '100%',
-  },
-  iconOverlay: {
-    position: 'absolute',
-    bottom: 15,
-    right: 15,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(0, 77, 77, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: colors.royalGold,
-  },
-  iconEmoji: {
-    fontSize: 30,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: colors.white,
-    textAlign: 'center',
-    marginBottom: 20,
-    lineHeight: 38,
-  },
-  subtitle: {
-    fontSize: 18,
-    color: 'rgba(255, 255, 255, 0.8)',
-    textAlign: 'center',
-    lineHeight: 28,
-    paddingHorizontal: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   nextButton: {
-    marginHorizontal: 32,
-    marginBottom: 50,
     borderRadius: 28,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   buttonGradient: {
-    paddingVertical: 18,
-    paddingHorizontal: 60,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 18,
+    paddingHorizontal: 32,
   },
   buttonText: {
     fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginRight: 8,
+  },
+  buttonArrow: {
+    fontSize: 18,
+    color: '#FFFFFF',
     fontWeight: 'bold',
-    color: colors.white,
   },
 });

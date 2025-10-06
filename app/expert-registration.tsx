@@ -12,8 +12,8 @@ export default function ExpertRegistrationScreen() {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   const handleCreateAccount = () => {
-    // Handle expert registration logic
-    router.push('/welcome');
+    // Handle expert account creation logic
+    router.push('/dashboard');
   };
 
   const handleLogin = () => {

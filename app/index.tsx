@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Animated, StatusBar } from 'react-native';
 import { router } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { Animated, StatusBar, StyleSheet, View } from 'react-native';
 
 export default function Index() {
   const [animatedValues] = useState(() => 

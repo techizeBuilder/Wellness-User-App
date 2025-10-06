@@ -14,7 +14,7 @@ export default function ExpertRegistrationScreen() {
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
 
   const handleRegister = () => {
-    router.push('/welcome');
+    router.push('/dashboard');
   };
 
   const handleLogin = () => {

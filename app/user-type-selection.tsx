@@ -1,8 +1,7 @@
 ﻿import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Dimensions, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -19,75 +18,91 @@ export default function UserTypeSelection() {
   };
 
   return (
-    <LinearGradient
-      colors={["#3EE0C0", "#6DECB9"]}
-      start={{ x: 0.5, y: 0 }}
-      end={{ x: 0.5, y: 1 }}
-      style={styles.container}
-    >
-      <SafeAreaView style={styles.safeArea}>
-  <View style={styles.content}>
-          {/* Header */}
-          <View style={styles.header}>
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#A0F0E4" />
+      
+      <LinearGradient
+        colors={['#2da898ff', '#abeee6ff']}
+        style={styles.backgroundGradient}
+      >
+        <ScrollView 
+          style={styles.scrollView} 
+          contentContainerStyle={styles.scrollViewContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header Section */}
+          <View style={styles.headerSection}>
             <Text style={styles.title}>Join Zenovia</Text>
             <Text style={styles.subtitle}>How would you like to join?</Text>
           </View>
           
-          {/* Options Container */}
-          <View style={styles.optionsContainer}>
+          {/* Form Section */}
+          <View style={styles.formSection}>
             {/* User Option */}
             <TouchableOpacity
-              style={[styles.optionUser, selectedType === 'user' && styles.selectedOption]}
+              style={[styles.optionCard, selectedType === 'user' && styles.selectedOption]}
               onPress={() => setSelectedType('user')}
               activeOpacity={0.8}
             >
-              <View style={styles.emojiIconContainer}>
-                <Text style={styles.emojiIcon}>👩‍🦰</Text>
+              <View style={[styles.iconContainer, selectedType === 'user' && styles.selectedIconContainer]}>
+                <Text style={styles.icon}>👩‍🦰</Text>
               </View>
-              <Text style={styles.optionTitleUser}>I'm a User</Text>
-              <Text style={styles.optionDescriptionUser}>
+              <Text style={styles.optionTitle}>I'm a User</Text>
+              <Text style={styles.optionDescription}>
                 Join classes and find wellness experts.
               </Text>
             </TouchableOpacity>
 
             {/* Expert Option */}
             <TouchableOpacity
-              style={[styles.optionExpert, selectedType === 'expert' && styles.selectedOption]}
+              style={[styles.optionCard, selectedType === 'expert' && styles.selectedOption]}
               onPress={() => setSelectedType('expert')}
               activeOpacity={0.8}
             >
-              <View style={styles.emojiIconContainerExpert}>
-                <Text style={styles.emojiIconExpert}>⭐</Text>
+              <View style={[styles.iconContainer, selectedType === 'expert' && styles.selectedIconContainer]}>
+                <Text style={styles.icon}>⭐</Text>
               </View>
-              <Text style={styles.optionTitleExpert}>I'm an Expert</Text>
-              <Text style={styles.optionDescriptionExpert}>
+              <Text style={styles.optionTitle}>I'm an Expert</Text>
+              <Text style={styles.optionDescription}>
                 Offer your services as certified provider.
               </Text>
             </TouchableOpacity>
-          </View>
 
-          {/* Continue Button */}
-          <TouchableOpacity
-            style={[styles.continueButton, !selectedType && styles.disabledButton]}
-            onPress={handleContinue}
-            disabled={!selectedType}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={selectedType ? ["#00C6A7", "#1D976C"] : ["#ccc", "#999"]}
-              style={styles.buttonGradient}
+            {/* Continue Button */}
+            <TouchableOpacity
+              style={[styles.continueButton, !selectedType && styles.disabledButton]}
+              onPress={handleContinue}
+              disabled={!selectedType}
+              activeOpacity={0.8}
             >
-              <Text style={styles.buttonText}>Continue</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+              <LinearGradient
+                colors={selectedType ? ['#14B8A6', '#0D9488'] : ['#ccc', '#999']}
+                style={styles.buttonGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <Text style={styles.buttonText}>Continue</Text>
+              </LinearGradient>
+            </TouchableOpacity>
 
-          {/* Login Link */}
-          <View style={styles.loginContainer}>
-            <Text style={styles.loginText}>Already have an account? <Text style={styles.loginLink} onPress={() => router.push('/login')}>Log In</Text></Text>
+            {/* Login Link */}
+            <View style={styles.loginContainer}>
+              <Text style={styles.loginText}>Already have an account? </Text>
+              <TouchableOpacity onPress={() => router.push('/login')}>
+                <Text style={styles.loginLink}>Log In</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </SafeAreaView>
-    </LinearGradient>
+
+          {/* Footer Section */}
+          <View style={styles.footerSection}>
+            <Text style={styles.footerText}>
+              By continuing, you agree to our Terms of Service and Privacy Policy.
+            </Text>
+          </View>
+        </ScrollView>
+      </LinearGradient>
+    </View>
   );
 }
 
@@ -95,156 +110,148 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  safeArea: {
+  backgroundGradient: {
     flex: 1,
   },
-  content: {
+  scrollView: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 20,
   },
-  header: {
+  scrollViewContent: {
+    flexGrow: 1,
+    paddingHorizontal: 32,
+    paddingTop: 60,
+    paddingBottom: 30,
+    justifyContent: 'center',
+  },
+  headerSection: {
     alignItems: 'center',
-    marginBottom: 30,
-    paddingTop: 20,
+    marginBottom: 40,
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#f3f3f3ff',
     textAlign: 'center',
-    marginBottom: 8,
-    letterSpacing: -0.5,
+    marginBottom: 12,
   },
   subtitle: {
-    fontSize: 18,
-    color: '#fff',
+    fontSize: 16,
+    color: '#f3f3f3ff',
     textAlign: 'center',
-    lineHeight: 22,
-    paddingHorizontal: 10,
-    marginBottom: 10,
+    lineHeight: 24,
+    fontWeight: '400',
   },
-  optionsContainer: {
+  formSection: {
     flex: 1,
     justifyContent: 'center',
-    gap: 18,
-    paddingHorizontal: 0,
+    maxWidth: 400,
+    alignSelf: 'center',
+    width: '100%',
   },
-  optionUser: {
-    backgroundColor: '#3EE0C0',
-    borderRadius: 24,
+  optionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
     padding: 24,
     alignItems: 'center',
     marginBottom: 16,
-    borderWidth: 0,
-    minHeight: 140,
-    shadowColor: '#3EE0C0',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
+    borderWidth: 2,
+    borderColor: '#F59E0B',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
     elevation: 4,
-  },
-  optionExpert: {
-    backgroundColor: '#FFE066',
-    borderRadius: 24,
-    padding: 24,
-    alignItems: 'center',
-    marginBottom: 16,
-    borderWidth: 0,
-    minHeight: 140,
-    shadowColor: '#FFE066',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
+    minHeight: 160,
   },
   selectedOption: {
+    borderColor: '#14B8A6',
     borderWidth: 3,
-    borderColor: '#fff',
-    transform: [{ scale: 1.03 }],
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#14B8A6',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 15,
+    elevation: 8,
+    transform: [{ scale: 1.02 }],
   },
-  emojiIconContainer: {
+  iconContainer: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    backgroundColor: '#F59E0B',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 16,
   },
-  emojiIcon: {
-    fontSize: 40,
+  selectedIconContainer: {
+    backgroundColor: '#14B8A6',
   },
-  emojiIconContainerExpert: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 10,
+  icon: {
+    fontSize: 32,
   },
-  emojiIconExpert: {
-    fontSize: 40,
-  },
-  optionTitleUser: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#fff',
+  optionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333333',
     marginBottom: 8,
     textAlign: 'center',
   },
-  optionDescriptionUser: {
-    fontSize: 16,
-    color: '#fff',
+  optionDescription: {
+    fontSize: 14,
+    color: '#666666',
     textAlign: 'center',
-    marginBottom: 4,
-  },
-  optionTitleExpert: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#A68A00',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  optionDescriptionExpert: {
-    fontSize: 16,
-    color: '#A68A00',
-    textAlign: 'center',
-    marginBottom: 4,
+    lineHeight: 20,
   },
   continueButton: {
-    marginTop: 20,
-    borderRadius: 16,
+    marginTop: 24,
+    marginBottom: 24,
+    borderRadius: 25,
     overflow: 'hidden',
-    marginHorizontal: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
   },
   disabledButton: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
   buttonGradient: {
     paddingVertical: 16,
-    paddingHorizontal: 32,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   buttonText: {
-    color: 'white',
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: 'bold',
+    color: '#FFFFFF',
     letterSpacing: 0.5,
   },
   loginContainer: {
-    marginTop: 24,
-    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
   loginText: {
     fontSize: 16,
-    color: '#fff',
+    color: '#666666',
+    fontWeight: '400',
   },
   loginLink: {
-    color: '#FFC300',
+    fontSize: 16,
+    color: '#575623ff',
     fontWeight: 'bold',
-    textDecorationLine: 'underline',
+  },
+  footerSection: {
+    marginTop: 'auto',
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  footerText: {
+    fontSize: 12,
+    color: '#666666',
+    textAlign: 'center',
+    lineHeight: 18,
+    opacity: 0.8,
   },
 });

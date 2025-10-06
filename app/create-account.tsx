@@ -12,7 +12,7 @@ export default function CreateAccountScreen() {
 
   const handleCreateAccount = () => {
     // Handle account creation logic
-    router.push('/welcome');
+    router.push('/dashboard');
   };
 
   const handleLogin = () => {
@@ -24,7 +24,7 @@ export default function CreateAccountScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="#A0F0E4" />
       
       <LinearGradient
-        colors={['#2DD4BF', '#14B8A6']}
+        colors={['#2da898ff', '#abeee6ff']}
         style={styles.backgroundGradient}
       >
         <ScrollView 
@@ -66,19 +66,14 @@ export default function CreateAccountScreen() {
 
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Phone Number</Text>
-              <View style={styles.passwordContainer}>
-                <TextInput
-                  style={[styles.input, phoneNumber ? styles.inputFilled : null]}
-                  placeholder="(123) 456-7890"
-                  placeholderTextColor="#999"
-                  value={phoneNumber}
-                  onChangeText={setPhoneNumber}
-                  keyboardType="phone-pad"
-                />
-                <Pressable style={styles.eyeIcon}>
-                  <Text style={styles.eyeIconText}>👁️</Text>
-                </Pressable>
-              </View>
+              <TextInput
+                style={[styles.input, phoneNumber ? styles.inputFilled : null]}
+                placeholder="(123) 456-7890"
+                placeholderTextColor="#999"
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+                keyboardType="phone-pad"
+              />
             </View>
 
             <View style={styles.inputGroup}>
@@ -135,8 +130,10 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     flexGrow: 1,
-    paddingTop: 80,
-    paddingHorizontal: 24,
+    paddingHorizontal: 32,
+    paddingTop: 60,
+    paddingBottom: 30,
+    justifyContent: 'center',
   },
   headerSection: {
     alignItems: 'center',
@@ -145,44 +142,47 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
+    color: '#f3f3f3ff',
     textAlign: 'center',
+    marginBottom: 12,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: '#f3f3f3ff',
     textAlign: 'center',
-    maxWidth: 280,
+    lineHeight: 24,
+    fontWeight: '400',
   },
   formSection: {
     flex: 1,
+    justifyContent: 'center',
+    maxWidth: 400,
+    alignSelf: 'center',
+    width: '100%',
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   inputLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#333',
+    color: '#f3f3f3ff',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 25,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     fontSize: 16,
-    color: '#333',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    color: '#333333',
     borderWidth: 2,
     borderColor: '#F59E0B',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
   inputFilled: {
     borderColor: '#14B8A6',
@@ -192,26 +192,24 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   passwordInput: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    paddingRight: 50,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 25,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingRight: 55,
     fontSize: 16,
-    color: '#333',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    color: '#333333',
     borderWidth: 2,
     borderColor: '#F59E0B',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
   eyeIcon: {
     position: 'absolute',
-    right: 16,
+    right: 20,
     top: 16,
     padding: 4,
   },
@@ -220,31 +218,28 @@ const styles = StyleSheet.create({
   },
   passwordRequirement: {
     fontSize: 12,
-    color: '#666',
+    color: '#f3f3f3ff',
     marginTop: 4,
   },
   createButton: {
-    marginTop: 20,
+    marginTop: 30,
     marginBottom: 30,
-    borderRadius: 12,
+    borderRadius: 25,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 5,
     backgroundColor: '#14B8A6',
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   createButtonText: {
-    color: '#fff',
+    color: '#ffffff',
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   loginContainer: {
     flexDirection: 'row',
@@ -254,11 +249,12 @@ const styles = StyleSheet.create({
   },
   loginText: {
     fontSize: 16,
-    color: '#666',
+    color: '#f3f3f3ff',
   },
   loginLink: {
     fontSize: 16,
     color: '#F59E0B',
     fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });

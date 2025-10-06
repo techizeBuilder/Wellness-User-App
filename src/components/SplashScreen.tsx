@@ -1,16 +1,14 @@
-import React, { useEffect } from 'react';
-import { View, Text } from 'react-native';
-import { useRouter } from 'expo-router';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withSequence,
-  withDelay,
-  runOnJS,
-} from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors } from '../utils/colors';
+import { useRouter } from 'expo-router';
+import React, { useEffect } from 'react';
+import { Image, Text, View } from 'react-native';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming
+} from 'react-native-reanimated';
 
 const SplashScreen: React.FC = () => {
   const router = useRouter();
@@ -76,7 +74,7 @@ const SplashScreen: React.FC = () => {
   return (
     <Animated.View style={[{ flex: 1 }, backgroundAnimatedStyle]} className="flex-1">
       <LinearGradient
-        colors={[colors.deepTeal, '#006666']}
+        colors={['#0A4A4A', '#1A5A5A', '#2A6A6A']}
         style={{ flex: 1 }}
         className="flex-1 justify-center items-center px-8"
       >
@@ -85,25 +83,27 @@ const SplashScreen: React.FC = () => {
           style={logoAnimatedStyle}
           className="items-center mb-8"
         >
-          {/* Placeholder for logo - you can replace with actual logo */}
-          <View className="w-32 h-32 bg-white rounded-full items-center justify-center mb-4">
-            <View className="w-20 h-20 bg-deep-teal rounded-full items-center justify-center">
-              <Text className="text-white text-2xl font-bold">Z</Text>
-            </View>
+          {/* Zenovia Logo */}
+          <View className="items-center mb-4">
+            <Image 
+              source={require('../../assets/images/logo.png')}
+              style={{ width: 120, height: 120 }}
+              resizeMode="contain"
+            />
           </View>
         </Animated.View>
 
         {/* Brand Name */}
         <Animated.View style={titleAnimatedStyle} className="items-center mb-4">
-          <Text className="text-white text-5xl font-bold tracking-wider text-center">
-            Zenovia
+          <Text style={{ color: '#F59E0B', fontSize: 48, fontWeight: 'bold', letterSpacing: 3, textAlign: 'center' }}>
+            ZENOVIA
           </Text>
         </Animated.View>
 
         {/* Tagline */}
         <Animated.View style={subtitleAnimatedStyle} className="items-center">
-          <Text className="text-white text-lg font-light text-center leading-6 opacity-90">
-            Balance Your Mind, Body & Soul
+          <Text style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: 18, fontWeight: '300', textAlign: 'center', lineHeight: 24 }}>
+            Your Journey to Wellness
           </Text>
         </Animated.View>
 

@@ -214,9 +214,9 @@ export default function ContentScreen() {
           </Text>
           {filteredContent.map((item, index) => {
             const gradients = [
-              ['rgba(186, 168, 255, 0.9)', 'rgba(225, 213, 255, 0.9)'], // Purple gradient
-              ['rgba(168, 230, 207, 0.9)', 'rgba(200, 247, 197, 0.9)'], // Green gradient  
-              ['rgba(255, 182, 193, 0.9)', 'rgba(255, 192, 203, 0.9)']  // Pink gradient
+              ['rgba(247, 246, 250, 0.9)', 'rgba(248, 248, 248, 0.9)'], // Purple gradient
+                ['rgba(247, 246, 250, 0.9)', 'rgba(248, 248, 248, 0.9)'], // Green gradient  
+                ['rgba(247, 246, 250, 0.9)', 'rgba(248, 248, 248, 0.9)'],// Pink gradient
             ];
             return (
               <LinearGradient

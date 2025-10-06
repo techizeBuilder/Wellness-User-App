@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Pressable, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
@@ -16,35 +16,39 @@ export default function ForgotPasswordScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#4DD0E1" />
+      <StatusBar barStyle="dark-content" backgroundColor="#A0F0E4" />
       
       <LinearGradient
-        colors={['#2DD4BF', '#14B8A6', '#0D9488']}
+        colors={['#2da898ff', '#abeee6ff']}
         style={styles.backgroundGradient}
       >
-        {/* Back Button */}
-        <View style={styles.headerContainer}>
-          <Pressable style={styles.backButton} onPress={() => router.back()}>
-            <Text style={styles.backArrow}>←</Text>
-          </Pressable>
-        </View>
+        <ScrollView 
+          style={styles.scrollView} 
+          contentContainerStyle={styles.scrollViewContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header */}
+          <View style={styles.headerContainer}>
+            <Pressable style={styles.backButton} onPress={() => router.back()}>
+              <Text style={styles.backArrow}>←</Text>
+            </Pressable>
+          </View>
 
-        {/* Content */}
-        <View style={styles.contentContainer}>
-          <View style={styles.titleSection}>
+          {/* Header Section */}
+          <View style={styles.headerSection}>
             <Text style={styles.title}>Forgot Password</Text>
             <Text style={styles.subtitle}>
               Enter your email or phone number to receive{'\n'}a one-time password (OTP).
             </Text>
           </View>
 
+          {/* Form Section */}
           <View style={styles.formSection}>
             <View style={styles.inputContainer}>
-              <Text style={styles.inputIcon}>📧</Text>
               <TextInput
                 style={styles.input}
                 placeholder="Email or Phone Number"
-                placeholderTextColor="#A0A0A0"
+                placeholderTextColor="#999"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -62,15 +66,22 @@ export default function ForgotPasswordScreen() {
                 <Text style={styles.sendButtonText}>Send OTP</Text>
               </LinearGradient>
             </Pressable>
+
+            <View style={styles.loginContainer}>
+              <Text style={styles.loginText}>Remember your password? </Text>
+              <Pressable onPress={handleLogin}>
+                <Text style={styles.loginLink}>Log In</Text>
+              </Pressable>
+            </View>
           </View>
 
+          {/* Footer Section */}
           <View style={styles.footerSection}>
-            <Text style={styles.loginText}>Remember your password? </Text>
-            <Pressable onPress={handleLogin}>
-              <Text style={styles.loginLink}>Log In</Text>
-            </Pressable>
+            <Text style={styles.footerText}>
+              By continuing, you agree to our Terms of Service and Privacy Policy.
+            </Text>
           </View>
-        </View>
+        </ScrollView>
       </LinearGradient>
     </View>
   );
@@ -83,63 +94,71 @@ const styles = StyleSheet.create({
   backgroundGradient: {
     flex: 1,
   },
-  headerContainer: {
+  scrollView: {
+    flex: 1,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    paddingHorizontal: 32,
     paddingTop: 60,
-    paddingHorizontal: 24,
+    paddingBottom: 30,
+  },
+  headerContainer: {
+    paddingTop: 0,
     paddingBottom: 20,
+    alignItems: 'flex-start',
   },
   backButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   backArrow: {
-    fontSize: 24,
-    color: '#2C5B5B',
+    fontSize: 18,
+    color: '#ffffff',
     fontWeight: 'bold',
   },
-  contentContainer: {
-    flex: 1,
-    paddingHorizontal: 24,
-    justifyContent: 'center',
-  },
-  titleSection: {
+  headerSection: {
     alignItems: 'center',
-    marginBottom: 50,
+    marginBottom: 60,
+    marginTop: 30,
   },
   title: {
-    fontSize: 34,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: '#2C5B5B',
+    color: '#f3f3f3ff',
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   subtitle: {
     fontSize: 16,
-    color: '#4A6B6B',
+    color: '#f3f3f3ff',
     textAlign: 'center',
     lineHeight: 24,
     fontWeight: '400',
   },
   formSection: {
+    maxWidth: 400,
+    alignSelf: 'center',
+    width: '100%',
     marginBottom: 40,
+    paddingHorizontal: 4,
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    marginBottom: 16,
+  },
+  input: {
+    backgroundColor: '#FFFFFF',
     borderRadius: 25,
-    paddingHorizontal: 24,
-    paddingVertical: 18,
-    marginBottom: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    fontSize: 16,
+    color: '#333333',
     borderWidth: 2,
     borderColor: '#F59E0B',
     shadowColor: '#000',
@@ -148,50 +167,53 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
-  inputIcon: {
-    fontSize: 20,
-    marginRight: 12,
-    color: '#F59E0B',
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333333',
-  },
   sendButton: {
+    marginTop: 12,
+    marginBottom: 24,
     borderRadius: 25,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 6,
   },
   buttonGradient: {
-    paddingVertical: 18,
+    paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   sendButtonText: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: '#FFFFFF',
     letterSpacing: 0.5,
   },
-  footerSection: {
+  loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 'auto',
-    paddingBottom: 40,
+    marginBottom: 20,
   },
   loginText: {
     fontSize: 16,
-    color: '#2C5B5B',
+    color: '#666666',
     fontWeight: '400',
   },
   loginLink: {
     fontSize: 16,
-    color: '#F59E0B',
-    fontWeight: '600',
+    color: '#575623ff',
+    fontWeight: 'bold',
+  },
+  footerSection: {
+    marginTop: 'auto',
+    paddingTop: 20,
+    paddingBottom: 20,
+  },
+  footerText: {
+    fontSize: 12,
+    color: '#666666',
+    textAlign: 'center',
+    lineHeight: 18,
+    opacity: 0.8,
   },
 });

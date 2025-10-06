@@ -269,6 +269,7 @@ export default function ExpertsScreen() {
             </LinearGradient>
           );
         })}
+        <View style={styles.bottomSpacer} />
       </ScrollView>
       <Footer activeRoute="experts" />
     </LinearGradient>
@@ -572,5 +573,8 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#ffffff',
     fontWeight: '600',
+  },
+  bottomSpacer: {
+    height: 100,
   },
 });

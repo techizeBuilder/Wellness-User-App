@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, StatusBar } from 'react-native';
-import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+import React, { useState } from 'react';
+import { Pressable, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import { colors } from '../src/utils/colors';
 
 export default function OTPVerificationScreen() {
@@ -23,7 +23,7 @@ export default function OTPVerificationScreen() {
     const otpCode = otp.join('');
     if (otpCode.length === 6) {
       // Navigate to main app after successful verification
-      router.push('/welcome');
+      router.push('/dashboard');
     }
   };
 

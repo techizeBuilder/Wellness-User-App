@@ -2,6 +2,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import AppleLogo from '../src/components/AppleLogo';
+import GoogleLogo from '../src/components/GoogleLogo';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -95,14 +97,20 @@ export default function LoginScreen() {
               <Text style={styles.forgotPasswordText}>Forgot password?</Text>
             </Pressable>
 
+            <View style={styles.dividerContainer}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>Or continue with</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
             <View style={styles.socialButtonsContainer}>
               <Pressable style={styles.socialButton}>
-                <Text style={styles.socialIcon}>G</Text>
+                <GoogleLogo size={18} />
                 <Text style={styles.socialText}>Google</Text>
               </Pressable>
               
               <Pressable style={styles.socialButton}>
-                <Text style={styles.appleIcon}>🍎</Text>
+                <AppleLogo size={18} color="#333333" />
                 <Text style={styles.socialText}>Apple</Text>
               </Pressable>
             </View>
@@ -140,19 +148,20 @@ const styles = StyleSheet.create({
   scrollViewContent: {
     flexGrow: 1,
     paddingHorizontal: 32,
-    paddingTop: 80,
-    paddingBottom: 40,
+    paddingTop: 60,
+    paddingBottom: 30,
+    justifyContent: 'center',
   },
   headerSection: {
     alignItems: 'center',
-    marginBottom: 60,
+    marginBottom: 40,
   },
   title: {
-    fontSize: 36,
+    fontSize: 32,
     fontWeight: 'bold',
     color: '#f3f3f3ff',
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   subtitle: {
     fontSize: 16,
@@ -164,45 +173,48 @@ const styles = StyleSheet.create({
   formSection: {
     flex: 1,
     justifyContent: 'center',
+    maxWidth: 400,
+    alignSelf: 'center',
+    width: '100%',
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   input: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 30,
-    paddingHorizontal: 24,
-    paddingVertical: 20,
+    borderRadius: 25,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     fontSize: 16,
     color: '#333333',
     borderWidth: 2,
     borderColor: '#F59E0B',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowRadius: 8,
+    elevation: 3,
   },
   passwordInput: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 30,
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    paddingRight: 60,
+    borderRadius: 25,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingRight: 55,
     fontSize: 16,
     color: '#333333',
     borderWidth: 2,
     borderColor: '#F59E0B',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowRadius: 8,
+    elevation: 3,
   },
   eyeIcon: {
     position: 'absolute',
-    right: 24,
-    top: 20,
+    right: 20,
+    top: 16,
     padding: 4,
   },
   eyeIconText: {
@@ -210,18 +222,18 @@ const styles = StyleSheet.create({
     color: '#666666',
   },
   continueButton: {
-    marginTop: 16,
-    marginBottom: 32,
-    borderRadius: 30,
+    marginTop: 12,
+    marginBottom: 24,
+    borderRadius: 25,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
   },
   buttonGradient: {
-    paddingVertical: 20,
+    paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -233,17 +245,35 @@ const styles = StyleSheet.create({
   },
   forgotPasswordContainer: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 28,
   },
   forgotPasswordText: {
     fontSize: 16,
     color: '#1A5D5D',
     fontWeight: '500',
   },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+    paddingHorizontal: 0,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E0E0E0',
+  },
+  dividerText: {
+    paddingHorizontal: 12,
+    fontSize: 14,
+    color: '#666666',
+    fontWeight: '400',
+  },
   socialButtonsContainer: {
     flexDirection: 'row',
     gap: 16,
-    marginBottom: 32,
+    marginBottom: 24,
+    paddingHorizontal: 0,
   },
   socialButton: {
     flex: 1,
@@ -251,34 +281,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 30,
-    paddingVertical: 16,
-    gap: 8,
+    borderRadius: 28,
+    paddingVertical: 18,
+    paddingHorizontal: 12,
+    gap: 6,
     borderWidth: 1,
     borderColor: '#E0E0E0',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.08,
     shadowRadius: 8,
-    elevation: 2,
-  },
-  socialIcon: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333333',
-  },
-  appleIcon: {
-    fontSize: 18,
+    elevation: 3,
+    height: 56,
+    minWidth: 120,
   },
   socialText: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#333333',
-    fontWeight: 'bold',
+    fontWeight: '600',
+    flexShrink: 0,
   },
   signUpContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   signUpText: {
     fontSize: 16,
@@ -292,7 +318,8 @@ const styles = StyleSheet.create({
   },
   footerSection: {
     marginTop: 'auto',
-    paddingTop: 20,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
   footerText: {
     fontSize: 12,

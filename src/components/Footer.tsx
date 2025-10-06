@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
   },
   navGradient: {
     paddingTop: 12,
-    paddingBottom: 28,
+    paddingBottom: 14,
     paddingHorizontal: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
