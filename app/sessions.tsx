@@ -137,17 +137,22 @@ export default function SessionsScreen() {
     return (
       <View key={session.id} style={styles.sessionCard}>
         <LinearGradient
-          colors={['rgba(255, 255, 255, 0.25)', 'rgba(255, 255, 255, 0.15)']}
+          colors={['rgba(255, 248, 240, 0.95)', 'rgba(250, 240, 230, 0.9)']}
           style={styles.sessionCardGradient}
         >
           {/* Session Header */}
           <View style={styles.sessionHeader}>
-            <Image source={{ uri: session.expertImage }} style={styles.expertImage} />
-            <View style={styles.sessionInfo}>
-              <Text style={styles.expertName}>{session.expertName}</Text>
-              <Text style={styles.sessionType}>{session.sessionType}</Text>
-              <Text style={styles.sessionId}>ID: {session.sessionId}</Text>
-            </View>
+            <Pressable 
+              style={styles.expertSection}
+              onPress={() => router.push('/person-detail')}
+            >
+              <Image source={{ uri: session.expertImage }} style={styles.expertImage} />
+              <View style={styles.sessionInfo}>
+                <Text style={styles.expertName}>{session.expertName}</Text>
+                <Text style={styles.sessionType}>{session.sessionType}</Text>
+                <Text style={styles.sessionId}>ID: {session.sessionId}</Text>
+              </View>
+            </Pressable>
             <View style={styles.sessionMeta}>
               <Text style={styles.sessionPrice}>{session.price}</Text>
               <View style={[
@@ -185,12 +190,26 @@ export default function SessionsScreen() {
           </View>
 
           {/* Completed Session Feedback */}
-          {isCompleted && session.feedback && (
-            <View style={styles.feedbackSection}>
-              <View style={styles.ratingContainer}>
-                <Text style={styles.ratingText}>⭐ {session.rating}</Text>
-                <Text style={styles.feedbackText}>"{session.feedback}"</Text>
-              </View>
+          {isCompleted && (
+            <View style={styles.completedSection}>
+              {session.feedback ? (
+                <View style={styles.feedbackContainer}>
+                  <View style={styles.ratingRow}>
+                    <Text style={styles.ratingLabel}>Your Rating:</Text>
+                    <View style={styles.starContainer}>
+                      <Text style={styles.ratingStars}>⭐ {session.rating}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.feedbackTextContainer}>
+                    <Text style={styles.feedbackLabel}>Your Feedback:</Text>
+                    <Text style={styles.feedbackText}>"{session.feedback}"</Text>
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.noRatingContainer}>
+                  <Text style={styles.noRatingText}>Session completed - Rate your experience!</Text>
+                </View>
+              )}
             </View>
           )}
 
@@ -226,12 +245,19 @@ export default function SessionsScreen() {
               </>
             )}
             {isCompleted && (
-              <Pressable 
+              <LinearGradient
+                colors={['#FFD700', '#FFA500']}
                 style={styles.rateButton}
-                onPress={() => handleRateSession(session.sessionId)}
               >
-                <Text style={styles.rateButtonText}>Rate Session</Text>
-              </Pressable>
+                <Pressable 
+                  style={styles.rateButtonPress}
+                  onPress={() => handleRateSession(session.sessionId)}
+                >
+                  <Text style={styles.rateButtonText}>
+                    {session.feedback ? 'Update Rating' : 'Rate Session'}
+                  </Text>
+                </Pressable>
+              </LinearGradient>
             )}
           </View>
         </LinearGradient>
@@ -377,7 +403,7 @@ const styles = StyleSheet.create({
   sessionCardGradient: {
     padding: 20,
     borderWidth: 2,
-    borderColor: '#F59E0B',
+    borderColor: '#FFA726',
     borderRadius: 16,
   },
   sessionHeader: {
@@ -385,13 +411,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
+  expertSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
   expertImage: {
     width: 60,
     height: 60,
     borderRadius: 30,
     marginRight: 16,
     borderWidth: 2,
-    borderColor: '#F59E0B',
+    borderColor: '#FFA726',
   },
   sessionInfo: {
     flex: 1,
@@ -399,17 +430,17 @@ const styles = StyleSheet.create({
   expertName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#2C3E50',
     marginBottom: 4,
   },
   sessionType: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#5D6D7E',
     marginBottom: 2,
   },
   sessionId: {
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: '#85929E',
   },
   sessionMeta: {
     alignItems: 'flex-end',
@@ -417,7 +448,7 @@ const styles = StyleSheet.create({
   sessionPrice: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#2C3E50',
     marginBottom: 8,
   },
   statusBadge: {
@@ -426,7 +457,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   upcomingBadge: {
-    backgroundColor: 'rgba(76, 175, 80, 0.3)',
+    backgroundColor: '#4CAF50',
   },
   completedBadge: {
     backgroundColor: 'rgba(33, 150, 243, 0.3)',
@@ -439,7 +470,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   upcomingText: {
-    color: '#4CAF50',
+    color: '#FFFFFF',
   },
   completedText: {
     color: '#2196F3',
@@ -451,7 +482,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
     padding: 12,
     borderRadius: 12,
   },
@@ -463,7 +494,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   detailText: {
-    color: '#FFFFFF',
+    color: '#2C3E50',
     fontSize: 12,
     fontWeight: '600',
   },
@@ -542,15 +573,77 @@ const styles = StyleSheet.create({
   },
   rateButton: {
     flex: 1,
-    backgroundColor: '#F59E0B',
-    paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 12,
+    marginTop: 8,
+  },
+  rateButtonPress: {
+    paddingVertical: 14,
     alignItems: 'center',
   },
   rateButtonText: {
     color: '#FFFFFF',
     fontWeight: 'bold',
+    fontSize: 16,
+  },
+  completedSection: {
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  feedbackContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  ratingLabel: {
     fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  starContainer: {
+    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  ratingStars: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#059669',
+  },
+  feedbackTextContainer: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.1)',
+    paddingTop: 12,
+  },
+  feedbackLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 6,
+  },
+  feedbackText: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontStyle: 'italic',
+    lineHeight: 20,
+  },
+  noRatingContainer: {
+    backgroundColor: 'rgba(251, 191, 36, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  noRatingText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#D97706',
+    textAlign: 'center',
   },
   emptyState: {
     alignItems: 'center',

@@ -132,11 +132,6 @@ const styles = StyleSheet.create({
   helpItem: {
     borderRadius: 16,
     marginBottom: 12,
-    shadowColor: colors.charcoalGray,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
   },
   helpContent: {
     flexDirection: 'row',

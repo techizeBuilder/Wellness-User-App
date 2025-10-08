@@ -124,7 +124,7 @@ export default function ExpertDetailScreen() {
 
   return (
     <LinearGradient
-      colors={['#FFFFFF', '#F5F5F5', '#EEEEEE']}
+        colors={['#37b9a8ff', '#37b9a8ff', '#37b9a8ff']}
       start={{ x: 0.5, y: 0 }}
       end={{ x: 0.5, y: 1 }}
       style={styles.container}

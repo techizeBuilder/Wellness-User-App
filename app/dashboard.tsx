@@ -8,7 +8,9 @@ const { width } = Dimensions.get('window');
 
 export default function DashboardScreen() {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [currentExpertIndex, setCurrentExpertIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
+  const expertsScrollRef = useRef<ScrollView>(null);
 
   const handleExpertsPress = () => {
     router.push('/experts');
@@ -20,6 +22,40 @@ export default function DashboardScreen() {
 
   const handleProfilePress = () => {
     router.push('/profile');
+  };
+
+  // Expert navigation functions
+  const navigateExpertLeft = () => {
+    if (currentExpertIndex > 0) {
+      const newIndex = currentExpertIndex - 1;
+      setCurrentExpertIndex(newIndex);
+      const cardWidth = 280; // Approximate width of expert card + margin
+      expertsScrollRef.current?.scrollTo({
+        x: newIndex * cardWidth,
+        animated: true,
+      });
+    }
+  };
+
+  const navigateExpertRight = () => {
+    if (currentExpertIndex < experts.length - 1) {
+      const newIndex = currentExpertIndex + 1;
+      setCurrentExpertIndex(newIndex);
+      const cardWidth = 280; // Approximate width of expert card + margin
+      expertsScrollRef.current?.scrollTo({
+        x: newIndex * cardWidth,
+        animated: true,
+      });
+    }
+  };
+
+  const handleExpertScroll = (event: any) => {
+    const scrollX = event.nativeEvent.contentOffset.x;
+    const cardWidth = 280;
+    const newIndex = Math.round(scrollX / cardWidth);
+    if (newIndex !== currentExpertIndex && newIndex >= 0 && newIndex < experts.length) {
+      setCurrentExpertIndex(newIndex);
+    }
   };
 
   // Auto-slider data
@@ -196,15 +232,30 @@ export default function DashboardScreen() {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Featured Experts</Text>
             <View style={styles.navigationArrows}>
-              <Pressable style={styles.arrowButton}>
+              <Pressable 
+                style={[styles.arrowButton, { opacity: currentExpertIndex === 0 ? 0.5 : 1 }]}
+                onPress={navigateExpertLeft}
+                disabled={currentExpertIndex === 0}
+              >
                 <Text style={styles.arrowText}>←</Text>
               </Pressable>
-              <Pressable style={styles.arrowButton}>
+              <Pressable 
+                style={[styles.arrowButton, { opacity: currentExpertIndex === experts.length - 1 ? 0.5 : 1 }]}
+                onPress={navigateExpertRight}
+                disabled={currentExpertIndex === experts.length - 1}
+              >
                 <Text style={styles.arrowText}>→</Text>
               </Pressable>
             </View>
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.expertsScroll}>
+          <ScrollView 
+            ref={expertsScrollRef}
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            style={styles.expertsScroll}
+            onScroll={handleExpertScroll}
+            scrollEventThrottle={16}
+          >
             {experts.map((expert, index) => {
               const gradients: [string, string][] = [
                 ['rgba(247, 246, 250, 0.9)', 'rgba(248, 248, 248, 0.9)'], // Purple gradient

@@ -39,7 +39,7 @@ export default function NotificationsScreen() {
           <Text style={styles.sectionTitle}>🔔 Push Notifications</Text>
           
           <LinearGradient
-            colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+            colors={['rgba(255, 255, 255, 0.15)', 'rgba(255, 255, 255, 0.05)']}
             style={styles.settingCard}
           >
             <View style={styles.settingItem}>
@@ -50,8 +50,10 @@ export default function NotificationsScreen() {
               <Switch
                 value={pushNotifications}
                 onValueChange={setPushNotifications}
-                trackColor={{ false: colors.warmGray, true: colors.sageGreen + '50' }}
-                thumbColor={pushNotifications ? colors.sageGreen : colors.charcoalGray}
+                trackColor={{ false: '#E5E7EB', true: '#10B981' }}
+                thumbColor={pushNotifications ? '#FFFFFF' : '#FFFFFF'}
+                ios_backgroundColor="#E5E7EB"
+                style={styles.switch}
               />
             </View>
 
@@ -65,8 +67,10 @@ export default function NotificationsScreen() {
               <Switch
                 value={sessionReminders}
                 onValueChange={setSessionReminders}
-                trackColor={{ false: colors.warmGray, true: colors.sageGreen + '50' }}
-                thumbColor={sessionReminders ? colors.sageGreen : colors.charcoalGray}
+                trackColor={{ false: '#E5E7EB', true: '#10B981' }}
+                thumbColor={sessionReminders ? '#FFFFFF' : '#FFFFFF'}
+                ios_backgroundColor="#E5E7EB"
+                style={styles.switch}
               />
             </View>
 
@@ -80,8 +84,10 @@ export default function NotificationsScreen() {
               <Switch
                 value={expertMessages}
                 onValueChange={setExpertMessages}
-                trackColor={{ false: colors.warmGray, true: colors.sageGreen + '50' }}
-                thumbColor={expertMessages ? colors.sageGreen : colors.charcoalGray}
+                trackColor={{ false: '#E5E7EB', true: '#10B981' }}
+                thumbColor={expertMessages ? '#FFFFFF' : '#FFFFFF'}
+                ios_backgroundColor="#E5E7EB"
+                style={styles.switch}
               />
             </View>
 
@@ -95,8 +101,10 @@ export default function NotificationsScreen() {
               <Switch
                 value={contentUpdates}
                 onValueChange={setContentUpdates}
-                trackColor={{ false: colors.warmGray, true: colors.sageGreen + '50' }}
-                thumbColor={contentUpdates ? colors.sageGreen : colors.charcoalGray}
+                trackColor={{ false: '#E5E7EB', true: '#10B981' }}
+                thumbColor={contentUpdates ? '#FFFFFF' : '#FFFFFF'}
+                ios_backgroundColor="#E5E7EB"
+                style={styles.switch}
               />
             </View>
           </LinearGradient>
@@ -107,7 +115,7 @@ export default function NotificationsScreen() {
           <Text style={styles.sectionTitle}>📧 Email Notifications</Text>
           
           <LinearGradient
-            colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+            colors={['rgba(255, 255, 255, 0.15)', 'rgba(255, 255, 255, 0.05)']}
             style={styles.settingCard}
           >
             <View style={styles.settingItem}>
@@ -118,8 +126,10 @@ export default function NotificationsScreen() {
               <Switch
                 value={emailNotifications}
                 onValueChange={setEmailNotifications}
-                trackColor={{ false: colors.warmGray, true: colors.sageGreen + '50' }}
-                thumbColor={emailNotifications ? colors.sageGreen : colors.charcoalGray}
+                trackColor={{ false: '#E5E7EB', true: '#10B981' }}
+                thumbColor={emailNotifications ? '#FFFFFF' : '#FFFFFF'}
+                ios_backgroundColor="#E5E7EB"
+                style={styles.switch}
               />
             </View>
 
@@ -133,8 +143,10 @@ export default function NotificationsScreen() {
               <Switch
                 value={weeklyNewsletter}
                 onValueChange={setWeeklyNewsletter}
-                trackColor={{ false: colors.warmGray, true: colors.sageGreen + '50' }}
-                thumbColor={weeklyNewsletter ? colors.sageGreen : colors.charcoalGray}
+                trackColor={{ false: '#E5E7EB', true: '#10B981' }}
+                thumbColor={weeklyNewsletter ? '#FFFFFF' : '#FFFFFF'}
+                ios_backgroundColor="#E5E7EB"
+                style={styles.switch}
               />
             </View>
 
@@ -148,8 +160,10 @@ export default function NotificationsScreen() {
               <Switch
                 value={promotionalEmails}
                 onValueChange={setPromotionalEmails}
-                trackColor={{ false: colors.warmGray, true: colors.sageGreen + '50' }}
-                thumbColor={promotionalEmails ? colors.sageGreen : colors.charcoalGray}
+                trackColor={{ false: '#E5E7EB', true: '#10B981' }}
+                thumbColor={promotionalEmails ? '#FFFFFF' : '#FFFFFF'}
+                ios_backgroundColor="#E5E7EB"
+                style={styles.switch}
               />
             </View>
           </LinearGradient>
@@ -160,7 +174,7 @@ export default function NotificationsScreen() {
           <Text style={styles.sectionTitle}>🔊 Sound & Vibration</Text>
           
           <LinearGradient
-            colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+            colors={['rgba(255, 255, 255, 0.15)', 'rgba(255, 255, 255, 0.05)']}
             style={styles.settingCard}
           >
             <View style={styles.settingItem}>
@@ -171,8 +185,10 @@ export default function NotificationsScreen() {
               <Switch
                 value={soundEnabled}
                 onValueChange={setSoundEnabled}
-                trackColor={{ false: colors.warmGray, true: colors.sageGreen + '50' }}
-                thumbColor={soundEnabled ? colors.sageGreen : colors.charcoalGray}
+                trackColor={{ false: '#E5E7EB', true: '#10B981' }}
+                thumbColor={soundEnabled ? '#FFFFFF' : '#FFFFFF'}
+                ios_backgroundColor="#E5E7EB"
+                style={styles.switch}  
               />
             </View>
 
@@ -186,8 +202,10 @@ export default function NotificationsScreen() {
               <Switch
                 value={vibrationEnabled}
                 onValueChange={setVibrationEnabled}
-                trackColor={{ false: colors.warmGray, true: colors.sageGreen + '50' }}
-                thumbColor={vibrationEnabled ? colors.sageGreen : colors.charcoalGray}
+                trackColor={{ false: '#E5E7EB', true: '#10B981' }}
+                thumbColor={vibrationEnabled ? '#FFFFFF' : '#FFFFFF'}
+                ios_backgroundColor="#E5E7EB"
+                style={styles.switch}
               />
             </View>
           </LinearGradient>
@@ -198,7 +216,7 @@ export default function NotificationsScreen() {
           <Text style={styles.sectionTitle}>⏰ Notification Schedule</Text>
           
           <LinearGradient
-            colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
+            colors={['rgba(255, 255, 255, 0.15)', 'rgba(255, 255, 255, 0.05)']}
             style={styles.scheduleCard}
           >
             <Pressable style={styles.scheduleItem}>
@@ -263,7 +281,7 @@ const styles = StyleSheet.create({
   },
   section: {
     paddingHorizontal: 20,
-    marginTop: 24,
+    marginTop: 28,
   },
   sectionTitle: {
     fontSize: 18,
@@ -277,11 +295,9 @@ const styles = StyleSheet.create({
   settingCard: {
     borderRadius: 16,
     padding: 20,
-    shadowColor: colors.charcoalGray,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    marginBottom: 4,
   },
   settingItem: {
     flexDirection: 'row',
@@ -309,16 +325,13 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: colors.lightMistTeal,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     marginVertical: 16,
   },
   scheduleCard: {
     borderRadius: 16,
-    shadowColor: colors.charcoalGray,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   scheduleItem: {
     flexDirection: 'row',
@@ -351,5 +364,8 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: 40,
+  },
+  switch: {
+    transform: [{ scaleX: 1.1 }, { scaleY: 1.1 }],
   },
 });

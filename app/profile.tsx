@@ -1,17 +1,29 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import { Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import Footer from '../src/components/Footer';
 import { colors } from '../src/utils/colors';
 
 export default function ProfileScreen() {
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [unreadNotifications, setUnreadNotifications] = useState(3);
   const handleBackPress = () => {
     router.back();
   };
 
   const handleLogout = () => {
     router.replace('/login');
+  };
+
+  const toggleNotifications = () => {
+    setNotificationsEnabled(!notificationsEnabled);
+    // Simulate clearing notifications when disabled
+    if (notificationsEnabled) {
+      setUnreadNotifications(0);
+    } else {
+      setUnreadNotifications(3);
+    }
   };
 
   const profileSections = [
@@ -47,8 +59,11 @@ export default function ProfileScreen() {
         { 
           icon: '🔔', 
           title: 'Notifications', 
-          subtitle: 'Push notifications and alerts', 
-          action: () => router.push('/notifications')
+          subtitle: notificationsEnabled ? 'All notifications enabled' : 'Notifications disabled',
+          action: () => router.push('/notifications'),
+          hasNotificationBadge: true,
+          notificationCount: unreadNotifications,
+          isEnabled: notificationsEnabled
         },
         { 
           icon: '🌐', 
@@ -156,12 +171,44 @@ export default function ProfileScreen() {
                   onPress={item.action}
                 >
                   <View style={styles.menuItemLeft}>
-                    <View style={styles.iconContainer}>
-                      <Text style={styles.menuIcon}>{item.icon}</Text>
+                    <View style={[
+                      styles.iconContainer,
+                      item.hasNotificationBadge && !item.isEnabled && styles.iconContainerDisabled
+                    ]}>
+                      <Text style={[
+                        styles.menuIcon,
+                        item.hasNotificationBadge && !item.isEnabled && styles.menuIconDisabled
+                      ]}>
+                        {item.icon}
+                      </Text>
+                      {item.hasNotificationBadge && item.notificationCount > 0 && (
+                        <View style={styles.notificationBadge}>
+                          <Text style={styles.notificationBadgeText}>
+                            {item.notificationCount > 9 ? '9+' : item.notificationCount}
+                          </Text>
+                        </View>
+                      )}
                     </View>
                     <View style={styles.menuItemContent}>
-                      <Text style={styles.menuItemTitle}>{item.title}</Text>
-                      <Text style={styles.menuItemSubtitle}>{item.subtitle}</Text>
+                      <View style={styles.titleRow}>
+                        <Text style={styles.menuItemTitle}>{item.title}</Text>
+                        {item.hasNotificationBadge && (
+                          <View style={[
+                            styles.statusIndicator,
+                            item.isEnabled ? styles.statusEnabled : styles.statusDisabled
+                          ]}>
+                            <Text style={styles.statusText}>
+                              {item.isEnabled ? 'ON' : 'OFF'}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={[
+                        styles.menuItemSubtitle,
+                        item.hasNotificationBadge && !item.isEnabled && styles.menuItemSubtitleDisabled
+                      ]}>
+                        {item.subtitle}
+                      </Text>
                     </View>
                   </View>
                   <Text style={styles.menuArrow}>›</Text>
@@ -405,7 +452,7 @@ const styles = StyleSheet.create({
   menuItemTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#F59E0B',
+    color: '#22201eff',
     marginBottom: 4,
   },
   menuItemSubtitle: {
@@ -508,5 +555,59 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: 100,
+  },
+  // Enhanced Notification Styles
+  iconContainerDisabled: {
+    opacity: 0.6,
+  },
+  menuIconDisabled: {
+    opacity: 0.7,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#FF4444',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  notificationBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  statusIndicator: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  statusEnabled: {
+    backgroundColor: 'rgba(76, 175, 80, 0.2)',
+    borderColor: '#4CAF50',
+  },
+  statusDisabled: {
+    backgroundColor: 'rgba(244, 67, 54, 0.2)',
+    borderColor: '#F44336',
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  menuItemSubtitleDisabled: {
+    color: 'rgba(255, 255, 255, 0.5)',
   },
 });

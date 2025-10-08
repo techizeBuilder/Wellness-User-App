@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
-import { Text, View, type TextProps } from 'react-native';
+import { Text } from 'react-native';
 import Animated, {
-  useSharedValue,
   useAnimatedStyle,
-  withTiming,
+  useSharedValue,
   withDelay,
+  withTiming,
 } from 'react-native-reanimated';
 
 interface AnimatedTextProps {
