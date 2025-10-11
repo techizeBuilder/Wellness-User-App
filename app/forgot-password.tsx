@@ -2,12 +2,61 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import authService, { ApiError } from '../src/services/authService';
+import {
+  fontSizes,
+  getResponsiveBorderRadius,
+  getResponsiveHeight,
+  getResponsiveMargin,
+  getResponsivePadding,
+  getResponsiveWidth,
+  screenData
+} from '../src/utils/dimensions';
+import { showErrorToast, showSuccessToast } from '../src/utils/toastConfig';
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSendOTP = () => {
-    router.push('/otp-verification');
+  const handleSendOTP = async () => {
+    // Email validation
+    if (!email.trim()) {
+      showErrorToast('Error', 'Please enter your email address');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      showErrorToast('Error', 'Please enter a valid email address');
+      return;
+    }
+
+    console.log(`🚀 === FORGOT PASSWORD BUTTON PRESSED ===`);
+    console.log(`📧 Email entered: ${email}`);
+
+    setIsLoading(true);
+    try {
+      // Use forgotPassword method which has enhanced logging
+      const response = await authService.forgotPassword({ email });
+      
+      console.log(`✅ Forgot password response:`, response);
+      
+      if (response.success) {
+        showSuccessToast('Success', 'OTP sent to your email!');
+        // Navigate to OTP verification with email parameter for password reset
+        router.push({
+          pathname: '/otp-verification',
+          params: { email, type: 'password_reset' }
+        });
+      }
+    } catch (error: any) {
+      console.error(`❌ Forgot password error:`, error);
+      const apiError = error as ApiError;
+      showErrorToast('Failed to Send OTP', apiError.message || 'Unable to send OTP. Please try again.');
+    } finally {
+      setIsLoading(false);
+      console.log(`🏁 === FORGOT PASSWORD REQUEST COMPLETE ===`);
+    }
   };
 
   const handleLogin = () => {
@@ -56,14 +105,20 @@ export default function ForgotPasswordScreen() {
               />
             </View>
 
-            <Pressable style={styles.sendButton} onPress={handleSendOTP}>
+            <Pressable 
+              style={[styles.sendButton, isLoading && { opacity: 0.7 }]} 
+              onPress={handleSendOTP}
+              disabled={isLoading}
+            >
               <LinearGradient
                 colors={['#14B8A6', '#0D9488']}
                 style={styles.buttonGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
               >
-                <Text style={styles.sendButtonText}>Send OTP</Text>
+                <Text style={styles.sendButtonText}>
+                  {isLoading ? 'Sending OTP...' : 'Send OTP'}
+                </Text>
               </LinearGradient>
             </Pressable>
 
@@ -99,19 +154,20 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     flexGrow: 1,
-    paddingHorizontal: 32,
-    paddingTop: 60,
-    paddingBottom: 30,
+    paddingHorizontal: getResponsivePadding(screenData.isSmall ? 20 : screenData.isMedium ? 24 : 32),
+    paddingTop: getResponsiveHeight(screenData.isSmall ? 40 : 60),
+    paddingBottom: getResponsiveHeight(30),
+    minHeight: screenData.height - getResponsiveHeight(100),
   },
   headerContainer: {
     paddingTop: 0,
-    paddingBottom: 20,
+    paddingBottom: getResponsivePadding(20),
     alignItems: 'flex-start',
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: getResponsiveWidth(40),
+    height: getResponsiveHeight(40),
+    borderRadius: getResponsiveBorderRadius(20),
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -119,45 +175,46 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   backArrow: {
-    fontSize: 18,
+    fontSize: fontSizes.lg,
     color: '#ffffff',
     fontWeight: 'bold',
   },
   headerSection: {
     alignItems: 'center',
-    marginBottom: 60,
-    marginTop: 30,
+    marginBottom: getResponsiveMargin(screenData.isSmall ? 40 : 60),
+    marginTop: getResponsiveMargin(30),
   },
   title: {
-    fontSize: 32,
+    fontSize: fontSizes.xxxl,
     fontWeight: 'bold',
     color: '#f3f3f3ff',
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: getResponsiveMargin(12),
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: fontSizes.md,
     color: '#f3f3f3ff',
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: fontSizes.md * 1.5,
     fontWeight: '400',
+    paddingHorizontal: getResponsivePadding(screenData.isSmall ? 10 : 0),
   },
   formSection: {
-    maxWidth: 400,
+    maxWidth: getResponsiveWidth(400),
     alignSelf: 'center',
     width: '100%',
-    marginBottom: 40,
-    paddingHorizontal: 4,
+    marginBottom: getResponsiveMargin(40),
+    paddingHorizontal: getResponsivePadding(4),
   },
   inputContainer: {
-    marginBottom: 16,
+    marginBottom: getResponsiveMargin(16),
   },
   input: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 25,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    fontSize: 16,
+    borderRadius: getResponsiveBorderRadius(25),
+    paddingHorizontal: getResponsivePadding(20),
+    paddingVertical: getResponsivePadding(screenData.isSmall ? 14 : 16),
+    fontSize: fontSizes.md,
     color: '#333333',
     borderWidth: 2,
     borderColor: '#F59E0B',
@@ -166,25 +223,28 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
+    minHeight: getResponsiveHeight(screenData.isSmall ? 48 : 54),
   },
   sendButton: {
-    marginTop: 12,
-    marginBottom: 24,
-    borderRadius: 25,
+    marginTop: getResponsiveMargin(12),
+    marginBottom: getResponsiveMargin(24),
+    borderRadius: getResponsiveBorderRadius(25),
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 6,
+    minHeight: getResponsiveHeight(screenData.isSmall ? 50 : 56),
   },
   buttonGradient: {
-    paddingVertical: 16,
+    paddingVertical: getResponsivePadding(screenData.isSmall ? 14 : 16),
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: getResponsiveHeight(screenData.isSmall ? 50 : 56),
   },
   sendButtonText: {
-    fontSize: 18,
+    fontSize: fontSizes.lg,
     fontWeight: 'bold',
     color: '#FFFFFF',
     letterSpacing: 0.5,
@@ -192,28 +252,30 @@ const styles = StyleSheet.create({
   loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: getResponsiveMargin(20),
+    flexWrap: 'wrap',
   },
   loginText: {
-    fontSize: 16,
+    fontSize: fontSizes.md,
     color: '#666666',
     fontWeight: '400',
   },
   loginLink: {
-    fontSize: 16,
+    fontSize: fontSizes.md,
     color: '#575623ff',
     fontWeight: 'bold',
   },
   footerSection: {
     marginTop: 'auto',
-    paddingTop: 20,
-    paddingBottom: 20,
+    paddingTop: getResponsivePadding(20),
+    paddingBottom: getResponsivePadding(20),
   },
   footerText: {
-    fontSize: 12,
+    fontSize: fontSizes.xs,
     color: '#666666',
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: fontSizes.xs * 1.5,
     opacity: 0.8,
+    paddingHorizontal: getResponsivePadding(screenData.isSmall ? 20 : 0),
   },
 });

@@ -3,6 +3,14 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Dimensions, Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import Footer from '../src/components/Footer';
+import {
+    getResponsiveBorderRadius,
+    getResponsiveFontSize,
+    getResponsiveHeight,
+    getResponsiveMargin,
+    getResponsivePadding,
+    getResponsiveWidth
+} from '../src/utils/dimensions';
 
 const { width } = Dimensions.get('window');
 
@@ -300,35 +308,35 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   filterIcon: {
-    fontSize: 16,
+    fontSize: getResponsiveFontSize(16),
     color: '#ffffff',
   },
   // Compact Search Styles
   compactSearchContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 12,
+    paddingHorizontal: getResponsivePadding(20),
+    marginBottom: getResponsiveMargin(12),
   },
   compactSearchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 25,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    borderRadius: getResponsiveBorderRadius(25),
+    paddingHorizontal: getResponsivePadding(16),
+    paddingVertical: getResponsivePadding(10),
     borderWidth: 2,
     borderColor: '#F59E0B',
   },
   // Compact Categories Styles
   compactCategoriesContainer: {
-    paddingLeft: 20,
-    marginBottom: 16,
+    paddingLeft: getResponsivePadding(20),
+    marginBottom: getResponsiveMargin(16),
   },
   compactCategoryChip: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 12,
+    paddingHorizontal: getResponsivePadding(16),
+    paddingVertical: getResponsivePadding(8),
+    borderRadius: getResponsiveBorderRadius(20),
+    marginRight: getResponsiveMargin(12),
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
@@ -337,7 +345,7 @@ const styles = StyleSheet.create({
     borderColor: '#D97706',
   },
   compactCategoryChipText: {
-    fontSize: 14,
+    fontSize: getResponsiveFontSize(14),
     fontWeight: '600',
     color: 'rgba(255, 255, 255, 0.9)',
   },
@@ -349,14 +357,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingTop: getResponsivePadding(60),
+    paddingHorizontal: getResponsivePadding(20),
+    paddingBottom: getResponsivePadding(16),
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: getResponsiveWidth(40),
+    height: getResponsiveHeight(40),
+    borderRadius: getResponsiveBorderRadius(20),
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -364,29 +372,29 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   backArrow: {
-    fontSize: 18,
+    fontSize: getResponsiveFontSize(18),
     color: '#ffffff',
     fontWeight: 'bold',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: getResponsiveFontSize(20),
     fontWeight: 'bold',
     color: '#ffffff',
   },
   headerRight: {
-    width: 40,
+    width: getResponsiveWidth(40),
   },
   searchContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 16,
+    paddingHorizontal: getResponsivePadding(20),
+    marginBottom: getResponsiveMargin(16),
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    borderRadius: getResponsiveBorderRadius(12),
+    paddingHorizontal: getResponsivePadding(16),
+    paddingVertical: getResponsivePadding(12),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -394,18 +402,18 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   searchIcon: {
-    fontSize: 16,
-    marginRight: 12,
+    fontSize: getResponsiveFontSize(16),
+    marginRight: getResponsiveMargin(12),
     color: 'rgba(255, 255, 255, 0.8)',
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: getResponsiveFontSize(16),
     color: '#ffffff',
   },
   filtersContainer: {
-    paddingLeft: 20,
-    marginBottom: 12,
+    paddingLeft: getResponsivePadding(20),
+    marginBottom: getResponsiveMargin(12),
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     paddingVertical: 12,
   },
@@ -435,7 +443,7 @@ const styles = StyleSheet.create({
     borderColor: '#D97706',
   },
   filterChipText: {
-    fontSize: 12,
+    fontSize: getResponsiveFontSize(12),
     color: '#ffffff',
     fontWeight: '500',
   },
@@ -443,15 +451,15 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   categoriesContainer: {
-    paddingLeft: 20,
-    marginBottom: 16,
+    paddingLeft: getResponsivePadding(20),
+    marginBottom: getResponsiveMargin(16),
   },
   categoryChip: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 12,
+    paddingHorizontal: getResponsivePadding(16),
+    paddingVertical: getResponsivePadding(8),
+    borderRadius: getResponsiveBorderRadius(20),
+    marginRight: getResponsiveMargin(12),
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
@@ -460,7 +468,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.9)',
   },
   categoryChipText: {
-    fontSize: 14,
+    fontSize: getResponsiveFontSize(14),
     color: '#ffffff',
     fontWeight: '500',
   },
@@ -469,12 +477,12 @@ const styles = StyleSheet.create({
   },
   expertsContainer: {
     flex: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: getResponsivePadding(16),
   },
   expertCard: {
-    borderRadius: 16,
-    marginBottom: 16,
-    padding: 16,
+    borderRadius: getResponsiveBorderRadius(16),
+    marginBottom: getResponsiveMargin(16),
+    padding: getResponsivePadding(16),
     borderWidth: 2,
     borderColor: '#F59E0B',
     shadowColor: '#000',
@@ -485,7 +493,7 @@ const styles = StyleSheet.create({
   },
   expertCardPressable: {
     flexDirection: 'row',
-    padding: 12,
+    padding: getResponsivePadding(12),
   },
   expertImage: {
     width: 70,
@@ -511,33 +519,33 @@ const styles = StyleSheet.create({
   },
   verifiedBadge: {
     backgroundColor: '#F59E0B',
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: getResponsiveWidth(18),
+    height: getResponsiveHeight(18),
+    borderRadius: getResponsiveBorderRadius(9),
     alignItems: 'center',
     justifyContent: 'center',
   },
   verifiedText: {
-    fontSize: 10,
+    fontSize: getResponsiveFontSize(10),
     color: '#ffffff',
     fontWeight: 'bold',
   },
   expertSpecialty: {
-    fontSize: 12,
+    fontSize: getResponsiveFontSize(12),
     color: '#666',
     fontWeight: '600',
-    marginBottom: 2,
+    marginBottom: getResponsiveMargin(2),
   },
   expertExperience: {
-    fontSize: 11,
+    fontSize: getResponsiveFontSize(11),
     color: '#555',
-    marginBottom: 6,
+    marginBottom: getResponsiveMargin(6),
   },
   expertDescription: {
-    fontSize: 11,
+    fontSize: getResponsiveFontSize(11),
     color: '#444',
-    lineHeight: 14,
-    marginBottom: 8,
+    lineHeight: getResponsiveHeight(14),
+    marginBottom: getResponsiveMargin(8),
   },
   expertFooter: {
     flexDirection: 'row',
@@ -547,22 +555,22 @@ const styles = StyleSheet.create({
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: getResponsiveWidth(12),
   },
   rating: {
-    fontSize: 11,
+    fontSize: getResponsiveFontSize(11),
     color: '#B8860B',
     fontWeight: 'bold',
   },
   price: {
-    fontSize: 12,
+    fontSize: getResponsiveFontSize(12),
     color: '#333',
     fontWeight: 'bold',
   },
   viewProfileButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: getResponsivePadding(12),
+    paddingVertical: getResponsivePadding(6),
+    borderRadius: getResponsiveBorderRadius(12),
     shadowColor: '#4DD0E1',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -570,11 +578,11 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   viewProfileText: {
-    fontSize: 11,
+    fontSize: getResponsiveFontSize(11),
     color: '#ffffff',
     fontWeight: '600',
   },
   bottomSpacer: {
-    height: 100,
+    height: getResponsiveHeight(100),
   },
 });

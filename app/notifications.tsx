@@ -3,6 +3,14 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StatusBar, StyleSheet, Switch, Text, View } from 'react-native';
 import { colors } from '../src/utils/colors';
+import {
+  getResponsiveBorderRadius,
+  getResponsiveFontSize,
+  getResponsiveHeight,
+  getResponsiveMargin,
+  getResponsivePadding,
+  getResponsiveWidth
+} from '../src/utils/dimensions';
 
 export default function NotificationsScreen() {
   const [pushNotifications, setPushNotifications] = useState(true);
@@ -245,20 +253,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingTop: getResponsivePadding(50),
+    paddingHorizontal: getResponsivePadding(20),
+    paddingBottom: getResponsivePadding(16),
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: getResponsiveWidth(40),
+    height: getResponsiveHeight(40),
+    borderRadius: getResponsiveBorderRadius(20),
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   backArrow: {
-    fontSize: 18,
+    fontSize: getResponsiveFontSize(18),
     color: 'white',
     fontWeight: 'bold',
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
@@ -266,7 +274,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: getResponsiveFontSize(20),
     fontWeight: 'bold',
     color: 'white',
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
@@ -274,96 +282,96 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   headerRight: {
-    width: 40,
+    width: getResponsiveWidth(40),
   },
   scrollView: {
     flex: 1,
   },
   section: {
-    paddingHorizontal: 20,
-    marginTop: 28,
+    paddingHorizontal: getResponsivePadding(20),
+    marginTop: getResponsiveMargin(28),
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: getResponsiveFontSize(18),
     fontWeight: 'bold',
     color: 'white',
-    marginBottom: 16,
+    marginBottom: getResponsiveMargin(16),
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
   settingCard: {
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: getResponsiveBorderRadius(16),
+    padding: getResponsivePadding(20),
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
-    marginBottom: 4,
+    marginBottom: getResponsiveMargin(4),
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    paddingVertical: getResponsivePadding(8),
   },
   settingInfo: {
     flex: 1,
-    marginRight: 16,
+    marginRight: getResponsiveMargin(16),
   },
   settingTitle: {
-    fontSize: 16,
+    fontSize: getResponsiveFontSize(16),
     fontWeight: '600',
     color: 'white',
-    marginBottom: 4,
+    marginBottom: getResponsiveMargin(4),
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
   settingDescription: {
-    fontSize: 14,
+    fontSize: getResponsiveFontSize(14),
     color: 'rgba(255, 255, 255, 0.8)',
-    lineHeight: 18,
+    lineHeight: getResponsiveHeight(18),
   },
   divider: {
     height: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    marginVertical: 16,
+    marginVertical: getResponsiveMargin(16),
   },
   scheduleCard: {
-    borderRadius: 16,
+    borderRadius: getResponsiveBorderRadius(16),
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   scheduleItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
+    padding: getResponsivePadding(20),
   },
   scheduleIcon: {
-    fontSize: 24,
-    marginRight: 16,
+    fontSize: getResponsiveFontSize(24),
+    marginRight: getResponsiveMargin(16),
   },
   scheduleInfo: {
     flex: 1,
   },
   scheduleTitle: {
-    fontSize: 16,
+    fontSize: getResponsiveFontSize(16),
     fontWeight: '600',
     color: 'white',
-    marginBottom: 4,
+    marginBottom: getResponsiveMargin(4),
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
   scheduleTime: {
-    fontSize: 14,
+    fontSize: getResponsiveFontSize(14),
     color: 'rgba(255, 255, 255, 0.8)',
   },
   scheduleArrow: {
-    fontSize: 16,
+    fontSize: getResponsiveFontSize(16),
     color: 'white',
   },
   bottomSpacer: {
-    height: 40,
+    height: getResponsiveHeight(40),
   },
   switch: {
     transform: [{ scaleX: 1.1 }, { scaleY: 1.1 }],

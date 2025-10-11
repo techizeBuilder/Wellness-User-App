@@ -3,6 +3,14 @@ import { router } from 'expo-router';
 import React from 'react';
 import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../src/utils/colors';
+import {
+    getResponsiveBorderRadius,
+    getResponsiveFontSize,
+    getResponsiveHeight,
+    getResponsiveMargin,
+    getResponsivePadding,
+    getResponsiveWidth
+} from '../src/utils/dimensions';
 
 export default function SubscriptionDetailsScreen() {
   return (
@@ -47,20 +55,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingTop: getResponsivePadding(50),
+    paddingHorizontal: getResponsivePadding(20),
+    paddingBottom: getResponsivePadding(16),
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: getResponsiveWidth(40),
+    height: getResponsiveHeight(40),
+    borderRadius: getResponsiveBorderRadius(20),
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   backArrow: {
-    fontSize: 18,
+    fontSize: getResponsiveFontSize(18),
     color: 'white',
     fontWeight: 'bold',
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
@@ -68,7 +76,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: getResponsiveFontSize(20),
     fontWeight: 'bold',
     color: 'white',
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
@@ -76,40 +84,40 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   headerRight: {
-    width: 40,
+    width: getResponsiveWidth(40),
   },
   scrollView: {
     flex: 1,
   },
   section: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
+    paddingHorizontal: getResponsivePadding(20),
+    paddingTop: getResponsivePadding(24),
   },
   planCard: {
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: getResponsiveBorderRadius(16),
+    padding: getResponsivePadding(20),
     alignItems: 'center',
   },
   planTitle: {
-    fontSize: 24,
+    fontSize: getResponsiveFontSize(24),
     fontWeight: 'bold',
     color: 'white',
-    marginBottom: 8,
+    marginBottom: getResponsiveMargin(8),
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
   planPrice: {
-    fontSize: 18,
+    fontSize: getResponsiveFontSize(18),
     color: '#FFD700',
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: getResponsiveMargin(8),
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
   planStatus: {
-    fontSize: 14,
+    fontSize: getResponsiveFontSize(14),
     color: 'rgba(255, 255, 255, 0.8)',
   },
 });

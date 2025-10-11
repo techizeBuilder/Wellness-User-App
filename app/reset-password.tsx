@@ -1,19 +1,66 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import authService, { ApiError } from '../src/services/authService';
 import { colors } from '../src/utils/colors';
+import {
+    getResponsiveBorderRadius,
+    getResponsiveFontSize,
+    getResponsiveHeight,
+    getResponsiveMargin,
+    getResponsivePadding,
+    getResponsiveWidth
+} from '../src/utils/dimensions';
+import { showErrorToast, showSuccessToast } from '../src/utils/toastConfig';
 
 export default function ResetPasswordScreen() {
+  const { email, resetToken } = useLocalSearchParams();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isNewPasswordVisible, setIsNewPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleResetPassword = () => {
-    if (newPassword === confirmPassword && newPassword.length >= 8) {
-      // Navigate to login or success screen
+  const handleResetPassword = async () => {
+    // Validation
+    if (!newPassword || !confirmPassword) {
+      showErrorToast('Error', 'Please fill in both password fields');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      showErrorToast('Error', 'Passwords do not match');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      showErrorToast('Error', 'Password must be at least 6 characters long');
+      return;
+    }
+
+    if (!email || !resetToken) {
+      showErrorToast('Error', 'Session expired. Please start the process again.');
+      router.push('/forgot-password');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await authService.resetPassword({
+        password: newPassword,
+        confirmPassword: confirmPassword,
+        resetToken: resetToken as string
+      });
+      
+      showSuccessToast('Success', 'Password reset successfully!');
+      // Navigate to login screen
       router.push('/login');
+    } catch (error) {
+      const apiError = error as ApiError;
+      showErrorToast('Reset Failed', apiError.message || 'Failed to reset password');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -79,14 +126,20 @@ export default function ResetPasswordScreen() {
       </View>
 
       <View style={styles.footer}>
-        <Pressable style={styles.resetButton} onPress={handleResetPassword}>
+        <Pressable 
+          style={[styles.resetButton, isLoading && { opacity: 0.7 }]} 
+          onPress={handleResetPassword}
+          disabled={isLoading}
+        >
           <LinearGradient
             colors={['#14B8A6', '#0D9488']}
             style={styles.buttonGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
           >
-            <Text style={styles.resetButtonText}>Reset Password</Text>
+            <Text style={styles.resetButtonText}>
+              {isLoading ? 'Resetting Password...' : 'Reset Password'}
+            </Text>
           </LinearGradient>
         </Pressable>
 
@@ -104,84 +157,84 @@ const styles = StyleSheet.create({
     backgroundColor: '#2DD4BF',
   },
   header: {
-    paddingTop: 50,
-    paddingHorizontal: 24,
-    paddingBottom: 40,
+    paddingTop: getResponsivePadding(50),
+    paddingHorizontal: getResponsivePadding(24),
+    paddingBottom: getResponsivePadding(40),
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: getResponsiveWidth(40),
+    height: getResponsiveHeight(40),
+    borderRadius: getResponsiveBorderRadius(20),
     backgroundColor: '#F8F9FA',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
+    marginBottom: getResponsiveMargin(24),
   },
   backArrow: {
-    fontSize: 20,
+    fontSize: getResponsiveFontSize(20),
     color: colors.deepTeal,
     fontWeight: 'bold',
   },
   title: {
-    fontSize: 24,
+    fontSize: getResponsiveFontSize(24),
     fontWeight: 'bold',
     color: colors.deepTeal,
-    marginBottom: 8,
+    marginBottom: getResponsiveMargin(8),
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: getResponsiveFontSize(16),
     color: '#666',
-    lineHeight: 22,
+    lineHeight: getResponsiveHeight(22),
     textAlign: 'center',
   },
   form: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: getResponsivePadding(24),
   },
   inputContainer: {
     position: 'relative',
-    marginBottom: 20,
+    marginBottom: getResponsiveMargin(20),
   },
   inputLabel: {
-    fontSize: 16,
+    fontSize: getResponsiveFontSize(16),
     fontWeight: '600',
     color: colors.deepTeal,
-    marginBottom: 8,
+    marginBottom: getResponsiveMargin(8),
   },
   input: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    fontSize: 16,
+    borderRadius: getResponsiveBorderRadius(12),
+    paddingHorizontal: getResponsivePadding(16),
+    paddingVertical: getResponsivePadding(16),
+    fontSize: getResponsiveFontSize(16),
     color: '#333333',
     borderWidth: 2,
     borderColor: '#F59E0B',
   },
   eyeIcon: {
     position: 'absolute',
-    right: 16,
-    top: 44,
-    padding: 4,
+    right: getResponsiveWidth(16),
+    top: getResponsiveHeight(44),
+    padding: getResponsivePadding(4),
   },
   eyeIconText: {
-    fontSize: 16,
+    fontSize: getResponsiveFontSize(16),
   },
   requirement: {
-    fontSize: 14,
+    fontSize: getResponsiveFontSize(14),
     color: '#666',
-    marginTop: 8,
-    paddingHorizontal: 4,
+    marginTop: getResponsiveMargin(8),
+    paddingHorizontal: getResponsivePadding(4),
   },
   footer: {
-    paddingHorizontal: 24,
-    paddingBottom: 40,
+    paddingHorizontal: getResponsivePadding(24),
+    paddingBottom: getResponsivePadding(40),
   },
   resetButton: {
-    borderRadius: 12,
+    borderRadius: getResponsiveBorderRadius(12),
     overflow: 'hidden',
-    marginBottom: 16,
+    marginBottom: getResponsiveMargin(16),
     shadowColor: colors.deepTeal,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -189,12 +242,12 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   buttonGradient: {
-    paddingVertical: 16,
+    paddingVertical: getResponsivePadding(16),
     alignItems: 'center',
     justifyContent: 'center',
   },
   resetButtonText: {
-    fontSize: 16,
+    fontSize: getResponsiveFontSize(16),
     fontWeight: '600',
     color: colors.white,
     letterSpacing: 0.5,
@@ -203,7 +256,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backToLoginText: {
-    fontSize: 16,
+    fontSize: getResponsiveFontSize(16),
     color: '#F59E0B',
     fontWeight: '600',
   },

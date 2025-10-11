@@ -3,6 +3,14 @@ import { router } from 'expo-router';
 import React from 'react';
 import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../src/utils/colors';
+import {
+  getResponsiveBorderRadius,
+  getResponsiveFontSize,
+  getResponsiveHeight,
+  getResponsiveMargin,
+  getResponsivePadding,
+  getResponsiveWidth
+} from '../src/utils/dimensions';
 
 export default function LegalScreen() {
   return (
@@ -80,66 +88,66 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingTop: getResponsivePadding(50),
+    paddingHorizontal: getResponsivePadding(20),
+    paddingBottom: getResponsivePadding(16),
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: getResponsiveWidth(40),
+    height: getResponsiveHeight(40),
+    borderRadius: getResponsiveBorderRadius(20),
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   backArrow: {
-    fontSize: 18,
+    fontSize: getResponsiveFontSize(18),
     color: 'white',
     fontWeight: 'bold',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: getResponsiveFontSize(20),
     fontWeight: 'bold',
     color: 'white',
   },
   headerRight: {
-    width: 40,
+    width: getResponsiveWidth(40),
   },
   scrollView: {
     flex: 1,
   },
   section: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
+    paddingHorizontal: getResponsivePadding(20),
+    paddingTop: getResponsivePadding(24),
   },
   legalItem: {
-    borderRadius: 16,
-    marginBottom: 12,
+    borderRadius: getResponsiveBorderRadius(16),
+    marginBottom: getResponsiveMargin(12),
   },
   legalContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
+    padding: getResponsivePadding(20),
   },
   legalIcon: {
-    fontSize: 24,
-    marginRight: 16,
+    fontSize: getResponsiveFontSize(24),
+    marginRight: getResponsiveMargin(16),
   },
   legalInfo: {
     flex: 1,
   },
   legalTitle: {
-    fontSize: 16,
+    fontSize: getResponsiveFontSize(16),
     fontWeight: '600',
     color: 'white',
-    marginBottom: 4,
+    marginBottom: getResponsiveMargin(4),
   },
   legalSubtitle: {
-    fontSize: 14,
+    fontSize: getResponsiveFontSize(14),
     color: 'rgba(255, 255, 255, 0.8)',
   },
   legalArrow: {
-    fontSize: 16,
+    fontSize: getResponsiveFontSize(16),
     color: 'white',
   },
 });

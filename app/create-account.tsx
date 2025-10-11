@@ -2,6 +2,18 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import { apiService, handleApiError } from '../src/services/apiService';
+import {
+    fontSizes,
+    getResponsiveBorderRadius,
+    getResponsiveFontSize,
+    getResponsiveHeight,
+    getResponsiveMargin,
+    getResponsivePadding,
+    getResponsiveWidth,
+    screenData
+} from '../src/utils/dimensions';
+import { showErrorToast, showSuccessToast } from '../src/utils/toastConfig';
 
 export default function CreateAccountScreen() {
   const [fullName, setFullName] = useState('');
@@ -9,10 +21,55 @@ export default function CreateAccountScreen() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleCreateAccount = () => {
-    // Handle account creation logic
-    router.push('/dashboard');
+  const handleCreateAccount = async () => {
+    // Validation
+    if (!fullName.trim() || !email.trim() || !phoneNumber.trim() || !password.trim()) {
+      showErrorToast('Error', 'Please fill in all fields');
+      return;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      showErrorToast('Error', 'Please enter a valid email address');
+      return;
+    }
+
+    // Password validation
+    if (password.length < 6) {
+      showErrorToast('Error', 'Password must be at least 6 characters long');
+      return;
+    }
+
+    // Phone number validation
+    const phoneRegex = /^[\+]?[0-9\s\-\(\)]{10,}$/;
+    if (!phoneRegex.test(phoneNumber)) {
+      showErrorToast('Error', 'Please enter a valid phone number');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await apiService.register({
+        fullName,
+        email,
+        phoneNumber,
+        password
+      });
+      
+      if (response.success) {
+        showSuccessToast('Success', 'Account created successfully!');
+        // Navigate to login or dashboard
+        router.replace('/login');
+      }
+    } catch (error) {
+      const errorMessage = handleApiError(error);
+      showErrorToast('Registration Failed', errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleLogin = () => {
@@ -101,8 +158,14 @@ export default function CreateAccountScreen() {
               </Text>
             </View>
 
-            <Pressable style={styles.createButton} onPress={handleCreateAccount}>
-              <Text style={styles.createButtonText}>Create Account</Text>
+            <Pressable 
+              style={[styles.createButton, isLoading && { opacity: 0.7 }]} 
+              onPress={handleCreateAccount}
+              disabled={isLoading}
+            >
+              <Text style={styles.createButtonText}>
+                {isLoading ? 'Creating Account...' : 'Create Account'}
+              </Text>
             </Pressable>
 
             <View style={styles.loginContainer}>
@@ -130,51 +193,53 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     flexGrow: 1,
-    paddingHorizontal: 32,
-    paddingTop: 60,
-    paddingBottom: 30,
+    paddingHorizontal: getResponsivePadding(screenData.isSmall ? 20 : screenData.isMedium ? 24 : 32),
+    paddingTop: getResponsiveHeight(screenData.isSmall ? 40 : 60),
+    paddingBottom: getResponsiveHeight(30),
     justifyContent: 'center',
+    minHeight: screenData.height - getResponsiveHeight(100),
   },
   headerSection: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: getResponsiveMargin(screenData.isSmall ? 24 : 40),
   },
   title: {
-    fontSize: 32,
+    fontSize: fontSizes.xxxl,
     fontWeight: 'bold',
     color: '#f3f3f3ff',
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: getResponsiveMargin(12),
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: fontSizes.md,
     color: '#f3f3f3ff',
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: fontSizes.md * 1.5,
     fontWeight: '400',
+    paddingHorizontal: getResponsivePadding(screenData.isSmall ? 10 : 0),
   },
   formSection: {
     flex: 1,
     justifyContent: 'center',
-    maxWidth: 400,
+    maxWidth: getResponsiveWidth(400),
     alignSelf: 'center',
     width: '100%',
   },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: getResponsiveMargin(16),
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: fontSizes.sm,
     fontWeight: '500',
     color: '#f3f3f3ff',
-    marginBottom: 8,
+    marginBottom: getResponsiveMargin(8),
   },
   input: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 25,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    fontSize: 16,
+    borderRadius: getResponsiveBorderRadius(25),
+    paddingHorizontal: getResponsivePadding(20),
+    paddingVertical: getResponsivePadding(screenData.isSmall ? 14 : 16),
+    fontSize: fontSizes.md,
     color: '#333333',
     borderWidth: 2,
     borderColor: '#F59E0B',
@@ -183,6 +248,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
+    minHeight: getResponsiveHeight(screenData.isSmall ? 48 : 54),
   },
   inputFilled: {
     borderColor: '#14B8A6',
@@ -193,11 +259,11 @@ const styles = StyleSheet.create({
   },
   passwordInput: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 25,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    paddingRight: 55,
-    fontSize: 16,
+    borderRadius: getResponsiveBorderRadius(25),
+    paddingHorizontal: getResponsivePadding(20),
+    paddingVertical: getResponsivePadding(screenData.isSmall ? 14 : 16),
+    paddingRight: getResponsivePadding(55),
+    fontSize: fontSizes.md,
     color: '#333333',
     borderWidth: 2,
     borderColor: '#F59E0B',
@@ -206,25 +272,26 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
+    minHeight: getResponsiveHeight(screenData.isSmall ? 48 : 54),
   },
   eyeIcon: {
     position: 'absolute',
-    right: 20,
-    top: 16,
-    padding: 4,
+    right: getResponsivePadding(20),
+    top: getResponsivePadding(screenData.isSmall ? 14 : 16),
+    padding: getResponsivePadding(4),
   },
   eyeIconText: {
-    fontSize: 18,
+    fontSize: getResponsiveFontSize(18),
   },
   passwordRequirement: {
-    fontSize: 12,
+    fontSize: fontSizes.xs,
     color: '#f3f3f3ff',
-    marginTop: 4,
+    marginTop: getResponsiveMargin(4),
   },
   createButton: {
-    marginTop: 30,
-    marginBottom: 30,
-    borderRadius: 25,
+    marginTop: getResponsiveMargin(30),
+    marginBottom: getResponsiveMargin(30),
+    borderRadius: getResponsiveBorderRadius(25),
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -232,27 +299,29 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 5,
     backgroundColor: '#14B8A6',
-    paddingVertical: 16,
+    paddingVertical: getResponsivePadding(screenData.isSmall ? 14 : 16),
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: getResponsiveHeight(screenData.isSmall ? 50 : 56),
   },
   createButtonText: {
     color: '#ffffff',
-    fontSize: 18,
+    fontSize: fontSizes.lg,
     fontWeight: '600',
   },
   loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: getResponsiveMargin(20),
+    flexWrap: 'wrap',
   },
   loginText: {
-    fontSize: 16,
+    fontSize: fontSizes.md,
     color: '#f3f3f3ff',
   },
   loginLink: {
-    fontSize: 16,
+    fontSize: fontSizes.md,
     color: '#F59E0B',
     fontWeight: '600',
     textDecorationLine: 'underline',

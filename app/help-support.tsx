@@ -3,6 +3,14 @@ import { router } from 'expo-router';
 import React from 'react';
 import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../src/utils/colors';
+import {
+    getResponsiveBorderRadius,
+    getResponsiveFontSize,
+    getResponsiveHeight,
+    getResponsiveMargin,
+    getResponsivePadding,
+    getResponsiveWidth
+} from '../src/utils/dimensions';
 
 export default function HelpSupportScreen() {
   return (
@@ -82,84 +90,84 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingTop: getResponsivePadding(50),
+    paddingHorizontal: getResponsivePadding(20),
+    paddingBottom: getResponsivePadding(16),
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: getResponsiveWidth(40),
+    height: getResponsiveHeight(40),
+    borderRadius: getResponsiveBorderRadius(20),
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   backArrow: {
-    fontSize: 18,
+    fontSize: getResponsiveFontSize(18),
     color: 'white',
     fontWeight: 'bold',
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    textShadowOffset: { width: 0, height: getResponsiveHeight(1) },
+    textShadowRadius: getResponsiveBorderRadius(2),
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: getResponsiveFontSize(20),
     fontWeight: 'bold',
     color: 'white',
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    textShadowOffset: { width: 0, height: getResponsiveHeight(1) },
+    textShadowRadius: getResponsiveBorderRadius(2),
   },
   headerRight: {
-    width: 40,
+    width: getResponsiveWidth(40),
   },
   scrollView: {
     flex: 1,
   },
   section: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
+    paddingHorizontal: getResponsivePadding(20),
+    paddingTop: getResponsivePadding(24),
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: getResponsiveFontSize(18),
     fontWeight: 'bold',
     color: 'white',
-    marginBottom: 16,
+    marginBottom: getResponsiveMargin(16),
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    textShadowOffset: { width: 0, height: getResponsiveHeight(1) },
+    textShadowRadius: getResponsiveBorderRadius(2),
   },
   helpItem: {
-    borderRadius: 16,
-    marginBottom: 12,
+    borderRadius: getResponsiveBorderRadius(16),
+    marginBottom: getResponsiveMargin(12),
   },
   helpContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
+    padding: getResponsivePadding(20),
   },
   helpIcon: {
-    fontSize: 24,
-    marginRight: 16,
+    fontSize: getResponsiveFontSize(24),
+    marginRight: getResponsiveMargin(16),
   },
   helpInfo: {
     flex: 1,
   },
   helpTitle: {
-    fontSize: 16,
+    fontSize: getResponsiveFontSize(16),
     fontWeight: '600',
     color: 'white',
-    marginBottom: 4,
+    marginBottom: getResponsiveMargin(4),
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    textShadowOffset: { width: 0, height: getResponsiveHeight(1) },
+    textShadowRadius: getResponsiveBorderRadius(2),
   },
   helpSubtitle: {
-    fontSize: 14,
+    fontSize: getResponsiveFontSize(14),
     color: 'rgba(255, 255, 255, 0.8)',
   },
   helpArrow: {
-    fontSize: 16,
+    fontSize: getResponsiveFontSize(16),
     color: 'white',
   },
 });

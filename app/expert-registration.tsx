@@ -1,19 +1,150 @@
+import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import { apiService, handleApiError } from '../src/services/apiService';
+import { showErrorToast, showSuccessToast } from '../src/utils/toastConfig';
 
 export default function ExpertRegistrationScreen() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
-  const [category, setCategory] = useState('');
+  const [profession, setProfession] = useState('');
+  const [specialization, setSpecialization] = useState('');
+  const [experience, setExperience] = useState('');
+  const [qualifications, setQualifications] = useState('');
+  const [bio, setBio] = useState('');
+  const [consultationFee, setConsultationFee] = useState('');
+  const [availability, setAvailability] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [profileImage, setProfileImage] = useState<any>(null);
+  const [documents, setDocuments] = useState<any[]>([]);
 
-  const handleCreateAccount = () => {
-    // Handle expert account creation logic
-    router.push('/dashboard');
+  const pickProfileImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled) {
+        setProfileImage(result.assets[0]);
+        showSuccessToast('Success', 'Profile image selected');
+      }
+    } catch (error) {
+      showErrorToast('Error', 'Failed to pick image');
+    }
+  };
+
+  const pickDocuments = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['image/*', 'application/pdf'],
+        multiple: true,
+      });
+
+      if (!result.canceled) {
+        setDocuments([...documents, ...result.assets]);
+        showSuccessToast('Success', `${result.assets.length} document(s) selected`);
+      }
+    } catch (error) {
+      showErrorToast('Error', 'Failed to pick documents');
+    }
+  };
+
+  const handleCreateAccount = async () => {
+    // Validation
+    if (!fullName.trim() || !email.trim() || !phoneNumber.trim() || !password.trim()) {
+      showErrorToast('Error', 'Please fill in all basic information fields');
+      return;
+    }
+
+    if (!profession.trim() || !specialization.trim() || !experience.trim()) {
+      showErrorToast('Error', 'Please fill in all professional information fields');
+      return;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      showErrorToast('Error', 'Please enter a valid email address');
+      return;
+    }
+
+    // Password validation
+    if (password.length < 6) {
+      showErrorToast('Error', 'Password must be at least 6 characters long');
+      return;
+    }
+
+    // Experience validation
+    const expNum = parseInt(experience);
+    if (isNaN(expNum) || expNum < 0) {
+      showErrorToast('Error', 'Please enter valid years of experience');
+      return;
+    }
+
+    // Consultation fee validation
+    const feeNum = parseFloat(consultationFee);
+    if (isNaN(feeNum) || feeNum < 0) {
+      showErrorToast('Error', 'Please enter valid consultation fee');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Create FormData for file upload
+      const formData = new FormData();
+      
+      // Add text fields
+      formData.append('fullName', fullName);
+      formData.append('email', email);
+      formData.append('phoneNumber', phoneNumber);
+      formData.append('password', password);
+      formData.append('profession', profession);
+      formData.append('specialization', specialization);
+      formData.append('experience', experience);
+      formData.append('qualifications', qualifications);
+      formData.append('bio', bio);
+      formData.append('consultationFee', consultationFee);
+      formData.append('availability', availability.split(',').map(s => s.trim()));
+
+      // Add profile image if selected
+      if (profileImage) {
+        formData.append('profileImage', {
+          uri: profileImage.uri,
+          type: profileImage.mimeType || 'image/jpeg',
+          name: profileImage.fileName || 'profile.jpg',
+        } as any);
+      }
+
+      // Add documents if selected
+      documents.forEach((doc, index) => {
+        formData.append('documents', {
+          uri: doc.uri,
+          type: doc.mimeType || 'application/pdf',
+          name: doc.name || `document${index}.pdf`,
+        } as any);
+      });
+
+      const response = await apiService.registerExpert(formData);
+      
+      if (response.success) {
+        showSuccessToast('Success', 'Expert registration successful!');
+        router.replace('/login');
+      }
+    } catch (error) {
+      const errorMessage = handleApiError(error);
+      showErrorToast('Registration Failed', errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleLogin = () => {
@@ -80,11 +211,11 @@ export default function ExpertRegistrationScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Specialization</Text>
               <TextInput
-                style={[styles.input, category ? styles.inputFilled : null]}
+                style={[styles.input, specialization ? styles.inputFilled : null]}
                 placeholder="e.g., Yoga, Meditation, Ayurveda"
                 placeholderTextColor="#999"
-                value={category}
-                onChangeText={setCategory}
+                value={specialization}
+                onChangeText={setSpecialization}
               />
             </View>
 

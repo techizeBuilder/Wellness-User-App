@@ -4,19 +4,49 @@ import React, { useState } from 'react';
 import { Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import AppleLogo from '../src/components/AppleLogo';
 import GoogleLogo from '../src/components/GoogleLogo';
+import authService, { ApiError } from '../src/services/authService';
+import {
+    getResponsiveBorderRadius,
+    getResponsiveFontSize,
+    getResponsiveMargin,
+    getResponsivePadding
+} from '../src/utils/dimensions';
+import { showErrorToast, showSuccessToast } from '../src/utils/toastConfig';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = () => {
-    // Simple dummy authentication - accepts any email/password
-    if (email.trim() && password.trim()) {
-      // Navigate to main dashboard after login
-      router.replace('/dashboard');
-    } else {
-      alert('Please enter both email and password');
+  const handleLogin = async () => {
+    // Validation
+    if (!email.trim() || !password.trim()) {
+      showErrorToast('Error', 'Please enter both email and password');
+      return;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      showErrorToast('Error', 'Please enter a valid email address');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await authService.login({ email, password });
+      
+      if (response.success) {
+        showSuccessToast('Success', 'Login successful!');
+        // Navigate to main dashboard after login
+        router.replace('/dashboard');
+      }
+    } catch (error: any) {
+      const apiError = error as ApiError;
+      showErrorToast('Login Failed', apiError.message || 'Please check your credentials and try again');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -44,90 +74,93 @@ export default function LoginScreen() {
           {/* Header Section */}
           <View style={styles.headerSection}>
             <Text style={styles.title}>Welcome to Zenovia</Text>
-            <Text style={styles.subtitle}>
-              Join our community of wellness{'\n'}enthusiasts and experts.
-            </Text>
+            <Text style={styles.subtitle}>Join our community of wellness{'\n'}enthusiasts and experts.</Text>
           </View>
 
-          {/* Form Section */}
-          <View style={styles.formSection}>
+          {/* Login Form */}
+          <View style={styles.formContainer}>
+            <Text style={styles.loginTitle}>Login</Text>
+            
+            {/* Email Input */}
             <View style={styles.inputContainer}>
               <TextInput
-                style={styles.input}
+                style={styles.textInput}
                 placeholder="Email or Phone"
-                placeholderTextColor="#999"
+                placeholderTextColor="#9CA3AF"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                autoComplete="email"
               />
             </View>
 
+            {/* Password Input */}
             <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.passwordInput}
-                placeholder="Password"
-                placeholderTextColor="#999"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!isPasswordVisible}
-              />
-              <Pressable 
-                style={styles.eyeIcon}
-                onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-              >
-                <Text style={styles.eyeIconText}>
-                  {isPasswordVisible ? '🙈' : '👁️'}
-                </Text>
-              </Pressable>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={styles.passwordInput}
+                  placeholder="Password"
+                  placeholderTextColor="#9CA3AF"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!isPasswordVisible}
+                  autoCapitalize="none"
+                />
+                <Pressable
+                  style={styles.eyeButton}
+                  onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+                >
+                  <Text style={styles.eyeText}>
+                    {isPasswordVisible ? '👁️' : '👁️‍🗨️'}
+                  </Text>
+                </Pressable>
+              </View>
             </View>
 
-            <Pressable style={styles.continueButton} onPress={handleLogin}>
-              <LinearGradient
-                colors={['#14B8A6', '#0D9488']}
-                style={styles.buttonGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              >
-                <Text style={styles.continueButtonText}>Continue</Text>
-              </LinearGradient>
-            </Pressable>
-
+            {/* Forgot Password Link */}
             <Pressable style={styles.forgotPasswordContainer} onPress={handleForgotPassword}>
-              <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
             </Pressable>
 
-            <View style={styles.dividerContainer}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>Or continue with</Text>
-              <View style={styles.dividerLine} />
+            {/* Login Button */}
+            <Pressable 
+              style={[styles.loginButton, isLoading && styles.loginButtonDisabled]} 
+              onPress={handleLogin}
+              disabled={isLoading}
+            >
+              <Text style={styles.loginButtonText}>
+                {isLoading ? 'Continuing...' : 'Continue'}
+              </Text>
+            </Pressable>
+
+            {/* OR Divider */}
+            <View style={styles.orContainer}>
+              <View style={styles.line} />
+              <Text style={styles.orText}>OR</Text>
+              <View style={styles.line} />
             </View>
 
+            {/* Social Login Buttons */}
             <View style={styles.socialButtonsContainer}>
               <Pressable style={styles.socialButton}>
-                <GoogleLogo size={18} />
-                <Text style={styles.socialText}>Google</Text>
+                <GoogleLogo width={24} height={24} />
+                <Text style={styles.socialButtonText}>Continue with Google</Text>
               </Pressable>
-              
+
               <Pressable style={styles.socialButton}>
-                <AppleLogo size={18} color="#333333" />
-                <Text style={styles.socialText}>Apple</Text>
+                <AppleLogo width={24} height={24} />
+                <Text style={styles.socialButtonText}>Continue with Apple</Text>
               </Pressable>
             </View>
 
+            {/* Sign Up Link */}
             <View style={styles.signUpContainer}>
               <Text style={styles.signUpText}>Don't have an account? </Text>
               <Pressable onPress={handleSignUp}>
                 <Text style={styles.signUpLink}>Sign Up</Text>
               </Pressable>
             </View>
-          </View>
-
-          {/* Footer Section */}
-          <View style={styles.footerSection}>
-            <Text style={styles.footerText}>
-              By continuing, you agree to our Terms of Service and Privacy Policy.
-            </Text>
           </View>
         </ScrollView>
       </LinearGradient>
@@ -147,185 +180,160 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     flexGrow: 1,
-    paddingHorizontal: 32,
-    paddingTop: 60,
-    paddingBottom: 30,
-    justifyContent: 'center',
+    paddingVertical: getResponsivePadding(20),
   },
   headerSection: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: getResponsiveMargin(40),
+    paddingTop: getResponsivePadding(40),
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#f3f3f3ff',
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#f3f3f3ff',
-    textAlign: 'center',
-    lineHeight: 24,
-    fontWeight: '400',
-  },
-  formSection: {
-    flex: 1,
-    justifyContent: 'center',
-    maxWidth: 400,
-    alignSelf: 'center',
-    width: '100%',
-  },
-  inputContainer: {
-    marginBottom: 16,
-  },
-  input: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 25,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    fontSize: 16,
-    color: '#333333',
-    borderWidth: 2,
-    borderColor: '#F59E0B',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  passwordInput: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 25,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    paddingRight: 55,
-    fontSize: 16,
-    color: '#333333',
-    borderWidth: 2,
-    borderColor: '#F59E0B',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  eyeIcon: {
-    position: 'absolute',
-    right: 20,
-    top: 16,
-    padding: 4,
-  },
-  eyeIconText: {
-    fontSize: 20,
-    color: '#666666',
-  },
-  continueButton: {
-    marginTop: 12,
-    marginBottom: 24,
-    borderRadius: 25,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  buttonGradient: {
-    paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  continueButtonText: {
-    fontSize: 18,
+    fontSize: getResponsiveFontSize(32),
     fontWeight: 'bold',
     color: '#FFFFFF',
-    letterSpacing: 0.5,
+    textAlign: 'center',
+    marginBottom: getResponsiveMargin(8),
+  },
+  subtitle: {
+    fontSize: getResponsiveFontSize(16),
+    color: '#FFFFFF',
+    textAlign: 'center',
+    opacity: 0.9,
+  },
+  formContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    marginHorizontal: getResponsiveMargin(20),
+    borderRadius: getResponsiveBorderRadius(20),
+    padding: getResponsivePadding(24),
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  loginTitle: {
+    fontSize: getResponsiveFontSize(24),
+    fontWeight: 'bold',
+    color: '#1F2937',
+    textAlign: 'center',
+    marginBottom: getResponsiveMargin(24),
+  },
+  inputContainer: {
+    marginBottom: getResponsiveMargin(16),
+  },
+  inputLabel: {
+    fontSize: getResponsiveFontSize(14),
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: getResponsiveMargin(8),
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: getResponsiveBorderRadius(12),
+    paddingHorizontal: getResponsivePadding(16),
+    paddingVertical: getResponsivePadding(12),
+    fontSize: getResponsiveFontSize(16),
+    color: '#1F2937',
+    backgroundColor: '#FFFFFF',
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: getResponsiveBorderRadius(12),
+    backgroundColor: '#FFFFFF',
+  },
+  passwordInput: {
+    flex: 1,
+    paddingHorizontal: getResponsivePadding(16),
+    paddingVertical: getResponsivePadding(12),
+    fontSize: getResponsiveFontSize(16),
+    color: '#1F2937',
+  },
+  eyeButton: {
+    paddingHorizontal: getResponsivePadding(16),
+    paddingVertical: getResponsivePadding(12),
+  },
+  eyeText: {
+    fontSize: getResponsiveFontSize(18),
   },
   forgotPasswordContainer: {
-    alignItems: 'center',
-    marginBottom: 28,
+    alignItems: 'flex-end',
+    marginBottom: getResponsiveMargin(24),
   },
   forgotPasswordText: {
-    fontSize: 16,
-    color: '#1A5D5D',
-    fontWeight: '500',
+    fontSize: getResponsiveFontSize(14),
+    color: '#2da898ff',
+    fontWeight: '600',
   },
-  dividerContainer: {
+  loginButton: {
+    backgroundColor: '#2da898ff',
+    borderRadius: getResponsiveBorderRadius(12),
+    paddingVertical: getResponsivePadding(16),
+    alignItems: 'center',
+    marginBottom: getResponsiveMargin(24),
+  },
+  loginButtonDisabled: {
+    backgroundColor: '#9CA3AF',
+  },
+  loginButtonText: {
+    fontSize: getResponsiveFontSize(16),
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  orContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
-    paddingHorizontal: 0,
+    marginBottom: getResponsiveMargin(24),
   },
-  dividerLine: {
+  line: {
     flex: 1,
     height: 1,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: '#D1D5DB',
   },
-  dividerText: {
-    paddingHorizontal: 12,
-    fontSize: 14,
-    color: '#666666',
-    fontWeight: '400',
+  orText: {
+    fontSize: getResponsiveFontSize(14),
+    color: '#6B7280',
+    marginHorizontal: getResponsiveMargin(16),
+    fontWeight: '500',
   },
   socialButtonsContainer: {
-    flexDirection: 'row',
-    gap: 16,
-    marginBottom: 24,
-    paddingHorizontal: 0,
+    marginBottom: getResponsiveMargin(24),
   },
   socialButton: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 28,
-    paddingVertical: 18,
-    paddingHorizontal: 12,
-    gap: 6,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-    height: 56,
-    minWidth: 120,
+    borderColor: '#D1D5DB',
+    borderRadius: getResponsiveBorderRadius(12),
+    paddingVertical: getResponsivePadding(12),
+    marginBottom: getResponsiveMargin(12),
+    backgroundColor: '#FFFFFF',
   },
-  socialText: {
-    fontSize: 15,
-    color: '#333333',
+  socialButtonText: {
+    fontSize: getResponsiveFontSize(16),
+    color: '#374151',
     fontWeight: '600',
-    flexShrink: 0,
+    marginLeft: getResponsiveMargin(12),
   },
   signUpContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 16,
+    alignItems: 'center',
   },
   signUpText: {
-    fontSize: 16,
-    color: '#666666',
-    fontWeight: '400',
+    fontSize: getResponsiveFontSize(14),
+    color: '#6B7280',
   },
   signUpLink: {
-    fontSize: 16,
-    color: '#575623ff',
-    fontWeight: 'bold',
-  },
-  footerSection: {
-    marginTop: 'auto',
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  footerText: {
-    fontSize: 12,
-    color: '#666666',
-    textAlign: 'center',
-    lineHeight: 18,
-    opacity: 0.8,
+    fontSize: getResponsiveFontSize(14),
+    color: '#2da898ff',
+    fontWeight: '600',
   },
 });

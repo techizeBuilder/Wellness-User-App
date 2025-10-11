@@ -1,35 +1,134 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import React, { useState } from 'react';
-import { Pressable, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
-import { colors } from '../src/utils/colors';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useRef, useState } from 'react';
+import { Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import authService, { ApiError } from '../src/services/authService';
+import {
+  getResponsiveBorderRadius,
+  getResponsiveFontSize,
+  getResponsiveHeight,
+  getResponsiveMargin,
+  getResponsivePadding,
+  getResponsiveWidth,
+} from '../src/utils/dimensions';
+import { showErrorToast, showSuccessToast } from '../src/utils/toastConfig';
 
 export default function OTPVerificationScreen() {
+  const { email, type } = useLocalSearchParams();
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [isLoading, setIsLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  
+  // Refs for auto-focus and auto-fill
+  const inputRefs = useRef<(TextInput | null)[]>([]);
 
-  const handleOtpChange = (value: string, index: number) => {
+  // Auto-fill OTP when pasted
+  const handleOtpPaste = (text: string, index: number) => {
+    // If text is longer than 1 character, it's likely a paste operation
+    if (text.length > 1) {
+      // Extract only digits and take first 6
+      const digits = text.replace(/\\D/g, '').slice(0, 6);
+      const newOtp = [...otp];
+      
+      // Fill from current index
+      for (let i = 0; i < digits.length && (index + i) < 6; i++) {
+        newOtp[index + i] = digits[i];
+      }
+      
+      setOtp(newOtp);
+      
+      // Focus the last filled input or next empty one
+      const lastFilledIndex = Math.min(index + digits.length - 1, 5);
+      const nextEmptyIndex = newOtp.findIndex((digit, idx) => idx > lastFilledIndex && digit === '');
+      const focusIndex = nextEmptyIndex !== -1 ? nextEmptyIndex : 5;
+      
+      setTimeout(() => {
+        inputRefs.current[focusIndex]?.focus();
+      }, 100);
+      
+      return;
+    }
+    
+    // Single character input
     const newOtp = [...otp];
-    newOtp[index] = value;
+    newOtp[index] = text;
     setOtp(newOtp);
 
     // Auto focus next input if value is entered
-    if (value && index < 5) {
-      const nextInput = `otp-input-${index + 1}`;
-      // Focus next input (implementation would need ref management)
+    if (text && index < 5) {
+      setTimeout(() => {
+        inputRefs.current[index + 1]?.focus();
+      }, 100);
     }
   };
 
-  const handleVerify = () => {
+  // Handle backspace to move to previous input
+  const handleKeyPress = (key: string, index: number) => {
+    if (key === 'Backspace' && !otp[index] && index > 0) {
+      setTimeout(() => {
+        inputRefs.current[index - 1]?.focus();
+      }, 100);
+    }
+  };
+
+  const handleVerify = async () => {
     const otpCode = otp.join('');
-    if (otpCode.length === 6) {
-      // Navigate to main app after successful verification
-      router.push('/dashboard');
+    if (otpCode.length !== 6) {
+      showErrorToast('Error', 'Please enter the complete 6-digit OTP');
+      return;
+    }
+
+    if (!email) {
+      showErrorToast('Error', 'Email not found. Please start the process again.');
+      router.push('/forgot-password');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await authService.verifyPasswordResetOTP({
+        email: email as string,
+        otp: otpCode,
+        type: 'password_reset'
+      });
+      
+      showSuccessToast('Success', 'OTP verified successfully!');
+      // Navigate to reset password screen with the reset token
+      router.push({
+        pathname: '/reset-password',
+        params: { 
+          email, 
+          resetToken: response.data?.resetToken || ''
+        }
+      });
+    } catch (error) {
+      const apiError = error as ApiError;
+      showErrorToast('Verification Failed', apiError.message || 'Failed to verify OTP');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleResendCode = () => {
-    // Implement resend code logic
-    console.log('Resend code');
+  const handleResendCode = async () => {
+    if (!email) {
+      showErrorToast('Error', 'Email not found. Please start the process again.');
+      router.push('/forgot-password');
+      return;
+    }
+
+    setResendLoading(true);
+    try {
+      const response = await authService.requestPasswordReset({ email: email as string });
+      
+      showSuccessToast('Success', 'New OTP sent to your email!');
+      // Clear current OTP
+      setOtp(['', '', '', '', '', '']);
+    } catch (error) {
+      const apiError = error as ApiError;
+      showErrorToast('Failed to Resend', apiError.message || 'Failed to resend OTP');
+    } finally {
+      setResendLoading(false);
+    }
   };
 
   const handleChangeEmail = () => {
@@ -39,58 +138,74 @@ export default function OTPVerificationScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
+      <StatusBar barStyle="dark-content" backgroundColor="#A0F0E4" />
       
-      <View style={styles.header}>
-        <Pressable style={styles.closeButton} onPress={() => router.push('/login')}>
-          <Text style={styles.closeText}>✕</Text>
-        </Pressable>
-        
-        <Text style={styles.title}>Verify Your Account</Text>
-        <Text style={styles.subtitle}>
-          We've sent a 6-digit code to your email. Please enter it below to continue.
-        </Text>
-      </View>
+      <LinearGradient
+        colors={['#2da898ff', '#abeee6ff']}
+        style={styles.backgroundGradient}
+      >
+        <ScrollView 
+          style={styles.scrollView} 
+          contentContainerStyle={styles.scrollViewContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header with close button */}
+          <View style={styles.headerContainer}>
+            <Pressable style={styles.backButton} onPress={() => router.back()}>
+              <Text style={styles.backArrow}>←</Text>
+            </Pressable>
+          </View>
 
-      <View style={styles.content}>
-        <View style={styles.otpContainer}>
-          {otp.map((digit, index) => (
-            <TextInput
-              key={index}
-              style={styles.otpInput}
-              value={digit}
-              onChangeText={(value) => handleOtpChange(value, index)}
-              keyboardType="numeric"
-              maxLength={1}
-              textAlign="center"
-            />
-          ))}
-        </View>
+          {/* Header Section */}
+          <View style={styles.headerSection}>
+            <Text style={styles.title}>Verify Your Account</Text>
+            <Text style={styles.subtitle}>
+              We've sent a 6-digit code to your email.{'\n'}Please enter it below to continue.
+            </Text>
+          </View>
 
-        <View style={styles.resendContainer}>
-          <Text style={styles.resendText}>Didn't receive the code? </Text>
-          <Pressable onPress={handleResendCode}>
-            <Text style={styles.resendLink}>Resend</Text>
-          </Pressable>
-        </View>
+          {/* OTP Form Section */}
+          <View style={styles.formContainer}>
+            <View style={styles.otpContainer}>
+              {otp.map((digit, index) => (
+                <TextInput
+                  key={index}
+                  ref={(ref) => (inputRefs.current[index] = ref)}
+                  style={styles.otpInput}
+                  value={digit}
+                  onChangeText={(text) => handleOtpPaste(text, index)}
+                  onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, index)}
+                  keyboardType="numeric"
+                  maxLength={6} // Allow paste of full OTP
+                  textAlign="center"
+                  selectTextOnFocus
+                />
+              ))}
+            </View>
 
-        <Pressable onPress={handleChangeEmail}>
-          <Text style={styles.changeEmailLink}>Change email address</Text>
-        </Pressable>
-      </View>
+            {/* Resend Section */}
+            <View style={styles.resendContainer}>
+              <Text style={styles.resendText}>Didn't receive the code? </Text>
+              <Pressable onPress={handleResendCode} disabled={resendLoading}>
+                <Text style={styles.resendLink}>
+                  {resendLoading ? 'Sending...' : 'Resend'}
+                </Text>
+              </Pressable>
+            </View>
 
-      <View style={styles.footer}>
-        <Pressable style={styles.verifyButton} onPress={handleVerify}>
-          <LinearGradient
-            colors={[colors.deepTeal, '#003D3D']}
-            style={styles.buttonGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-          >
-            <Text style={styles.verifyButtonText}>Verify</Text>
-          </LinearGradient>
-        </Pressable>
-      </View>
+            {/* Verify Button */}
+            <Pressable 
+              style={[styles.verifyButton, isLoading && styles.verifyButtonDisabled]} 
+              onPress={handleVerify}
+              disabled={isLoading}
+            >
+              <Text style={styles.verifyButtonText}>
+                {isLoading ? 'Verifying...' : 'Verify'}
+              </Text>
+            </Pressable>
+          </View>
+        </ScrollView>
+      </LinearGradient>
     </View>
   );
 }
@@ -98,34 +213,41 @@ export default function OTPVerificationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.white,
   },
-  header: {
-    paddingTop: 50,
-    paddingHorizontal: 24,
-    paddingBottom: 40,
+  backgroundGradient: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    paddingVertical: getResponsivePadding(20),
+  },
+  headerContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: getResponsivePadding(20),
+    paddingTop: getResponsivePadding(20),
+    marginBottom: getResponsiveMargin(20),
   },
-  closeButton: {
-    position: 'absolute',
-    top: 50,
-    right: 24,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F8F9FA',
+  backButton: {
+    width: getResponsiveWidth(40),
+    height: getResponsiveHeight(40),
+    borderRadius: getResponsiveBorderRadius(20),
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  closeText: {
-    fontSize: 16,
-    color: colors.charcoalGray,
-    fontWeight: '600',
+  backArrow: {
+    fontSize: getResponsiveFontSize(20),
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: colors.deepTeal,
+    color: '#2da898ff',
     marginBottom: 12,
     textAlign: 'center',
     marginTop: 40,
@@ -158,8 +280,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     fontSize: 24,
     fontWeight: '600',
-    color: colors.deepTeal,
-    backgroundColor: colors.white,
+    color: '#2da898ff',
+    backgroundColor: '#FFFFFF',
   },
   resendContainer: {
     flexDirection: 'row',
@@ -171,12 +293,12 @@ const styles = StyleSheet.create({
   },
   resendLink: {
     fontSize: 16,
-    color: colors.royalGold,
+    color: '#2da898ff',
     fontWeight: '600',
   },
   changeEmailLink: {
     fontSize: 16,
-    color: colors.royalGold,
+    color: '#2da898ff',
     fontWeight: '600',
   },
   footer: {
@@ -186,7 +308,7 @@ const styles = StyleSheet.create({
   verifyButton: {
     borderRadius: 12,
     overflow: 'hidden',
-    shadowColor: colors.deepTeal,
+    shadowColor: '#2da898ff',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -200,7 +322,7 @@ const styles = StyleSheet.create({
   verifyButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.white,
+    color: '#FFFFFF',
     letterSpacing: 0.5,
   },
 });

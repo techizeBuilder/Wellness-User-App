@@ -3,6 +3,14 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../src/utils/colors';
+import {
+    getResponsiveBorderRadius,
+    getResponsiveFontSize,
+    getResponsiveHeight,
+    getResponsiveMargin,
+    getResponsivePadding,
+    getResponsiveWidth
+} from '../src/utils/dimensions';
 
 export default function HealthPreferencesScreen() {
   const [selectedGoals, setSelectedGoals] = useState(['Weight Management', 'Stress Relief']);
@@ -280,31 +288,31 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: getResponsiveWidth(40),
+    height: getResponsiveHeight(40),
+    borderRadius: getResponsiveBorderRadius(20),
     backgroundColor: 'rgba(255, 255, 255, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   backArrow: {
-    fontSize: 18,
+    fontSize: getResponsiveFontSize(18),
     color: colors.white,
     fontWeight: 'bold',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: getResponsiveFontSize(20),
     fontWeight: 'bold',
     color: colors.white,
   },
   saveHeaderButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 16,
+    paddingHorizontal: getResponsivePadding(16),
+    paddingVertical: getResponsivePadding(8),
+    borderRadius: getResponsiveBorderRadius(16),
     backgroundColor: 'rgba(129, 199, 132, 0.3)',
   },
   saveHeaderText: {
-    fontSize: 14,
+    fontSize: getResponsiveFontSize(14),
     color: colors.white,
     fontWeight: '600',
   },
@@ -312,11 +320,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   section: {
-    paddingHorizontal: 20,
-    marginTop: 24,
+    paddingHorizontal: getResponsivePadding(20),
+    marginTop: getResponsiveMargin(24),
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: getResponsiveFontSize(18),
     fontWeight: 'bold',
     color: 'rgba(255, 255, 255, 0.9)',
     marginBottom: 8,
@@ -325,10 +333,10 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   sectionSubtitle: {
-    fontSize: 14,
+    fontSize: getResponsiveFontSize(14),
     color: 'rgba(255, 255, 255, 0.8)',
-    marginBottom: 16,
-    lineHeight: 20,
+    marginBottom: getResponsiveMargin(16),
+    lineHeight: getResponsiveHeight(20),
     textShadowColor: 'rgba(0, 0, 0, 0.2)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 1,
@@ -336,12 +344,12 @@ const styles = StyleSheet.create({
   optionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: getResponsiveWidth(12),
   },
   optionCard: {
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    borderRadius: getResponsiveBorderRadius(12),
+    paddingHorizontal: getResponsivePadding(16),
+    paddingVertical: getResponsivePadding(12),
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
     shadowColor: 'rgba(0, 0, 0, 0.1)',
@@ -355,19 +363,19 @@ const styles = StyleSheet.create({
     minWidth: '45%',
   },
   checkmark: {
-    fontSize: 16,
+    fontSize: getResponsiveFontSize(16),
     color: 'white',
     fontWeight: 'bold',
-    marginLeft: 8,
+    marginLeft: getResponsiveMargin(8),
   },
   optionsColumn: {
-    gap: 12,
+    gap: getResponsiveWidth(12),
   },
   optionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
-    paddingHorizontal: 16,
+    borderRadius: getResponsiveBorderRadius(12),
+    paddingHorizontal: getResponsivePadding(16),
     paddingVertical: 16,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
@@ -411,33 +419,33 @@ const styles = StyleSheet.create({
   recommendationCard: {
     flexDirection: 'row',
     backgroundColor: colors.royalGold + '20',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: getResponsiveBorderRadius(16),
+    padding: getResponsivePadding(20),
     borderWidth: 1,
     borderColor: colors.royalGold + '30',
   },
   recommendationIcon: {
-    fontSize: 24,
-    marginRight: 16,
+    fontSize: getResponsiveFontSize(24),
+    marginRight: getResponsiveMargin(16),
   },
   recommendationContent: {
     flex: 1,
   },
   recommendationTitle: {
-    fontSize: 16,
+    fontSize: getResponsiveFontSize(16),
     fontWeight: 'bold',
     color: colors.deepTeal,
-    marginBottom: 8,
+    marginBottom: getResponsiveMargin(8),
   },
   recommendationText: {
-    fontSize: 14,
+    fontSize: getResponsiveFontSize(14),
     color: colors.charcoalGray,
-    lineHeight: 20,
+    lineHeight: getResponsiveHeight(20),
   },
   saveButton: {
     backgroundColor: colors.coralAccent,
-    borderRadius: 16,
-    paddingVertical: 16,
+    borderRadius: getResponsiveBorderRadius(16),
+    paddingVertical: getResponsivePadding(16),
     alignItems: 'center',
     shadowColor: colors.coralAccent,
     shadowOffset: { width: 0, height: 4 },
@@ -446,11 +454,11 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   saveButtonText: {
-    fontSize: 18,
+    fontSize: getResponsiveFontSize(18),
     fontWeight: 'bold',
     color: colors.white,
   },
   bottomSpacer: {
-    height: 40,
+    height: getResponsiveHeight(40),
   },
 });

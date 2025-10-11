@@ -2,6 +2,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+    fontSizes,
+    getResponsiveBorderRadius,
+    getResponsiveFontSize,
+    getResponsiveHeight,
+    getResponsiveMargin,
+    getResponsivePadding,
+    getResponsiveWidth,
+    screenData
+} from '../utils/dimensions';
 
 interface FooterProps {
   activeRoute: string;
@@ -98,9 +108,9 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   navGradient: {
-    paddingTop: 12,
-    paddingBottom: 14,
-    paddingHorizontal: 20,
+    paddingTop: getResponsivePadding(12),
+    paddingBottom: getResponsivePadding(screenData.isSmall ? 10 : 14),
+    paddingHorizontal: getResponsivePadding(screenData.isSmall ? 16 : 20),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.15,
@@ -114,17 +124,17 @@ const styles = StyleSheet.create({
   },
   navItem: {
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    minWidth: 60,
+    paddingVertical: getResponsivePadding(8),
+    paddingHorizontal: getResponsivePadding(screenData.isSmall ? 8 : 12),
+    minWidth: getResponsiveWidth(screenData.isSmall ? 50 : 60),
   },
   navIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: getResponsiveWidth(screenData.isSmall ? 40 : 44),
+    height: getResponsiveHeight(screenData.isSmall ? 40 : 44),
+    borderRadius: getResponsiveBorderRadius(screenData.isSmall ? 20 : 22),
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
+    marginBottom: getResponsiveMargin(4),
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     shadowColor: '#4DD0E1',
     shadowOffset: { width: 0, height: 2 },
@@ -141,11 +151,11 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.4)',
   },
   navIcon: {
-    fontSize: 22,
+    fontSize: getResponsiveFontSize(screenData.isSmall ? 20 : 22),
     fontWeight: '600',
   },
   navLabel: {
-    fontSize: 12,
+    fontSize: fontSizes.xs,
     fontWeight: '500',
     textAlign: 'center',
   },
