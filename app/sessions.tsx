@@ -4,12 +4,12 @@ import React, { useState } from 'react';
 import { Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import Footer from '../src/components/Footer';
 import {
-    getResponsiveBorderRadius,
-    getResponsiveFontSize,
-    getResponsiveHeight,
-    getResponsiveMargin,
-    getResponsivePadding,
-    getResponsiveWidth
+  getResponsiveBorderRadius,
+  getResponsiveFontSize,
+  getResponsiveHeight,
+  getResponsiveMargin,
+  getResponsivePadding,
+  getResponsiveWidth
 } from '../src/utils/dimensions';
 
 export default function SessionsScreen() {
@@ -635,7 +635,7 @@ const styles = StyleSheet.create({
     color: '#374151',
     marginBottom: getResponsiveMargin(6),
   },
-  feedbackText: {
+  feedbackDescription: {
     fontSize: getResponsiveFontSize(14),
     color: '#6B7280',
     fontStyle: 'italic',

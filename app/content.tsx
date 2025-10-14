@@ -5,12 +5,12 @@ import { Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, V
 import Footer from '../src/components/Footer';
 import { colors } from '../src/utils/colors';
 import {
-    getResponsiveBorderRadius,
-    getResponsiveFontSize,
-    getResponsiveHeight,
-    getResponsiveMargin,
-    getResponsivePadding,
-    getResponsiveWidth
+  getResponsiveBorderRadius,
+  getResponsiveFontSize,
+  getResponsiveHeight,
+  getResponsiveMargin,
+  getResponsivePadding,
+  getResponsiveWidth
 } from '../src/utils/dimensions';
 
 export default function ContentScreen() {
@@ -131,6 +131,11 @@ export default function ContentScreen() {
     }
   };
 
+  const getCategoryColor = (category: string) => {
+    // Same color for all categories - consistent design
+    return '#FF6B6B'; // Light coral/pinkish-red color for all category tags
+  };
+
   return (
     <LinearGradient
       colors={['#2DD4BF', '#14B8A6', '#0D9488']}
@@ -222,9 +227,9 @@ export default function ContentScreen() {
           </Text>
           {filteredContent.map((item, index) => {
             const gradients = [
-              ['rgba(247, 246, 250, 0.9)', 'rgba(248, 248, 248, 0.9)'], // Purple gradient
-                ['rgba(247, 246, 250, 0.9)', 'rgba(248, 248, 248, 0.9)'], // Green gradient  
-                ['rgba(247, 246, 250, 0.9)', 'rgba(248, 248, 248, 0.9)'],// Pink gradient
+              ['#F9F9F9', '#F9F9F9'], // Warmer white for softer contrast
+              ['#F9F9F9', '#F9F9F9'], // Warmer white for softer contrast
+              ['#F9F9F9', '#F9F9F9'], // Warmer white for softer contrast
             ];
             return (
               <LinearGradient
@@ -236,8 +241,8 @@ export default function ContentScreen() {
                   <Image source={{ uri: item.image }} style={styles.contentImage} />
                   <View style={styles.contentInfo}>
                     <View style={styles.contentHeader}>
-                      <View style={[styles.categoryBadge, { backgroundColor: getTypeColor(item.type) + '20' }]}>
-                        <Text style={[styles.categoryBadgeText, { color: getTypeColor(item.type) }]}>
+                      <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(item.category) + '20' }]}>
+                        <Text style={[styles.categoryBadgeText, { color: getCategoryColor(item.category) }]}>
                           {item.category}
                         </Text>
                       </View>
@@ -324,41 +329,52 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveMargin(16),
   },
   searchInput: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: getResponsiveBorderRadius(12),
-    paddingHorizontal: getResponsivePadding(16),
-    paddingVertical: getResponsivePadding(12),
+    backgroundColor: '#F9F9F9',
+    borderRadius: getResponsiveBorderRadius(15),
+    paddingHorizontal: getResponsivePadding(18),
+    paddingVertical: getResponsivePadding(14),
     fontSize: getResponsiveFontSize(16),
     color: '#333',
     borderWidth: 2,
     borderColor: '#F59E0B',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: getResponsiveHeight(2) },
+    shadowOffset: { width: 0, height: getResponsiveHeight(3) },
     shadowOpacity: 0.1,
-    shadowRadius: getResponsiveBorderRadius(4),
-    elevation: 3,
+    shadowRadius: getResponsiveBorderRadius(6),
+    elevation: 4,
   },
   categoriesContainer: {
     paddingLeft: getResponsivePadding(20),
     marginBottom: getResponsiveMargin(24),
   },
   categoryChip: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: getResponsivePadding(16),
-    paddingVertical: getResponsivePadding(8),
-    borderRadius: getResponsiveBorderRadius(20),
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    paddingHorizontal: getResponsivePadding(18),
+    paddingVertical: getResponsivePadding(10),
+    borderRadius: getResponsiveBorderRadius(25),
     marginRight: getResponsiveMargin(12),
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: getResponsiveHeight(2) },
+    shadowOpacity: 0.1,
+    shadowRadius: getResponsiveBorderRadius(4),
+    elevation: 3,
   },
   categoryChipActive: {
     backgroundColor: '#F59E0B',
     borderColor: '#D97706',
+    shadowColor: '#F59E0B',
+    shadowOffset: { width: 0, height: getResponsiveHeight(4) },
+    shadowOpacity: 0.3,
+    shadowRadius: getResponsiveBorderRadius(8),
+    elevation: 6,
   },
   categoryChipText: {
-    fontSize: getResponsiveFontSize(14),
+    fontSize: getResponsiveFontSize(15),
     color: '#ffffff',
-    fontWeight: '500',
+    fontWeight: '600',
+    textAlign: 'center',
   },
   categoryChipTextActive: {
     color: '#ffffff',
@@ -377,17 +393,23 @@ const styles = StyleSheet.create({
     paddingLeft: getResponsivePadding(20),
   },
   featuredCard: {
-    width: getResponsiveWidth(280),
-    height: getResponsiveHeight(180),
+    width: getResponsiveWidth(300),
+    height: getResponsiveHeight(200),
     marginRight: getResponsiveMargin(16),
-    borderRadius: getResponsiveBorderRadius(16),
-    borderWidth: 2,
+    borderRadius: getResponsiveBorderRadius(20),
+    borderWidth: 3,
     borderColor: '#F59E0B',
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: getResponsiveHeight(8) },
+    shadowOpacity: 0.25,
+    shadowRadius: getResponsiveBorderRadius(12),
+    elevation: 10,
   },
   featuredImage: {
     width: '100%',
     height: '100%',
+    resizeMode: 'cover', // Ensures consistent aspect ratio
   },
   featuredOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -436,10 +458,11 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#F59E0B',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: getResponsiveHeight(6) },
-    shadowOpacity: 0.15,
-    shadowRadius: getResponsiveBorderRadius(10),
-    elevation: 6,
+    shadowOffset: { width: 0, height: getResponsiveHeight(8) },
+    shadowOpacity: 0.12,
+    shadowRadius: getResponsiveBorderRadius(12),
+    elevation: 8,
+    overflow: 'hidden',
   },
   contentCardPressable: {
     flexDirection: 'row',
@@ -452,6 +475,7 @@ const styles = StyleSheet.create({
     marginRight: getResponsiveMargin(16),
     borderWidth: 2,
     borderColor: '#F59E0B',
+    resizeMode: 'cover', // Ensures consistent aspect ratio
   },
   contentInfo: {
     flex: 1,
@@ -465,7 +489,7 @@ const styles = StyleSheet.create({
   categoryBadge: {
     paddingHorizontal: getResponsivePadding(8),
     paddingVertical: getResponsivePadding(4),
-    borderRadius: getResponsiveBorderRadius(8),
+    borderRadius: getResponsiveBorderRadius(12),
   },
   categoryBadgeText: {
     fontSize: getResponsiveFontSize(10),

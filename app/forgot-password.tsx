@@ -4,13 +4,13 @@ import React, { useState } from 'react';
 import { Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import authService, { ApiError } from '../src/services/authService';
 import {
-  fontSizes,
-  getResponsiveBorderRadius,
-  getResponsiveHeight,
-  getResponsiveMargin,
-  getResponsivePadding,
-  getResponsiveWidth,
-  screenData
+    fontSizes,
+    getResponsiveBorderRadius,
+    getResponsiveHeight,
+    getResponsiveMargin,
+    getResponsivePadding,
+    getResponsiveWidth,
+    screenData
 } from '../src/utils/dimensions';
 import { showErrorToast, showSuccessToast } from '../src/utils/toastConfig';
 
@@ -106,20 +106,13 @@ export default function ForgotPasswordScreen() {
             </View>
 
             <Pressable 
-              style={[styles.sendButton, isLoading && { opacity: 0.7 }]} 
+              style={[styles.sendButton, isLoading && styles.sendButtonDisabled]} 
               onPress={handleSendOTP}
               disabled={isLoading}
             >
-              <LinearGradient
-                colors={['#14B8A6', '#0D9488']}
-                style={styles.buttonGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              >
-                <Text style={styles.sendButtonText}>
-                  {isLoading ? 'Sending OTP...' : 'Send OTP'}
-                </Text>
-              </LinearGradient>
+              <Text style={styles.sendButtonText}>
+                {isLoading ? 'Sending OTP...' : 'Send OTP'}
+              </Text>
             </Pressable>
 
             <View style={styles.loginContainer}>
@@ -226,28 +219,26 @@ const styles = StyleSheet.create({
     minHeight: getResponsiveHeight(screenData.isSmall ? 48 : 54),
   },
   sendButton: {
+    backgroundColor: '#2da898ff',
     marginTop: getResponsiveMargin(12),
     marginBottom: getResponsiveMargin(24),
     borderRadius: getResponsiveBorderRadius(25),
-    overflow: 'hidden',
+    paddingVertical: getResponsivePadding(screenData.isSmall ? 16 : 18),
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
     minHeight: getResponsiveHeight(screenData.isSmall ? 50 : 56),
   },
-  buttonGradient: {
-    paddingVertical: getResponsivePadding(screenData.isSmall ? 14 : 16),
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: getResponsiveHeight(screenData.isSmall ? 50 : 56),
+  sendButtonDisabled: {
+    backgroundColor: '#9CA3AF',
   },
   sendButtonText: {
     fontSize: fontSizes.lg,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    letterSpacing: 0.5,
   },
   loginContainer: {
     flexDirection: 'row',

@@ -6,10 +6,11 @@ import AppleLogo from '../src/components/AppleLogo';
 import GoogleLogo from '../src/components/GoogleLogo';
 import authService, { ApiError } from '../src/services/authService';
 import {
-    getResponsiveBorderRadius,
-    getResponsiveFontSize,
-    getResponsiveMargin,
-    getResponsivePadding
+  getResponsiveBorderRadius,
+  getResponsiveFontSize,
+  getResponsiveMargin,
+  getResponsivePadding,
+  screenData
 } from '../src/utils/dimensions';
 import { showErrorToast, showSuccessToast } from '../src/utils/toastConfig';
 
@@ -60,7 +61,7 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#A0F0E4" />
+      <StatusBar barStyle="light-content" backgroundColor="#2DD4BF" translucent />
       
       <LinearGradient
         colors={['#2da898ff', '#abeee6ff']}
@@ -79,8 +80,6 @@ export default function LoginScreen() {
 
           {/* Login Form */}
           <View style={styles.formContainer}>
-            <Text style={styles.loginTitle}>Login</Text>
-            
             {/* Email Input */}
             <View style={styles.inputContainer}>
               <TextInput
@@ -112,16 +111,11 @@ export default function LoginScreen() {
                   onPress={() => setIsPasswordVisible(!isPasswordVisible)}
                 >
                   <Text style={styles.eyeText}>
-                    {isPasswordVisible ? '👁️' : '👁️‍🗨️'}
+                    {isPasswordVisible ? '�' : '👁️'}
                   </Text>
                 </Pressable>
               </View>
             </View>
-
-            {/* Forgot Password Link */}
-            <Pressable style={styles.forgotPasswordContainer} onPress={handleForgotPassword}>
-              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-            </Pressable>
 
             {/* Login Button */}
             <Pressable 
@@ -134,23 +128,26 @@ export default function LoginScreen() {
               </Text>
             </Pressable>
 
+            {/* Forgot Password Link */}
+            <Pressable style={styles.forgotPasswordContainer} onPress={handleForgotPassword}>
+              <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+            </Pressable>
+
             {/* OR Divider */}
             <View style={styles.orContainer}>
-              <View style={styles.line} />
-              <Text style={styles.orText}>OR</Text>
-              <View style={styles.line} />
+              <Text style={styles.orText}>Or continue with</Text>
             </View>
 
             {/* Social Login Buttons */}
             <View style={styles.socialButtonsContainer}>
               <Pressable style={styles.socialButton}>
-                <GoogleLogo width={24} height={24} />
-                <Text style={styles.socialButtonText}>Continue with Google</Text>
+                <GoogleLogo />
+                <Text style={styles.socialButtonText}>Google</Text>
               </Pressable>
 
               <Pressable style={styles.socialButton}>
-                <AppleLogo width={24} height={24} />
-                <Text style={styles.socialButtonText}>Continue with Apple</Text>
+                <AppleLogo />
+                <Text style={styles.socialButtonText}>Apple</Text>
               </Pressable>
             </View>
 
@@ -161,6 +158,11 @@ export default function LoginScreen() {
                 <Text style={styles.signUpLink}>Sign Up</Text>
               </Pressable>
             </View>
+
+            {/* Terms and Privacy */}
+            <Text style={styles.termsText}>
+              By continuing, you agree to our Terms of Service and Privacy Policy.
+            </Text>
           </View>
         </ScrollView>
       </LinearGradient>
@@ -180,103 +182,92 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     flexGrow: 1,
-    paddingVertical: getResponsivePadding(20),
+    justifyContent: 'center',
+    paddingHorizontal: getResponsivePadding(20),
+    paddingVertical: getResponsivePadding(40),
   },
   headerSection: {
     alignItems: 'center',
-    marginBottom: getResponsiveMargin(40),
-    paddingTop: getResponsivePadding(40),
+    marginBottom: getResponsiveMargin(60),
+    paddingTop: getResponsivePadding(screenData.isSmall ? 60 : 80),
   },
   title: {
-    fontSize: getResponsiveFontSize(32),
+    fontSize: getResponsiveFontSize(screenData.isSmall ? 28 : 32),
     fontWeight: 'bold',
     color: '#FFFFFF',
     textAlign: 'center',
-    marginBottom: getResponsiveMargin(8),
+    marginBottom: getResponsiveMargin(12),
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   subtitle: {
     fontSize: getResponsiveFontSize(16),
     color: '#FFFFFF',
     textAlign: 'center',
     opacity: 0.9,
+    lineHeight: 24,
   },
   formContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    marginHorizontal: getResponsiveMargin(20),
-    borderRadius: getResponsiveBorderRadius(20),
-    padding: getResponsivePadding(24),
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  loginTitle: {
-    fontSize: getResponsiveFontSize(24),
-    fontWeight: 'bold',
-    color: '#1F2937',
-    textAlign: 'center',
-    marginBottom: getResponsiveMargin(24),
+    flex: 1,
+    justifyContent: 'center',
   },
   inputContainer: {
-    marginBottom: getResponsiveMargin(16),
-  },
-  inputLabel: {
-    fontSize: getResponsiveFontSize(14),
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: getResponsiveMargin(8),
+    marginBottom: getResponsiveMargin(20),
   },
   textInput: {
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: getResponsiveBorderRadius(12),
-    paddingHorizontal: getResponsivePadding(16),
-    paddingVertical: getResponsivePadding(12),
+    borderWidth: 2,
+    borderColor: '#FFD700',
+    borderRadius: getResponsiveBorderRadius(25),
+    paddingHorizontal: getResponsivePadding(20),
+    paddingVertical: getResponsivePadding(screenData.isSmall ? 14 : 16),
     fontSize: getResponsiveFontSize(16),
-    color: '#1F2937',
+    color: '#374151',
     backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: getResponsiveBorderRadius(12),
+    borderWidth: 2,
+    borderColor: '#FFD700',
+    borderRadius: getResponsiveBorderRadius(25),
     backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   passwordInput: {
     flex: 1,
-    paddingHorizontal: getResponsivePadding(16),
-    paddingVertical: getResponsivePadding(12),
+    paddingHorizontal: getResponsivePadding(20),
+    paddingVertical: getResponsivePadding(screenData.isSmall ? 14 : 16),
     fontSize: getResponsiveFontSize(16),
-    color: '#1F2937',
+    color: '#374151',
   },
   eyeButton: {
-    paddingHorizontal: getResponsivePadding(16),
-    paddingVertical: getResponsivePadding(12),
+    paddingHorizontal: getResponsivePadding(15),
+    paddingVertical: getResponsivePadding(10),
   },
   eyeText: {
     fontSize: getResponsiveFontSize(18),
   },
-  forgotPasswordContainer: {
-    alignItems: 'flex-end',
-    marginBottom: getResponsiveMargin(24),
-  },
-  forgotPasswordText: {
-    fontSize: getResponsiveFontSize(14),
-    color: '#2da898ff',
-    fontWeight: '600',
-  },
   loginButton: {
     backgroundColor: '#2da898ff',
-    borderRadius: getResponsiveBorderRadius(12),
-    paddingVertical: getResponsivePadding(16),
+    borderRadius: getResponsiveBorderRadius(25),
+    paddingVertical: getResponsivePadding(screenData.isSmall ? 16 : 18),
     alignItems: 'center',
-    marginBottom: getResponsiveMargin(24),
+    marginBottom: getResponsiveMargin(20),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
   },
   loginButtonDisabled: {
     backgroundColor: '#9CA3AF',
@@ -286,46 +277,58 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
-  orContainer: {
-    flexDirection: 'row',
+  forgotPasswordContainer: {
     alignItems: 'center',
-    marginBottom: getResponsiveMargin(24),
+    marginBottom: getResponsiveMargin(30),
   },
-  line: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#D1D5DB',
+  forgotPasswordText: {
+    fontSize: getResponsiveFontSize(14),
+    color: '#2da898ff',
+    fontWeight: '600',
+  },
+  orContainer: {
+    alignItems: 'center',
+    marginBottom: getResponsiveMargin(30),
   },
   orText: {
     fontSize: getResponsiveFontSize(14),
     color: '#6B7280',
-    marginHorizontal: getResponsiveMargin(16),
     fontWeight: '500',
   },
   socialButtonsContainer: {
-    marginBottom: getResponsiveMargin(24),
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: getResponsiveMargin(30),
+    gap: getResponsiveMargin(12),
   },
   socialButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: getResponsiveBorderRadius(12),
-    paddingVertical: getResponsivePadding(12),
-    marginBottom: getResponsiveMargin(12),
+    borderColor: '#E5E7EB',
+    borderRadius: getResponsiveBorderRadius(25),
+    paddingVertical: getResponsivePadding(screenData.isSmall ? 12 : 14),
+    paddingHorizontal: getResponsivePadding(16),
     backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   socialButtonText: {
-    fontSize: getResponsiveFontSize(16),
+    fontSize: getResponsiveFontSize(14),
     color: '#374151',
     fontWeight: '600',
-    marginLeft: getResponsiveMargin(12),
+    marginLeft: getResponsiveMargin(8),
   },
   signUpContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: getResponsiveMargin(30),
   },
   signUpText: {
     fontSize: getResponsiveFontSize(14),
@@ -334,6 +337,13 @@ const styles = StyleSheet.create({
   signUpLink: {
     fontSize: getResponsiveFontSize(14),
     color: '#2da898ff',
-    fontWeight: '600',
+    fontWeight: '700',
+  },
+  termsText: {
+    fontSize: getResponsiveFontSize(12),
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 18,
+    paddingHorizontal: getResponsivePadding(20),
   },
 });

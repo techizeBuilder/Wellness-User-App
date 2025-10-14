@@ -67,7 +67,11 @@ export default function OTPVerificationNew() {
             ))}
           </View>
 
-          <Pressable style={styles.verifyButton} onPress={handleVerify}>
+          <Pressable 
+            style={[styles.verifyButton, isLoading && styles.verifyButtonDisabled]} 
+            onPress={handleVerify}
+            disabled={isLoading}
+          >
             <Text style={styles.verifyButtonText}>
               {isLoading ? 'Verifying...' : 'Verify'}
             </Text>
@@ -132,7 +136,7 @@ const styles = StyleSheet.create({
     color: '#333333',
   },
   verifyButton: {
-    backgroundColor: '#14B8A6',
+    backgroundColor: '#2da898ff',
     borderRadius: 25,
     paddingVertical: 16,
     alignItems: 'center',
@@ -140,13 +144,16 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  verifyButtonDisabled: {
+    backgroundColor: '#9CA3AF',
   },
   verifyButtonText: {
     color: '#ffffff',
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
   resendText: {
     textAlign: 'center',

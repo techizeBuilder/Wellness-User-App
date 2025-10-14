@@ -1,4 +1,5 @@
 // Authentication Service - Handles all auth-related API calls
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URLS } from '../config/apiConfig';
 
 // Types for API requests and responses
@@ -228,48 +229,31 @@ class AuthService {
   // Token management methods
   private async storeToken(token: string): Promise<void> {
     try {
-      // For React Native, use AsyncStorage or SecureStore
-      if (typeof window !== 'undefined') {
-        // Web environment
-        localStorage.setItem('authToken', token);
-      } else {
-        // React Native - you might want to use AsyncStorage or SecureStore
-        // await AsyncStorage.setItem('authToken', token);
-        console.log('Token would be stored in AsyncStorage:', token);
-      }
+      await AsyncStorage.setItem('authToken', token);
+      console.log('✅ Token stored successfully in AsyncStorage');
     } catch (error) {
-      console.error('Error storing token:', error);
+      console.error('❌ Error storing token:', error);
+      throw error;
     }
   }
 
   async getToken(): Promise<string | null> {
     try {
-      if (typeof window !== 'undefined') {
-        // Web environment
-        return localStorage.getItem('authToken');
-      } else {
-        // React Native
-        // return await AsyncStorage.getItem('authToken');
-        return null;
-      }
+      const token = await AsyncStorage.getItem('authToken');
+      return token;
     } catch (error) {
-      console.error('Error retrieving token:', error);
+      console.error('❌ Error retrieving token:', error);
       return null;
     }
   }
 
   async removeToken(): Promise<void> {
     try {
-      if (typeof window !== 'undefined') {
-        // Web environment
-        localStorage.removeItem('authToken');
-      } else {
-        // React Native
-        // await AsyncStorage.removeItem('authToken');
-        console.log('Token would be removed from AsyncStorage');
-      }
+      await AsyncStorage.removeItem('authToken');
+      console.log('✅ Token removed successfully from AsyncStorage');
     } catch (error) {
-      console.error('Error removing token:', error);
+      console.error('❌ Error removing token:', error);
+      throw error;
     }
   }
 

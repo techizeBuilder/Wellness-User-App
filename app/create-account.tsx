@@ -4,14 +4,14 @@ import React, { useState } from 'react';
 import { Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import { apiService, handleApiError } from '../src/services/apiService';
 import {
-    fontSizes,
-    getResponsiveBorderRadius,
-    getResponsiveFontSize,
-    getResponsiveHeight,
-    getResponsiveMargin,
-    getResponsivePadding,
-    getResponsiveWidth,
-    screenData
+  fontSizes,
+  getResponsiveBorderRadius,
+  getResponsiveFontSize,
+  getResponsiveHeight,
+  getResponsiveMargin,
+  getResponsivePadding,
+  getResponsiveWidth,
+  screenData
 } from '../src/utils/dimensions';
 import { showErrorToast, showSuccessToast } from '../src/utils/toastConfig';
 
@@ -159,7 +159,7 @@ export default function CreateAccountScreen() {
             </View>
 
             <Pressable 
-              style={[styles.createButton, isLoading && { opacity: 0.7 }]} 
+              style={[styles.createButton, isLoading && styles.createButtonDisabled]} 
               onPress={handleCreateAccount}
               disabled={isLoading}
             >
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
     minHeight: getResponsiveHeight(screenData.isSmall ? 48 : 54),
   },
   inputFilled: {
-    borderColor: '#14B8A6',
+    borderColor: '#2da898ff',
     borderWidth: 2,
   },
   passwordContainer: {
@@ -289,25 +289,26 @@ const styles = StyleSheet.create({
     marginTop: getResponsiveMargin(4),
   },
   createButton: {
+    backgroundColor: '#2da898ff',
+    borderRadius: getResponsiveBorderRadius(25),
+    paddingVertical: getResponsivePadding(screenData.isSmall ? 16 : 18),
+    alignItems: 'center',
     marginTop: getResponsiveMargin(30),
     marginBottom: getResponsiveMargin(30),
-    borderRadius: getResponsiveBorderRadius(25),
-    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 5,
-    backgroundColor: '#14B8A6',
-    paddingVertical: getResponsivePadding(screenData.isSmall ? 14 : 16),
-    alignItems: 'center',
-    justifyContent: 'center',
+    shadowRadius: 6,
+    elevation: 4,
     minHeight: getResponsiveHeight(screenData.isSmall ? 50 : 56),
+  },
+  createButtonDisabled: {
+    backgroundColor: '#9CA3AF',
   },
   createButtonText: {
     color: '#ffffff',
     fontSize: fontSizes.lg,
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
   loginContainer: {
     flexDirection: 'row',

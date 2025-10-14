@@ -13,6 +13,7 @@
     "noImplicitThis": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
+    "types": ["react-native", "expo"],
     "paths": {
       "@/*": [
         "./*"

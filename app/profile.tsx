@@ -5,14 +5,14 @@ import { Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 
 import Footer from '../src/components/Footer';
 import { colors } from '../src/utils/colors';
 import {
-    fontSizes,
-    getResponsiveBorderRadius,
-    getResponsiveFontSize,
-    getResponsiveHeight,
-    getResponsiveMargin,
-    getResponsivePadding,
-    getResponsiveWidth,
-    screenData
+  fontSizes,
+  getResponsiveBorderRadius,
+  getResponsiveFontSize,
+  getResponsiveHeight,
+  getResponsiveMargin,
+  getResponsivePadding,
+  getResponsiveWidth,
+  screenData
 } from '../src/utils/dimensions';
 
 export default function ProfileScreen() {
@@ -246,6 +246,23 @@ export default function ProfileScreen() {
                 <Text style={styles.premiumSubtitle}>Unlimited access to all features</Text>
               </View>
             </View>
+
+            {/* Subscription Details */}
+            <View style={styles.subscriptionDetails}>
+              <View style={styles.subscriptionRow}>
+                <Text style={styles.subscriptionLabel}>Plan:</Text>
+                <Text style={styles.subscriptionValue}>Annual Premium</Text>
+              </View>
+              <View style={styles.subscriptionRow}>
+                <Text style={styles.subscriptionLabel}>Next billing:</Text>
+                <Text style={styles.subscriptionValue}>Nov 14, 2025</Text>
+              </View>
+              <View style={styles.subscriptionRow}>
+                <Text style={styles.subscriptionLabel}>Amount:</Text>
+                <Text style={styles.subscriptionValue}>$99.99/year</Text>
+              </View>
+            </View>
+
             <View style={styles.premiumBenefits}>
               <Text style={styles.benefitItem}>✅ Unlimited expert sessions</Text>
               <Text style={styles.benefitItem}>✅ Priority booking</Text>
@@ -253,7 +270,9 @@ export default function ProfileScreen() {
               <Text style={styles.benefitItem}>✅ Personal wellness tracker</Text>
             </View>
             <LinearGradient
-              colors={['#FFD700', '#FFA500']}
+              colors={['#FFD700', '#FF8C00', '#FF6347']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
               style={styles.manageButton}
             >
               <Text style={styles.manageButtonText}>Manage Subscription</Text>
@@ -263,18 +282,13 @@ export default function ProfileScreen() {
 
         {/* Logout Button */}
         <View style={styles.logoutSection}>
-          <LinearGradient
-            colors={['rgba(255, 99, 71, 0.1)', 'rgba(255, 160, 122, 0.2)']}
+          <Pressable
             style={styles.logoutButton}
+            onPress={handleLogout}
           >
-            <Pressable
-              style={styles.logoutPressable}
-              onPress={handleLogout}
-            >
-              <Text style={styles.logoutIcon}>🚪</Text>
-              <Text style={styles.logoutText}>Log Out</Text>
-            </Pressable>
-          </LinearGradient>
+            <Text style={styles.logoutIcon}>🚪</Text>
+            <Text style={styles.logoutText}>Log Out</Text>
+          </Pressable>
         </View>
 
         <View style={styles.bottomSpacer} />
@@ -410,12 +424,15 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveMargin(8),
   },
   sectionTitle: {
-    fontSize: getResponsiveFontSize(14),
+    fontSize: getResponsiveFontSize(16),
     fontWeight: 'bold',
-    color: '#F59E0B',
-    letterSpacing: 1,
+    color: '#FFFFFF',
+    letterSpacing: 1.2,
     marginBottom: getResponsiveMargin(16),
     paddingLeft: getResponsivePadding(4),
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   menuContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -520,6 +537,30 @@ const styles = StyleSheet.create({
   premiumBenefits: {
     marginBottom: getResponsiveMargin(20),
   },
+  subscriptionDetails: {
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: getResponsiveBorderRadius(10),
+    padding: getResponsivePadding(16),
+    marginBottom: getResponsiveMargin(16),
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.3)',
+  },
+  subscriptionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: getResponsiveMargin(8),
+  },
+  subscriptionLabel: {
+    fontSize: getResponsiveFontSize(14),
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  subscriptionValue: {
+    fontSize: getResponsiveFontSize(14),
+    color: '#1F2937',
+    fontWeight: '600',
+  },
   benefitItem: {
     fontSize: getResponsiveFontSize(14),
     color: colors.deepTeal,
@@ -528,42 +569,53 @@ const styles = StyleSheet.create({
   },
   manageButton: {
     backgroundColor: colors.royalGold,
-    paddingVertical: getResponsivePadding(12),
+    paddingVertical: getResponsivePadding(14),
     paddingHorizontal: getResponsivePadding(20),
     borderRadius: getResponsiveBorderRadius(12),
     alignItems: 'center',
+    shadowColor: '#FF8C00',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   manageButtonText: {
     fontSize: getResponsiveFontSize(16),
-    fontWeight: '600',
-    color: colors.white,
+    fontWeight: '700',
+    color: '#000000',
+    textShadowColor: 'rgba(255, 255, 255, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
   logoutSection: {
     paddingHorizontal: 20,
-    paddingTop: 32,
+    paddingTop: 24,
+    paddingBottom: 16,
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 99, 71, 0.3)',
-  },
-  logoutPressable: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   logoutIcon: {
-    fontSize: 16,
-    marginRight: 8,
+    fontSize: 18,
+    marginRight: 10,
   },
   logoutText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.white,
+    color: '#EF4444',
   },
   bottomSpacer: {
     height: 100,

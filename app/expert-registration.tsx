@@ -3,8 +3,16 @@ import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import { apiService, handleApiError } from '../src/services/apiService';
+import {
+  getResponsiveBorderRadius,
+  getResponsiveFontSize,
+  getResponsiveHeight,
+  getResponsiveMargin,
+  getResponsivePadding,
+  getResponsiveWidth
+} from '../src/utils/dimensions';
 import { showErrorToast, showSuccessToast } from '../src/utils/toastConfig';
 
 export default function ExpertRegistrationScreen() {
@@ -23,6 +31,17 @@ export default function ExpertRegistrationScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [profileImage, setProfileImage] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
+  const [showSpecializationDropdown, setShowSpecializationDropdown] = useState(false);
+
+  const specializationOptions = [
+    'Yoga',
+    'Meditation', 
+    'Ayurveda',
+    'Nutrition',
+    'Fitness',
+    'Mental Health',
+    'Other'
+  ];
 
   const pickProfileImage = async () => {
     try {
@@ -210,14 +229,69 @@ export default function ExpertRegistrationScreen() {
 
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Specialization</Text>
-              <TextInput
-                style={[styles.input, specialization ? styles.inputFilled : null]}
-                placeholder="e.g., Yoga, Meditation, Ayurveda"
-                placeholderTextColor="#999"
-                value={specialization}
-                onChangeText={setSpecialization}
-              />
+              <Pressable 
+                style={[styles.dropdownButton, specialization ? styles.inputFilled : null]}
+                onPress={() => setShowSpecializationDropdown(true)}
+              >
+                <Text style={[styles.dropdownText, !specialization && styles.dropdownPlaceholder]}>
+                  {specialization || 'Select your specialization'}
+                </Text>
+                <Text style={styles.dropdownArrow}>▼</Text>
+              </Pressable>
             </View>
+
+            {/* Specialization Dropdown Modal */}
+            <Modal
+              visible={showSpecializationDropdown}
+              transparent={true}
+              animationType="fade"
+              onRequestClose={() => setShowSpecializationDropdown(false)}
+              statusBarTranslucent={false}
+              presentationStyle="overFullScreen"
+            >
+              <View style={styles.modalOverlay}>
+                <Pressable 
+                  style={styles.modalBackdrop}
+                  onPress={() => setShowSpecializationDropdown(false)}
+                />
+                <View style={styles.dropdownModal}>
+                  <View style={styles.modalHeader}>
+                    <Text style={styles.dropdownTitle}>Select Specialization</Text>
+                    <Pressable 
+                      style={styles.closeButton}
+                      onPress={() => setShowSpecializationDropdown(false)}
+                    >
+                      <Text style={styles.closeButtonText}>✕</Text>
+                    </Pressable>
+                  </View>
+                  <ScrollView style={styles.optionsContainer} showsVerticalScrollIndicator={false}>
+                    {specializationOptions.map((option) => (
+                      <Pressable
+                        key={option}
+                        style={[
+                          styles.dropdownOption,
+                          specialization === option && styles.dropdownOptionSelected
+                        ]}
+                        onPress={() => {
+                          setSpecialization(option);
+                          setShowSpecializationDropdown(false);
+                        }}
+                      >
+                        <Text style={[
+                          styles.dropdownOptionText,
+                          specialization === option && styles.dropdownOptionTextSelected
+                        ]}>
+                          {option}
+                        </Text>
+                        {specialization === option && (
+                          <Text style={styles.checkmark}>✓</Text>
+                        )}
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                </View>
+              </View>
+            </Modal>
 
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Password</Text>
@@ -243,16 +317,38 @@ export default function ExpertRegistrationScreen() {
 
             <View style={styles.uploadSection}>
               <Text style={styles.uploadLabel}>Upload Certification</Text>
-              <Pressable style={styles.uploadButton}>
-                <Text style={styles.uploadButtonText}>📎 Choose File</Text>
+              <Pressable style={styles.uploadCard} onPress={pickDocuments}>
+                <View style={styles.uploadCardContent}>
+                  <Text style={styles.uploadIcon}>📎</Text>
+                  <Text style={styles.uploadTitle}>Drag & Drop or Click to Upload</Text>
+                  <Text style={styles.uploadDescription}>
+                    Upload your professional certifications or credentials
+                  </Text>
+                  <Text style={styles.uploadFormats}>
+                    Supported formats: PDF, JPG, PNG (Max 5MB)
+                  </Text>
+                </View>
               </Pressable>
-              <Text style={styles.uploadNote}>
-                Upload your professional certifications or credentials
-              </Text>
+              {documents.length > 0 && (
+                <View style={styles.uploadedFiles}>
+                  <Text style={styles.uploadedFilesTitle}>Uploaded Files:</Text>
+                  {documents.map((doc, index) => (
+                    <View key={index} style={styles.uploadedFileItem}>
+                      <Text style={styles.uploadedFileName}>{doc.name}</Text>
+                      <Pressable 
+                        onPress={() => setDocuments(documents.filter((_, i) => i !== index))}
+                        style={styles.removeFileButton}
+                      >
+                        <Text style={styles.removeFileText}>✕</Text>
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
 
             <Pressable style={styles.createButton} onPress={handleCreateAccount}>
-              <Text style={styles.createButtonText}>Register as Expert</Text>
+              <Text style={styles.createButtonText}>Submit Application</Text>
             </Pressable>
 
             <View style={styles.loginContainer}>
@@ -280,51 +376,54 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     flexGrow: 1,
-    paddingTop: 80,
-    paddingHorizontal: 24,
+    paddingTop: getResponsivePadding(80),
+    paddingHorizontal: getResponsivePadding(24),
+    paddingBottom: getResponsivePadding(40),
   },
   headerSection: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: getResponsiveMargin(40),
   },
   title: {
-    fontSize: 32,
+    fontSize: getResponsiveFontSize(28),
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 8,
+    marginBottom: getResponsiveMargin(8),
     textAlign: 'center',
+    lineHeight: getResponsiveHeight(34),
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: getResponsiveFontSize(16),
     color: '#666',
     textAlign: 'center',
-    maxWidth: 280,
+    maxWidth: getResponsiveWidth(300),
+    lineHeight: getResponsiveHeight(22),
   },
   formSection: {
     flex: 1,
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: getResponsiveMargin(20),
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: getResponsiveFontSize(14),
     fontWeight: '500',
     color: '#333',
-    marginBottom: 8,
+    marginBottom: getResponsiveMargin(8),
   },
   input: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
+    borderRadius: getResponsiveBorderRadius(12),
+    padding: getResponsivePadding(16),
+    fontSize: getResponsiveFontSize(16),
     color: '#333',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: getResponsiveHeight(2),
     },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowRadius: getResponsiveBorderRadius(8),
     elevation: 4,
     borderWidth: 1,
     borderColor: '#E5E5E5',
@@ -338,30 +437,30 @@ const styles = StyleSheet.create({
   },
   passwordInput: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    paddingRight: 50,
-    fontSize: 16,
+    borderRadius: getResponsiveBorderRadius(12),
+    padding: getResponsivePadding(16),
+    paddingRight: getResponsivePadding(50),
+    fontSize: getResponsiveFontSize(16),
     color: '#333',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: getResponsiveHeight(2),
     },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowRadius: getResponsiveBorderRadius(8),
     elevation: 4,
     borderWidth: 1,
     borderColor: '#E5E5E5',
   },
   eyeIcon: {
     position: 'absolute',
-    right: 16,
-    top: 16,
-    padding: 4,
+    right: getResponsivePadding(16),
+    top: getResponsivePadding(16),
+    padding: getResponsivePadding(4),
   },
   eyeIconText: {
-    fontSize: 18,
+    fontSize: getResponsiveFontSize(18),
   },
   passwordRequirement: {
     fontSize: 12,
@@ -369,51 +468,52 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   createButton: {
-    marginTop: 20,
-    marginBottom: 30,
-    borderRadius: 12,
+    marginTop: getResponsiveMargin(20),
+    marginBottom: getResponsiveMargin(20),
+    borderRadius: getResponsiveBorderRadius(12),
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: getResponsiveHeight(4),
     },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: getResponsiveBorderRadius(8),
     elevation: 8,
     backgroundColor: '#00C6A7',
-    paddingVertical: 16,
+    paddingVertical: getResponsivePadding(16),
     alignItems: 'center',
     justifyContent: 'center',
   },
   createButtonText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: getResponsiveFontSize(18),
     fontWeight: 'bold',
   },
   loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: getResponsiveMargin(20),
+    marginBottom: getResponsiveMargin(20),
   },
   loginText: {
-    fontSize: 16,
+    fontSize: getResponsiveFontSize(16),
     color: '#666',
   },
   loginLink: {
-    fontSize: 16,
+    fontSize: getResponsiveFontSize(16),
     color: '#00C6A7',
     fontWeight: '600',
   },
   uploadSection: {
-    marginVertical: 20,
+    marginBottom: getResponsiveMargin(20),
   },
   uploadLabel: {
-    fontSize: 14,
+    fontSize: getResponsiveFontSize(14),
     fontWeight: '500',
     color: '#333',
-    marginBottom: 8,
+    marginBottom: getResponsiveMargin(8),
   },
   uploadButton: {
     backgroundColor: '#fff',
@@ -442,5 +542,220 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 4,
     textAlign: 'center',
+  },
+  // Dropdown styles
+  dropdownButton: {
+    backgroundColor: '#fff',
+    borderRadius: getResponsiveBorderRadius(12),
+    padding: getResponsivePadding(16),
+    fontSize: getResponsiveFontSize(16),
+    color: '#333',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: getResponsiveHeight(2),
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: getResponsiveBorderRadius(8),
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dropdownText: {
+    fontSize: getResponsiveFontSize(16),
+    color: '#333',
+    flex: 1,
+  },
+  dropdownPlaceholder: {
+    color: '#999',
+  },
+  dropdownArrow: {
+    fontSize: getResponsiveFontSize(12),
+    color: '#666',
+    marginLeft: getResponsiveMargin(8),
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999999,
+    elevation: 999999,
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  dropdownModal: {
+    backgroundColor: '#fff',
+    borderRadius: getResponsiveBorderRadius(16),
+    margin: getResponsiveMargin(20),
+    maxHeight: '70%',
+    width: '85%',
+    maxWidth: getResponsiveWidth(350),
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: getResponsiveHeight(10),
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: getResponsiveBorderRadius(20),
+    elevation: 50,
+    zIndex: 1000000,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: getResponsivePadding(20),
+    paddingBottom: getResponsivePadding(10),
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  dropdownTitle: {
+    fontSize: getResponsiveFontSize(18),
+    fontWeight: 'bold',
+    color: '#333',
+    flex: 1,
+  },
+  closeButton: {
+    width: getResponsiveWidth(30),
+    height: getResponsiveHeight(30),
+    borderRadius: getResponsiveBorderRadius(15),
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    fontSize: getResponsiveFontSize(16),
+    color: '#666',
+    fontWeight: 'bold',
+  },
+  optionsContainer: {
+    padding: getResponsivePadding(20),
+    paddingTop: getResponsivePadding(10),
+  },
+  dropdownOption: {
+    padding: getResponsivePadding(16),
+    borderRadius: getResponsiveBorderRadius(12),
+    marginBottom: getResponsiveMargin(8),
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    backgroundColor: '#fafafa',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dropdownOptionSelected: {
+    backgroundColor: '#00C6A7',
+    borderColor: '#00C6A7',
+  },
+  dropdownOptionText: {
+    fontSize: getResponsiveFontSize(16),
+    color: '#333',
+    fontWeight: '500',
+    flex: 1,
+  },
+  dropdownOptionTextSelected: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  checkmark: {
+    fontSize: getResponsiveFontSize(16),
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  // Enhanced upload styles
+  uploadCard: {
+    backgroundColor: '#fff',
+    borderRadius: getResponsiveBorderRadius(16),
+    padding: getResponsivePadding(24),
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: getResponsiveHeight(4),
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: getResponsiveBorderRadius(12),
+    elevation: 6,
+    borderWidth: 2,
+    borderColor: '#00C6A7',
+    borderStyle: 'dashed',
+    minHeight: getResponsiveHeight(120),
+  },
+  uploadCardContent: {
+    alignItems: 'center',
+  },
+  uploadIcon: {
+    fontSize: getResponsiveFontSize(32),
+    marginBottom: getResponsiveMargin(12),
+  },
+  uploadTitle: {
+    fontSize: getResponsiveFontSize(16),
+    fontWeight: '600',
+    color: '#00C6A7',
+    marginBottom: getResponsiveMargin(8),
+    textAlign: 'center',
+  },
+  uploadDescription: {
+    fontSize: getResponsiveFontSize(14),
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: getResponsiveMargin(8),
+    lineHeight: getResponsiveHeight(20),
+  },
+  uploadFormats: {
+    fontSize: getResponsiveFontSize(12),
+    color: '#999',
+    textAlign: 'center',
+  },
+  uploadedFiles: {
+    marginTop: getResponsiveMargin(16),
+  },
+  uploadedFilesTitle: {
+    fontSize: getResponsiveFontSize(14),
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: getResponsiveMargin(8),
+  },
+  uploadedFileItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    padding: getResponsivePadding(12),
+    borderRadius: getResponsiveBorderRadius(8),
+    marginBottom: getResponsiveMargin(8),
+  },
+  uploadedFileName: {
+    fontSize: getResponsiveFontSize(14),
+    color: '#333',
+    flex: 1,
+  },
+  removeFileButton: {
+    padding: getResponsivePadding(4),
+    borderRadius: getResponsiveBorderRadius(12),
+    backgroundColor: '#ff4757',
+    width: getResponsiveWidth(24),
+    height: getResponsiveHeight(24),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeFileText: {
+    color: '#fff',
+    fontSize: getResponsiveFontSize(12),
+    fontWeight: 'bold',
   },
 });

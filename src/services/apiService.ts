@@ -1,5 +1,7 @@
 // API Configuration and Service Layer
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL, ENDPOINTS } from '../config/apiConfig';
+import { ENV_CONFIG } from '../config/environment';
 
 // API Client Class
 class ApiService {
@@ -10,8 +12,13 @@ class ApiService {
   }
 
   private async request(endpoint: string, options: RequestInit = {}): Promise<any> {
-    // Try multiple base URLs for React Native compatibility
-    const baseUrls = [
+    // Try multiple base URLs based on environment
+    const isProduction = ENV_CONFIG.CURRENT_ENV === 'production';
+    
+    const baseUrls = isProduction ? [
+      this.baseUrl, // Production URL from config
+      'https://helthbackend.onrender.com/api' // Backup production URL
+    ] : [
       this.baseUrl,
       'http://localhost:3001/api',
       'http://10.0.2.2:3001/api',
@@ -34,7 +41,7 @@ class ApiService {
         };
 
         // Add auth token if available
-        const token = this.getToken();
+        const token = await this.getToken();
         if (token) {
           config.headers = {
             ...config.headers,
@@ -65,18 +72,31 @@ class ApiService {
   }
 
   // Token management
-  private getToken(): string | null {
-    // For React Native, you might want to use AsyncStorage
-    // For now, we'll use a simple variable
-    return globalThis.authToken || null;
+  private async getToken(): Promise<string | null> {
+    try {
+      return await AsyncStorage.getItem('authToken');
+    } catch (error) {
+      console.error('Error retrieving token:', error);
+      return null;
+    }
   }
 
-  setToken(token: string): void {
-    globalThis.authToken = token;
+  async setToken(token: string): Promise<void> {
+    try {
+      await AsyncStorage.setItem('authToken', token);
+    } catch (error) {
+      console.error('Error storing token:', error);
+      throw error;
+    }
   }
 
-  removeToken(): void {
-    globalThis.authToken = null;
+  async removeToken(): Promise<void> {
+    try {
+      await AsyncStorage.removeItem('authToken');
+    } catch (error) {
+      console.error('Error removing token:', error);
+      throw error;
+    }
   }
 
   // Authentication APIs
@@ -113,7 +133,7 @@ class ApiService {
     });
     
     if (response.token) {
-      this.setToken(response.token);
+      await this.setToken(response.token);
     }
     
     return response;
@@ -148,17 +168,18 @@ class ApiService {
   }
 
   async logout() {
-    this.removeToken();
+    await this.removeToken();
     return { success: true, message: 'Logged out successfully' };
   }
 
   // Expert APIs
   async registerExpert(formData: FormData) {
+    const token = await this.getToken();
     return this.request(ENDPOINTS.EXPERTS.REGISTER, {
       method: 'POST',
       headers: {
         // Don't set Content-Type for FormData, let the browser set it
-        Authorization: `Bearer ${this.getToken()}`,
+        Authorization: `Bearer ${token}`,
       },
       body: formData,
     });

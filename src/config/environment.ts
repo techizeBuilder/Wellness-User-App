@@ -3,21 +3,21 @@ import { Platform } from 'react-native';
 // Helper to get the correct API URL based on platform
 const getApiBaseUrl = () => {
   if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:3001/api'; // Android emulator
+    return 'http://192.168.1.4:3001/api'; // Use PC's IP for real device connectivity
   } else if (Platform.OS === 'ios') {
-    return 'http://localhost:3001/api'; // iOS simulator
+    return 'http://192.168.1.4:3001/api'; // Use PC's IP for real device connectivity
   } else {
-    return 'http://localhost:3001/api'; // Web/other platforms
+    return 'http://192.168.1.4:3001/api'; // Use PC's IP for web/other platforms
   }
 };
 
 const getUploadsBaseUrl = () => {
   if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:3001/uploads'; // Android emulator
+    return 'http://192.168.1.4:3001/uploads'; // Use PC's IP for real device connectivity
   } else if (Platform.OS === 'ios') {
-    return 'http://localhost:3001/uploads'; // iOS simulator
+    return 'http://192.168.1.4:3001/uploads'; // Use PC's IP for real device connectivity
   } else {
-    return 'http://localhost:3001/uploads'; // Web/other platforms
+    return 'http://192.168.1.4:3001/uploads'; // Use PC's IP for web/other platforms
   }
 };
 
@@ -29,7 +29,7 @@ interface EnvConfig {
 
 export const ENV_CONFIG = {
   // Current environment - change this to switch environments
-  CURRENT_ENV: 'development' as 'development' | 'staging' | 'production',
+  CURRENT_ENV: 'production' as 'development' | 'staging' | 'production',
   
   // Development settings - Dynamic API URL based on platform
   development: {
@@ -47,8 +47,8 @@ export const ENV_CONFIG = {
   
   // Production settings
   production: {
-    API_BASE_URL: 'https://api.yourapp.com/api',
-    UPLOADS_BASE_URL: 'https://api.yourapp.com/uploads',
+    API_BASE_URL: 'https://helthbackend.onrender.com/api',
+    UPLOADS_BASE_URL: 'https://helthbackend.onrender.com/uploads',
     DEBUG: false,
   } as EnvConfig
 };

@@ -19,6 +19,7 @@
   "author": "TechiziBuilder",
   "license": "MIT",
   "dependencies": {
+    "@react-native-async-storage/async-storage": "^2.2.0",
     "axios": "^1.12.2",
     "bcryptjs": "^2.4.3",
     "compression": "^1.7.4",

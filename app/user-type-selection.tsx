@@ -3,14 +3,14 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Dimensions, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import {
-    fontSizes,
-    getResponsiveBorderRadius,
-    getResponsiveFontSize,
-    getResponsiveHeight,
-    getResponsiveMargin,
-    getResponsivePadding,
-    getResponsiveWidth,
-    screenData
+  fontSizes,
+  getResponsiveBorderRadius,
+  getResponsiveFontSize,
+  getResponsiveHeight,
+  getResponsiveMargin,
+  getResponsivePadding,
+  getResponsiveWidth,
+  screenData
 } from '../src/utils/dimensions';
 
 const { width, height } = Dimensions.get('window');
@@ -85,14 +85,7 @@ export default function UserTypeSelection() {
               disabled={!selectedType}
               activeOpacity={0.8}
             >
-              <LinearGradient
-                colors={selectedType ? ['#14B8A6', '#0D9488'] : ['#ccc', '#999']}
-                style={styles.buttonGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              >
-                <Text style={styles.buttonText}>Continue</Text>
-              </LinearGradient>
+              <Text style={styles.buttonText}>Continue</Text>
             </TouchableOpacity>
 
             {/* Login Link */}
@@ -176,10 +169,10 @@ const styles = StyleSheet.create({
     minHeight: getResponsiveHeight(screenData.isSmall ? 140 : 160),
   },
   selectedOption: {
-    borderColor: '#14B8A6',
+    borderColor: '#2da898ff',
     borderWidth: 3,
     backgroundColor: '#FFFFFF',
-    shadowColor: '#14B8A6',
+    shadowColor: '#2da898ff',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.2,
     shadowRadius: 15,
@@ -196,7 +189,7 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveMargin(16),
   },
   selectedIconContainer: {
-    backgroundColor: '#14B8A6',
+    backgroundColor: '#2da898ff',
   },
   icon: {
     fontSize: getResponsiveFontSize(screenData.isSmall ? 28 : 32),
@@ -216,31 +209,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsivePadding(screenData.isSmall ? 8 : 0),
   },
   continueButton: {
+    backgroundColor: '#2da898ff',
+    borderRadius: getResponsiveBorderRadius(25),
+    paddingVertical: getResponsivePadding(screenData.isSmall ? 16 : 18),
+    alignItems: 'center',
     marginTop: getResponsiveMargin(24),
     marginBottom: getResponsiveMargin(24),
-    borderRadius: getResponsiveBorderRadius(25),
-    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
     minHeight: getResponsiveHeight(screenData.isSmall ? 50 : 56),
   },
   disabledButton: {
-    opacity: 0.5,
-  },
-  buttonGradient: {
-    paddingVertical: getResponsivePadding(screenData.isSmall ? 14 : 16),
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: getResponsiveHeight(screenData.isSmall ? 50 : 56),
+    backgroundColor: '#9CA3AF',
   },
   buttonText: {
     fontSize: fontSizes.lg,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    letterSpacing: 0.5,
   },
   loginContainer: {
     flexDirection: 'row',

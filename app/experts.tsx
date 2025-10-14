@@ -4,12 +4,12 @@ import React, { useState } from 'react';
 import { Dimensions, Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import Footer from '../src/components/Footer';
 import {
-    getResponsiveBorderRadius,
-    getResponsiveFontSize,
-    getResponsiveHeight,
-    getResponsiveMargin,
-    getResponsivePadding,
-    getResponsiveWidth
+  getResponsiveBorderRadius,
+  getResponsiveFontSize,
+  getResponsiveHeight,
+  getResponsiveMargin,
+  getResponsivePadding,
+  getResponsiveWidth
 } from '../src/utils/dimensions';
 
 const { width } = Dimensions.get('window');
@@ -123,9 +123,9 @@ export default function ExpertsScreen() {
       
       {/* Compact Header */}
       <View style={styles.compactHeader}>
-        <Pressable style={styles.backButton} onPress={handleBackPress}>
+        {/* <Pressable style={styles.backButton} onPress={handleBackPress}>
           <Text style={styles.backArrow}>←</Text>
-        </Pressable>
+        </Pressable> */}
         <Text style={styles.headerTitle}>Experts</Text>
         <Pressable 
           style={styles.filterToggle}

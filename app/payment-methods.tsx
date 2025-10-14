@@ -1,199 +1,490 @@
-import { LinearGradient } from 'expo-linear-gradient';
+﻿import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
-import { colors } from '../src/utils/colors';
+import { Alert, Animated, Modal, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import {
-    getResponsiveBorderRadius,
-    getResponsiveFontSize,
-    getResponsiveHeight,
-    getResponsiveMargin,
-    getResponsivePadding,
-    getResponsiveWidth
+  getResponsiveBorderRadius,
+  getResponsiveFontSize,
+  getResponsiveHeight,
+  getResponsiveMargin,
+  getResponsivePadding,
+  getResponsiveWidth
 } from '../src/utils/dimensions';
 
 export default function PaymentMethodsScreen() {
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showPaymentTypeModal, setShowPaymentTypeModal] = useState(false);
+  const [selectedPaymentType, setSelectedPaymentType] = useState('');
   const [cardNumber, setCardNumber] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [cvv, setCvv] = useState('');
   const [cardholderName, setCardholderName] = useState('');
-
-  const savedCards = [
+  const [upiId, setUpiId] = useState('');
+  
+  const [paymentMethods, setPaymentMethods] = useState([
     {
       id: 1,
-      type: 'Visa',
+      type: 'card',
+      brand: 'Visa',
       lastFour: '4242',
       expiryDate: '12/25',
       isDefault: true,
-      cardholderName: 'Sophia Bennett'
+      cardholderName: 'Sophia Bennett',
+      logo: '💳'
     },
     {
       id: 2,
-      type: 'Mastercard',
+      type: 'card',
+      brand: 'Mastercard',
       lastFour: '8888',
       expiryDate: '08/26',
       isDefault: false,
-      cardholderName: 'Sophia Bennett'
+      cardholderName: 'Sophia Bennett',
+      logo: '💳'
+    },
+    {
+      id: 3,
+      type: 'card',
+      brand: 'American Express',
+      lastFour: '1005',
+      expiryDate: '03/27',
+      isDefault: false,
+      cardholderName: 'Sophia Bennett',
+      logo: '💳'
+    },
+    {
+      id: 4,
+      type: 'upi',
+      brand: 'UPI',
+      upiId: 'sophia@paytm',
+      isDefault: false,
+      cardholderName: 'Sophia Bennett',
+      logo: '📱'
+    },
+    {
+      id: 5,
+      type: 'card',
+      brand: 'Visa',
+      lastFour: '7890',
+      expiryDate: '11/28',
+      isDefault: false,
+      cardholderName: 'Sophia Bennett',
+      logo: '💳'
+    },
+    {
+      id: 6,
+      type: 'upi',
+      brand: 'UPI',
+      upiId: 'sophia@googlepay',
+      isDefault: false,
+      cardholderName: 'Sophia Bennett',
+      logo: '📱'
     }
+  ]);
+  
+  const [animatedValues] = useState(() => {
+    const values = {};
+    for (let i = 1; i <= 6; i++) {
+      values['card' + i] = new Animated.Value(1);
+    }
+    return values;
+  });
+
+  const paymentTypes = [
+    { id: 'card', name: 'Credit/Debit Card', icon: '💳' },
+    { id: 'upi', name: 'UPI', icon: '📱' }
   ];
 
+  const handleCardPress = (cardId) => {
+    const animKey = 'card' + cardId;
+    if (animatedValues[animKey]) {
+      Animated.sequence([
+        Animated.timing(animatedValues[animKey], {
+          toValue: 0.95,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(animatedValues[animKey], {
+          toValue: 1,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  };
+
+  const handleSetDefault = (cardId) => {
+    const currentDefault = paymentMethods.find(method => method.isDefault);
+    const newDefault = paymentMethods.find(method => method.id === cardId);
+    
+    if (currentDefault && currentDefault.id !== cardId) {
+      Alert.alert(
+        'Set Default Payment Method',
+        `Set ${newDefault.type === 'card' ? newDefault.brand + ' ****' + newDefault.lastFour : newDefault.upiId} as default?`,
+        [
+          { 
+            text: 'Cancel', 
+            style: 'cancel'
+          },
+          { 
+            text: 'Set Default', 
+            onPress: () => {
+              setPaymentMethods(prevMethods => {
+                const updatedMethods = prevMethods.map(method => ({
+                  ...method,
+                  isDefault: method.id === cardId
+                }));
+                return [...updatedMethods];
+              });
+            }
+          }
+        ]
+      );
+    }
+  };
+
+  const handleDeleteCard = (cardId) => {
+    const methodToDelete = paymentMethods.find(method => method.id === cardId);
+    
+    Alert.alert(
+      'Delete Payment Method',
+      'Are you sure you want to remove ' + (methodToDelete.type === 'card' ? methodToDelete.brand + ' ****' + methodToDelete.lastFour : methodToDelete.upiId) + '?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive', 
+          onPress: () => {
+            const updatedMethods = paymentMethods.filter(method => method.id !== cardId);
+            
+            if (methodToDelete.isDefault && updatedMethods.length > 0) {
+              updatedMethods[0].isDefault = true;
+            }
+            
+            setPaymentMethods(updatedMethods);
+            Alert.alert('Success', 'Payment method removed!');
+          }
+        }
+      ]
+    );
+  };
+
+  const handleAddPaymentMethod = () => {
+    setShowPaymentTypeModal(true);
+  };
+
+  const handlePaymentTypeSelect = (type) => {
+    setSelectedPaymentType(type);
+    setShowPaymentTypeModal(false);
+    setShowAddForm(true);
+  };
+
+  const formatCardNumber = (text) => {
+    const cleaned = text.replace(/\s/g, '');
+    const formatted = cleaned.replace(/(.{4})/g, '$1 ');
+    return formatted.trim();
+  };
+
+  const formatExpiryDate = (text) => {
+    const cleaned = text.replace(/\D/g, '');
+    if (cleaned.length >= 2) {
+      return cleaned.substring(0, 2) + '/' + cleaned.substring(2, 4);
+    }
+    return cleaned;
+  };
+
+  const getCardBrand = (number) => {
+    const cleaned = number.replace(/\s/g, '');
+    if (cleaned.startsWith('4')) return 'Visa';
+    if (cleaned.startsWith('5')) return 'Mastercard';
+    if (cleaned.startsWith('3')) return 'American Express';
+    return 'Card';
+  };
+
   const handleAddCard = () => {
-    if (!cardNumber || !expiryDate || !cvv || !cardholderName) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
+    const newId = Math.max(...paymentMethods.map(m => m.id)) + 1;
+    
+    if (selectedPaymentType === 'card') {
+      const newCard = {
+        id: newId,
+        type: 'card',
+        brand: getCardBrand(cardNumber) || 'Visa',
+        lastFour: cardNumber.slice(-4) || '0000',
+        expiryDate: expiryDate || '12/25',
+        isDefault: paymentMethods.length === 0,
+        cardholderName: cardholderName || 'Dummy User',
+        logo: '💳'
+      };
+      setPaymentMethods(prev => [...prev, newCard]);
+    } else {
+      const newUPI = {
+        id: newId,
+        type: 'upi',
+        brand: 'UPI',
+        upiId: upiId || ('dummy' + newId + '@upi'),
+        isDefault: paymentMethods.length === 0,
+        cardholderName: 'Dummy User',
+        logo: '📱'
+      };
+      setPaymentMethods(prev => [...prev, newUPI]);
     }
     
-    // Here you would typically validate and save the card
     Alert.alert('Success', 'Payment method added successfully!');
     setShowAddForm(false);
     setCardNumber('');
     setExpiryDate('');
     setCvv('');
     setCardholderName('');
-  };
-
-  const handleDeleteCard = (cardId: number) => {
-    Alert.alert(
-      'Delete Payment Method',
-      'Are you sure you want to delete this payment method?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive' }
-      ]
-    );
-  };
-
-  const getCardIcon = (type: string) => {
-    switch (type) {
-      case 'Visa':
-        return '💳';
-      case 'Mastercard':
-        return '💳';
-      case 'Amex':
-        return '💳';
-      default:
-        return '💳';
-    }
-  };
-
-  const formatCardNumber = (text: string) => {
-    const cleaned = text.replace(/\s/g, '');
-    const formatted = cleaned.replace(/(.{4})/g, '$1 ').trim();
-    setCardNumber(formatted);
-  };
-
-  const formatExpiryDate = (text: string) => {
-    const cleaned = text.replace(/\D/g, '');
-    if (cleaned.length >= 2) {
-      const formatted = cleaned.slice(0, 2) + '/' + cleaned.slice(2, 4);
-      setExpiryDate(formatted);
-    } else {
-      setExpiryDate(cleaned);
-    }
+    setUpiId('');
+    setSelectedPaymentType('');
   };
 
   return (
-    <LinearGradient
-      colors={['#2DD4BF', '#14B8A6', '#0D9488']}
-      start={{ x: 0.5, y: 0 }}
-      end={{ x: 0.5, y: 1 }}
-      style={styles.container}
-    >
+    <View style={styles.container}>
+      <LinearGradient
+        colors={['#37b9a8', '#37b9a8']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
+      />
+      
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
-      {/* Header */}
       <View style={styles.header}>
         <Pressable style={styles.backButton} onPress={() => router.back()}>
           <Text style={styles.backArrow}>←</Text>
         </Pressable>
         <Text style={styles.headerTitle}>Payment Methods</Text>
-        <View style={styles.headerRight} />
+        <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Add Payment Method Button */}
         <View style={styles.section}>
-          <Pressable 
-            style={styles.addButton}
-            onPress={() => setShowAddForm(!showAddForm)}
-          >
-            <LinearGradient
-              colors={[colors.coralAccent, '#E55A50']}
-              style={styles.addButtonGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              <Text style={styles.addButtonIcon}>+</Text>
-              <Text style={styles.addButtonText}>Add New Payment Method</Text>
-            </LinearGradient>
+          <Pressable style={styles.addPaymentButton} onPress={handleAddPaymentMethod}>
+            <Text style={styles.addPaymentIcon}>+</Text>
+            <Text style={styles.addPaymentText}>Add Payment Method</Text>
           </Pressable>
         </View>
 
-        {/* Add Card Form */}
-        {showAddForm && (
-          <View style={styles.section}>
-            <LinearGradient
-              colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
-              style={styles.addCardForm}
-            >
-              <Text style={styles.formTitle}>Add New Card</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Saved Payment Methods ({paymentMethods.length})</Text>
+          
+          {paymentMethods.map((method, index) => (
+            <View key={`card-${method.id}-${Date.now()}`}>
+              <View style={[
+                styles.cardItem,
+                method.isDefault && styles.defaultCardItem,
+              ]}>
+                <Pressable 
+                  style={styles.cardContent}
+                  onPress={() => {
+                    if (!method.isDefault) {
+                      handleSetDefault(method.id);
+                    } else {
+                      handleCardPress(method.id);
+                    }
+                  }}
+                  android_ripple={{ color: 'rgba(55, 185, 168, 0.1)' }}
+                >
+                  <View style={styles.cardInfo}>
+                    <View style={styles.cardHeader}>
+                      <Text style={styles.cardType}>
+                        {method.type === 'card' ? method.brand : 'UPI'}
+                      </Text>
+                      {method.isDefault && (
+                        <View style={styles.defaultBadge}>
+                          <Text style={styles.defaultText}>Default</Text>
+                        </View>
+                      )}
+                    </View>
+                    
+                    <View style={styles.cardDetails}>
+                      <Text style={styles.cardNumber}>
+                        {method.type === 'card' 
+                          ? '•••• •••• •••• ' + method.lastFour
+                          : method.upiId
+                        }
+                      </Text>
+                      {method.type === 'card' && (
+                        <Text style={styles.cardExpiry}>Expires {method.expiryDate}</Text>
+                      )}
+                      <Text style={styles.cardHolder}>{method.cardholderName}</Text>
+                    </View>
+                  </View>
+                  
+                  <View style={styles.cardActions}>
+                    <Text style={styles.cardBrandIcon}>{method.logo}</Text>
+                    <Pressable 
+                      style={styles.setDefaultButton}
+                      onPress={() => {
+                        if (!method.isDefault) {
+                          handleSetDefault(method.id);
+                        } else {
+                          handleCardPress(method.id);
+                        }
+                      }}
+                    >
+                      <Text style={styles.setDefaultIcon}>
+                        {method.isDefault ? '⭐' : '☆'}
+                      </Text>
+                    </Pressable>
+                    <Pressable 
+                      style={styles.deleteButton}
+                      onPress={() => handleDeleteCard(method.id)}
+                    >
+                      <Text style={styles.deleteIcon}>🗑️</Text>
+                    </Pressable>
+                  </View>
+                </Pressable>
+              </View>
               
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Card Number</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="1234 5678 9012 3456"
-                  placeholderTextColor="#999"
-                  value={cardNumber}
-                  onChangeText={formatCardNumber}
-                  keyboardType="numeric"
-                  maxLength={19}
-                />
-              </View>
+              {index < paymentMethods.length - 1 && <View style={styles.cardDivider} />}
+            </View>
+          ))}
+        </View>
 
-              <View style={styles.rowContainer}>
-                <View style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}>
-                  <Text style={styles.inputLabel}>Expiry Date</Text>
+        <View style={styles.bottomSpacer} />
+      </ScrollView>
+
+      <Modal
+        visible={showPaymentTypeModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowPaymentTypeModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable 
+            style={styles.modalBackdrop}
+            onPress={() => setShowPaymentTypeModal(false)}
+          />
+          <View style={styles.paymentTypeModal}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Payment Type</Text>
+              <Pressable
+                style={styles.closeButton}
+                onPress={() => setShowPaymentTypeModal(false)}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </Pressable>
+            </View>
+            
+            <View style={styles.paymentTypesList}>
+              {paymentTypes.map((type) => (
+                <Pressable
+                  key={type.id}
+                  style={styles.paymentTypeItem}
+                  onPress={() => handlePaymentTypeSelect(type.id)}
+                >
+                  <Text style={styles.paymentTypeIcon}>{type.icon}</Text>
+                  <Text style={styles.paymentTypeName}>{type.name}</Text>
+                  <Text style={styles.paymentTypeArrow}>→</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showAddForm}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowAddForm(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable 
+            style={styles.modalBackdrop}
+            onPress={() => setShowAddForm(false)}
+          />
+          <View style={styles.addCardModal}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {selectedPaymentType === 'card' ? 'Add New Card' : 'Add UPI ID'}
+              </Text>
+              <Pressable
+                style={styles.closeButton}
+                onPress={() => setShowAddForm(false)}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </Pressable>
+            </View>
+            
+            <ScrollView style={styles.formContainer} showsVerticalScrollIndicator={false}>
+              {selectedPaymentType === 'card' ? (
+                <View>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Card Number</Text>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="1234 5678 9012 3456"
+                      placeholderTextColor="#4a5568"
+                      value={cardNumber}
+                      onChangeText={(text) => setCardNumber(formatCardNumber(text))}
+                      keyboardType="numeric"
+                      maxLength={19}
+                    />
+                    {cardNumber && (
+                      <Text style={styles.cardBrandText}>{getCardBrand(cardNumber)}</Text>
+                    )}
+                  </View>
+
+                  <View style={styles.rowInputs}>
+                    <View style={[styles.inputGroup, styles.halfWidth]}>
+                      <Text style={styles.inputLabel}>Expiry Date</Text>
+                      <TextInput
+                        style={styles.textInput}
+                        placeholder="MM/YY"
+                        placeholderTextColor="#4a5568"
+                        value={expiryDate}
+                        onChangeText={(text) => setExpiryDate(formatExpiryDate(text))}
+                        keyboardType="numeric"
+                        maxLength={5}
+                      />
+                    </View>
+                    
+                    <View style={[styles.inputGroup, styles.halfWidth]}>
+                      <Text style={styles.inputLabel}>CVV</Text>
+                      <TextInput
+                        style={styles.textInput}
+                        placeholder="123"
+                        placeholderTextColor="#4a5568"
+                        value={cvv}
+                        onChangeText={setCvv}
+                        keyboardType="numeric"
+                        maxLength={4}
+                        secureTextEntry
+                      />
+                    </View>
+                  </View>
+
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Cardholder Name</Text>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Full name on card"
+                      placeholderTextColor="#4a5568"
+                      value={cardholderName}
+                      onChangeText={setCardholderName}
+                      autoCapitalize="words"
+                    />
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>UPI ID</Text>
                   <TextInput
-                    style={styles.input}
-                    placeholder="MM/YY"
-                    placeholderTextColor="#999"
-                    value={expiryDate}
-                    onChangeText={formatExpiryDate}
-                    keyboardType="numeric"
-                    maxLength={5}
+                    style={styles.textInput}
+                    placeholder="yourname@upi"
+                    placeholderTextColor="#4a5568"
+                    value={upiId}
+                    onChangeText={setUpiId}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
                   />
                 </View>
-                
-                <View style={[styles.inputContainer, { flex: 1, marginLeft: 8 }]}>
-                  <Text style={styles.inputLabel}>CVV</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="123"
-                    placeholderTextColor="#999"
-                    value={cvv}
-                    onChangeText={setCvv}
-                    keyboardType="numeric"
-                    maxLength={3}
-                    secureTextEntry
-                  />
-                </View>
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Cardholder Name</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Full name on card"
-                  placeholderTextColor="#999"
-                  value={cardholderName}
-                  onChangeText={setCardholderName}
-                  autoCapitalize="words"
-                />
-              </View>
-
-              <View style={styles.formButtons}>
+              )}
+              
+              <View style={styles.actionButtons}>
                 <Pressable 
                   style={styles.cancelButton}
                   onPress={() => setShowAddForm(false)}
@@ -201,274 +492,130 @@ export default function PaymentMethodsScreen() {
                   <Text style={styles.cancelButtonText}>Cancel</Text>
                 </Pressable>
                 
-                <Pressable style={styles.saveButton} onPress={handleAddCard}>
-                  <Text style={styles.saveButtonText}>Add Card</Text>
-                </Pressable>
-              </View>
-            </LinearGradient>
-          </View>
-        )}
-
-        {/* Saved Payment Methods */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Saved Payment Methods</Text>
-          
-          {savedCards.map((card) => (
-            <LinearGradient
-              key={card.id}
-              colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
-              style={styles.cardContainer}
-            >
-              <View style={styles.cardContent}>
-                <View style={styles.cardLeft}>
-                  <Text style={styles.cardIcon}>{getCardIcon(card.type)}</Text>
-                  <View style={styles.cardInfo}>
-                    <View style={styles.cardHeader}>
-                      <Text style={styles.cardType}>{card.type}</Text>
-                      {card.isDefault && (
-                        <View style={styles.defaultBadge}>
-                          <Text style={styles.defaultText}>Default</Text>
-                        </View>
-                      )}
-                    </View>
-                    <Text style={styles.cardNumber}>**** **** **** {card.lastFour}</Text>
-                    <Text style={styles.cardExpiry}>Expires {card.expiryDate}</Text>
-                    <Text style={styles.cardHolder}>{card.cardholderName}</Text>
-                  </View>
-                </View>
-                
                 <Pressable 
-                  style={styles.deleteButton}
-                  onPress={() => handleDeleteCard(card.id)}
+                  style={styles.addButton}
+                  onPress={handleAddCard}
                 >
-                  <Text style={styles.deleteIcon}>🗑️</Text>
+                  <Text style={styles.addButtonText}>
+                    {selectedPaymentType === 'card' ? 'Add Card' : 'Add UPI'}
+                  </Text>
                 </Pressable>
               </View>
-              
-              {!card.isDefault && (
-                <Pressable style={styles.setDefaultButton}>
-                  <Text style={styles.setDefaultText}>Set as Default</Text>
-                </Pressable>
-              )}
-            </LinearGradient>
-          ))}
-        </View>
-
-        {/* Billing Information */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Billing Information</Text>
-          
-          <LinearGradient
-            colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
-            style={styles.billingCard}
-          >
-            <View style={styles.billingItem}>
-              <View style={styles.billingHeader}>
-                <Text style={styles.billingIcon}>🏠</Text>
-                <Text style={styles.billingLabel}>Billing Address</Text>
-              </View>
-              <Text style={styles.billingValue}>
-                123 Wellness Street{'\n'}
-                San Francisco, CA 94102{'\n'}
-                United States
-              </Text>
-              <Pressable style={styles.editBillingButton}>
-                <Text style={styles.editBillingText}>Edit Address</Text>
-              </Pressable>
-            </View>
-          </LinearGradient>
-        </View>
-
-        {/* Payment Security */}
-        <View style={styles.section}>
-          <View style={styles.securityCard}>
-            <Text style={styles.securityIcon}>🔒</Text>
-            <View style={styles.securityContent}>
-              <Text style={styles.securityTitle}>Secure Payments</Text>
-              <Text style={styles.securityText}>
-                Your payment information is encrypted and processed securely. We use industry-standard security measures to protect your data.
-              </Text>
-            </View>
+            </ScrollView>
           </View>
         </View>
-
-        <View style={styles.bottomSpacer} />
-      </ScrollView>
-    </LinearGradient>
+      </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.lightMistTeal,
+  },
+  gradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingTop: getResponsivePadding(50),
     paddingHorizontal: getResponsivePadding(20),
-    paddingBottom: getResponsivePadding(16),
+    paddingBottom: getResponsivePadding(20),
   },
   backButton: {
     width: getResponsiveWidth(40),
     height: getResponsiveHeight(40),
     borderRadius: getResponsiveBorderRadius(20),
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   backArrow: {
-    fontSize: getResponsiveFontSize(18),
-    color: colors.white,
+    fontSize: getResponsiveFontSize(20),
+    color: '#ffffff',
     fontWeight: 'bold',
   },
   headerTitle: {
-    fontSize: getResponsiveFontSize(20),
+    flex: 1,
+    fontSize: getResponsiveFontSize(22),
     fontWeight: 'bold',
-    color: colors.white,
+    color: '#ffffff',
+    textAlign: 'center',
   },
-  headerRight: {
+  headerSpacer: {
     width: getResponsiveWidth(40),
   },
   scrollView: {
     flex: 1,
+    paddingHorizontal: getResponsivePadding(20),
   },
   section: {
-    paddingHorizontal: getResponsivePadding(20),
-    marginTop: getResponsiveMargin(24),
+    marginBottom: getResponsiveMargin(25),
   },
   sectionTitle: {
     fontSize: getResponsiveFontSize(18),
-    fontWeight: 'bold',
-    color: colors.deepTeal,
-    marginBottom: getResponsiveMargin(16),
+    fontWeight: '600',
+    color: '#ffffff',
+    marginBottom: getResponsiveMargin(15),
   },
-  addButton: {
-    borderRadius: getResponsiveBorderRadius(16),
-    overflow: 'hidden',
-    shadowColor: colors.coralAccent,
-    shadowOffset: { width: 0, height: getResponsiveHeight(4) },
-    shadowOpacity: 0.3,
-    shadowRadius: getResponsiveBorderRadius(8),
-    elevation: 6,
-  },
-  addButtonGradient: {
+  addPaymentButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     paddingVertical: getResponsivePadding(16),
     paddingHorizontal: getResponsivePadding(20),
+    borderRadius: getResponsiveBorderRadius(12),
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderStyle: 'dashed',
   },
-  addButtonIcon: {
-    fontSize: getResponsiveFontSize(20),
-    color: colors.white,
-    fontWeight: 'bold',
+  addPaymentIcon: {
+    fontSize: getResponsiveFontSize(24),
+    color: '#ffffff',
     marginRight: getResponsiveMargin(12),
   },
-  addButtonText: {
+  addPaymentText: {
     fontSize: getResponsiveFontSize(16),
-    fontWeight: '600',
-    color: colors.white,
+    color: '#ffffff',
+    fontWeight: '500',
   },
-  addCardForm: {
-    borderRadius: getResponsiveBorderRadius(16),
-    padding: getResponsivePadding(20),
-    shadowColor: 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: getResponsiveHeight(2) },
+  cardItem: {
+    backgroundColor: '#ffffff',
+    borderRadius: getResponsiveBorderRadius(15),
+    marginBottom: getResponsiveMargin(12),
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
     shadowOpacity: 0.1,
-    shadowRadius: getResponsiveBorderRadius(8),
-    elevation: 3,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-  formTitle: {
-    fontSize: getResponsiveFontSize(18),
-    fontWeight: 'bold',
-    color: 'white',
-    marginBottom: getResponsiveMargin(20),
-    textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: getResponsiveHeight(1) },
-    textShadowRadius: getResponsiveBorderRadius(2),
-  },
-  inputContainer: {
-    marginBottom: getResponsiveMargin(16),
-  },
-  inputLabel: {
-    fontSize: getResponsiveFontSize(14),
-    color: 'white',
-    fontWeight: '600',
-    marginBottom: getResponsiveMargin(8),
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: getResponsiveHeight(1) },
-    textShadowRadius: getResponsiveBorderRadius(1),
-  },
-  input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: getResponsiveBorderRadius(12),
-    paddingHorizontal: getResponsivePadding(16),
-    paddingVertical: getResponsivePadding(12),
-    fontSize: getResponsiveFontSize(16),
-    color: 'white',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  rowContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  formButtons: {
-    flexDirection: 'row',
-    gap: getResponsiveWidth(12),
-    marginTop: getResponsiveMargin(20),
-  },
-  cancelButton: {
-    flex: 1,
-    paddingVertical: getResponsivePadding(12),
-    borderRadius: getResponsiveBorderRadius(12),
-    backgroundColor: colors.warmGray,
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    fontSize: getResponsiveFontSize(16),
-    color: colors.charcoalGray,
-    fontWeight: '600',
-  },
-  saveButton: {
-    flex: 1,
-    paddingVertical: getResponsivePadding(12),
-    borderRadius: getResponsiveBorderRadius(12),
-    backgroundColor: colors.sageGreen,
-    alignItems: 'center',
-  },
-  saveButtonText: {
-    fontSize: getResponsiveFontSize(16),
-    color: colors.white,
-    fontWeight: '600',
-  },
-  cardContainer: {
-    borderRadius: getResponsiveBorderRadius(16),
-    padding: getResponsivePadding(16),
-    marginBottom: getResponsiveMargin(16),
-    shadowColor: 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: getResponsiveHeight(2) },
-    shadowOpacity: 0.1,
-    shadowRadius: getResponsiveBorderRadius(8),
-    elevation: 3,
+  defaultCardItem: {
+    backgroundColor: '#ffffff',
+    borderWidth: 2,
+    borderColor: '#FFD700',
+    shadowColor: '#FFD700',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 3.84,
+    elevation: 8,
   },
   cardContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  cardLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  cardIcon: {
-    fontSize: getResponsiveFontSize(32),
-    marginRight: getResponsiveMargin(16),
+    paddingVertical: getResponsivePadding(16),
+    paddingHorizontal: getResponsivePadding(16),
   },
   cardInfo: {
     flex: 1,
@@ -476,142 +623,201 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: getResponsiveMargin(4),
+    marginBottom: getResponsiveMargin(8),
   },
   cardType: {
     fontSize: getResponsiveFontSize(16),
-    fontWeight: 'bold',
-    color: 'white',
-    marginRight: getResponsiveMargin(12),
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: getResponsiveHeight(1) },
-    textShadowRadius: getResponsiveBorderRadius(1),
+    fontWeight: '600',
+    color: '#2d3748',
+    marginRight: getResponsiveMargin(10),
   },
   defaultBadge: {
-    backgroundColor: colors.royalGold + '20',
+    backgroundColor: '#FFD700',
     paddingHorizontal: getResponsivePadding(8),
     paddingVertical: getResponsivePadding(2),
-    borderRadius: getResponsiveBorderRadius(8),
+    borderRadius: getResponsiveBorderRadius(10),
   },
   defaultText: {
-    fontSize: getResponsiveFontSize(12),
-    color: colors.royalGold,
+    fontSize: getResponsiveFontSize(11),
     fontWeight: '600',
+    color: '#000000',
+  },
+  cardDetails: {
+    gap: getResponsiveMargin(4),
   },
   cardNumber: {
-    fontSize: getResponsiveFontSize(16),
-    color: 'rgba(255, 255, 255, 0.9)',
-    marginBottom: getResponsiveMargin(2),
-    fontFamily: 'monospace',
+    fontSize: getResponsiveFontSize(14),
+    color: '#4a5568',
+    fontWeight: '500',
   },
   cardExpiry: {
-    fontSize: getResponsiveFontSize(14),
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginBottom: getResponsiveMargin(2),
+    fontSize: getResponsiveFontSize(12),
+    color: '#6b7280',
   },
   cardHolder: {
-    fontSize: getResponsiveFontSize(14),
-    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: getResponsiveFontSize(12),
+    color: '#6b7280',
+  },
+  cardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: getResponsiveMargin(10),
+  },
+  cardBrandIcon: {
+    fontSize: getResponsiveFontSize(24),
+  },
+  setDefaultButton: {
+    padding: getResponsivePadding(6),
+  },
+  setDefaultIcon: {
+    fontSize: getResponsiveFontSize(18),
   },
   deleteButton: {
-    width: getResponsiveWidth(36),
-    height: getResponsiveHeight(36),
-    borderRadius: getResponsiveBorderRadius(18),
-    backgroundColor: colors.coralAccent + '20',
-    alignItems: 'center',
-    justifyContent: 'center',
+    padding: getResponsivePadding(6),
   },
   deleteIcon: {
     fontSize: getResponsiveFontSize(16),
   },
-  setDefaultButton: {
-    marginTop: getResponsiveMargin(12),
-    paddingVertical: getResponsivePadding(8),
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: colors.lightMistTeal,
+  cardDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    marginVertical: getResponsiveMargin(8),
   },
-  setDefaultText: {
-    fontSize: getResponsiveFontSize(14),
-    color: 'white',
-    fontWeight: '600',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: getResponsiveHeight(1) },
-    textShadowRadius: getResponsiveBorderRadius(1),
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
   },
-  billingCard: {
-    borderRadius: getResponsiveBorderRadius(16),
-    padding: getResponsivePadding(20),
-    shadowColor: 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: getResponsiveHeight(2) },
-    shadowOpacity: 0.1,
-    shadowRadius: getResponsiveBorderRadius(8),
-    elevation: 3,
+  modalBackdrop: {
+    flex: 1,
   },
-  billingItem: {
-    alignItems: 'flex-start',
+  paymentTypeModal: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: getResponsiveBorderRadius(20),
+    borderTopRightRadius: getResponsiveBorderRadius(20),
+    paddingBottom: getResponsivePadding(30),
   },
-  billingHeader: {
+  addCardModal: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: getResponsiveBorderRadius(20),
+    borderTopRightRadius: getResponsiveBorderRadius(20),
+    maxHeight: '80%',
+  },
+  modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: getResponsiveMargin(12),
+    justifyContent: 'space-between',
+    paddingVertical: getResponsivePadding(20),
+    paddingHorizontal: getResponsivePadding(20),
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
   },
-  billingIcon: {
-    fontSize: getResponsiveFontSize(20),
-    marginRight: getResponsiveMargin(12),
+  modalTitle: {
+    fontSize: getResponsiveFontSize(18),
+    fontWeight: '600',
+    color: '#1a202c',
   },
-  billingLabel: {
-    fontSize: getResponsiveFontSize(16),
-    fontWeight: 'bold',
-    color: 'white',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: getResponsiveHeight(1) },
-    textShadowRadius: getResponsiveBorderRadius(1),
+  closeButton: {
+    padding: getResponsivePadding(4),
   },
-  billingValue: {
-    fontSize: getResponsiveFontSize(14),
-    color: 'rgba(255, 255, 255, 0.9)',
-    lineHeight: getResponsiveHeight(20),
-    marginBottom: getResponsiveMargin(16),
+  closeButtonText: {
+    fontSize: getResponsiveFontSize(18),
+    color: '#4a5568',
   },
-  editBillingButton: {
+  paymentTypesList: {
+    paddingHorizontal: getResponsivePadding(20),
+    paddingTop: getResponsivePadding(10),
+  },
+  paymentTypeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: getResponsivePadding(16),
     paddingHorizontal: getResponsivePadding(16),
-    paddingVertical: getResponsivePadding(8),
-    borderRadius: getResponsiveBorderRadius(16),
-    backgroundColor: colors.lightMistTeal,
+    backgroundColor: '#f7fafc',
+    borderRadius: getResponsiveBorderRadius(12),
+    marginBottom: getResponsiveMargin(10),
   },
-  editBillingText: {
-    fontSize: getResponsiveFontSize(14),
-    color: colors.deepTeal,
-    fontWeight: '600',
-  },
-  securityCard: {
-    flexDirection: 'row',
-    backgroundColor: colors.sageGreen + '20',
-    borderRadius: getResponsiveBorderRadius(16),
-    padding: getResponsivePadding(20),
-    borderWidth: 1,
-    borderColor: colors.sageGreen + '30',
-  },
-  securityIcon: {
+  paymentTypeIcon: {
     fontSize: getResponsiveFontSize(24),
     marginRight: getResponsiveMargin(16),
   },
-  securityContent: {
+  paymentTypeName: {
     flex: 1,
-  },
-  securityTitle: {
     fontSize: getResponsiveFontSize(16),
-    fontWeight: 'bold',
-    color: colors.deepTeal,
+    fontWeight: '500',
+    color: '#2d3748',
+  },
+  paymentTypeArrow: {
+    fontSize: getResponsiveFontSize(16),
+    color: '#4a5568',
+  },
+  formContainer: {
+    padding: getResponsivePadding(20),
+  },
+  inputGroup: {
+    marginBottom: getResponsiveMargin(20),
+  },
+  inputLabel: {
+    fontSize: getResponsiveFontSize(14),
+    fontWeight: '500',
+    color: '#2d3748',
     marginBottom: getResponsiveMargin(8),
   },
-  securityText: {
-    fontSize: getResponsiveFontSize(14),
-    color: colors.charcoalGray,
-    lineHeight: getResponsiveHeight(20),
+  textInput: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: getResponsiveBorderRadius(8),
+    paddingVertical: getResponsivePadding(12),
+    paddingHorizontal: getResponsivePadding(16),
+    fontSize: getResponsiveFontSize(16),
+    color: '#1a202c',
+    backgroundColor: '#ffffff',
+  },
+  rowInputs: {
+    flexDirection: 'row',
+    gap: getResponsiveMargin(12),
+  },
+  halfWidth: {
+    flex: 1,
+  },
+  cardBrandText: {
+    fontSize: getResponsiveFontSize(12),
+    color: '#4a5568',
+    marginTop: getResponsiveMargin(4),
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: getResponsiveMargin(12),
+    marginTop: getResponsiveMargin(20),
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: getResponsivePadding(12),
+    paddingHorizontal: getResponsivePadding(20),
+    borderRadius: getResponsiveBorderRadius(8),
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: getResponsiveFontSize(16),
+    fontWeight: '500',
+    color: '#4a5568',
+  },
+  addButton: {
+    flex: 1,
+    paddingVertical: getResponsivePadding(12),
+    paddingHorizontal: getResponsivePadding(20),
+    borderRadius: getResponsiveBorderRadius(8),
+    backgroundColor: '#37b9a8',
+    alignItems: 'center',
+  },
+  addButtonText: {
+    fontSize: getResponsiveFontSize(16),
+    fontWeight: '500',
+    color: '#ffffff',
   },
   bottomSpacer: {
-    height: getResponsiveHeight(40),
+    height: getResponsiveHeight(50),
   },
 });

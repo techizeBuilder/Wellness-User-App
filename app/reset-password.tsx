@@ -1,4 +1,3 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -10,7 +9,8 @@ import {
     getResponsiveHeight,
     getResponsiveMargin,
     getResponsivePadding,
-    getResponsiveWidth
+    getResponsiveWidth,
+    screenData
 } from '../src/utils/dimensions';
 import { showErrorToast, showSuccessToast } from '../src/utils/toastConfig';
 
@@ -127,20 +127,13 @@ export default function ResetPasswordScreen() {
 
       <View style={styles.footer}>
         <Pressable 
-          style={[styles.resetButton, isLoading && { opacity: 0.7 }]} 
+          style={[styles.resetButton, isLoading && styles.resetButtonDisabled]} 
           onPress={handleResetPassword}
           disabled={isLoading}
         >
-          <LinearGradient
-            colors={['#14B8A6', '#0D9488']}
-            style={styles.buttonGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-          >
-            <Text style={styles.resetButtonText}>
-              {isLoading ? 'Resetting Password...' : 'Reset Password'}
-            </Text>
-          </LinearGradient>
+          <Text style={styles.resetButtonText}>
+            {isLoading ? 'Resetting Password...' : 'Reset Password'}
+          </Text>
         </Pressable>
 
         <Pressable style={styles.backToLogin} onPress={() => router.push('/login')}>
@@ -154,7 +147,7 @@ export default function ResetPasswordScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#2DD4BF',
+    backgroundColor: '#2da898ff',
   },
   header: {
     paddingTop: getResponsivePadding(50),
@@ -232,25 +225,24 @@ const styles = StyleSheet.create({
     paddingBottom: getResponsivePadding(40),
   },
   resetButton: {
-    borderRadius: getResponsiveBorderRadius(12),
-    overflow: 'hidden',
-    marginBottom: getResponsiveMargin(16),
-    shadowColor: colors.deepTeal,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  buttonGradient: {
-    paddingVertical: getResponsivePadding(16),
+    backgroundColor: '#2da898ff',
+    borderRadius: getResponsiveBorderRadius(25),
+    paddingVertical: getResponsivePadding(screenData.isSmall ? 16 : 18),
     alignItems: 'center',
-    justifyContent: 'center',
+    marginBottom: getResponsiveMargin(16),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  resetButtonDisabled: {
+    backgroundColor: '#9CA3AF',
   },
   resetButtonText: {
     fontSize: getResponsiveFontSize(16),
-    fontWeight: '600',
-    color: colors.white,
-    letterSpacing: 0.5,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
   backToLogin: {
     alignItems: 'center',

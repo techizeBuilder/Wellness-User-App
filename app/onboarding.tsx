@@ -1,21 +1,22 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
-import { Dimensions, Image, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { Animated, Dimensions, Image, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
 import {
-    fontSizes,
-    getResponsiveBorderRadius,
-    getResponsiveHeight,
-    getResponsiveMargin,
-    getResponsivePadding,
-    getResponsiveWidth,
-    screenData
+  fontSizes,
+  getResponsiveBorderRadius,
+  getResponsiveHeight,
+  getResponsiveMargin,
+  getResponsivePadding,
+  getResponsiveWidth,
+  screenData
 } from '../src/utils/dimensions';
 
 const { width, height } = Dimensions.get('window');
 
 export default function OnboardingScreen() {
   const [currentStep, setCurrentStep] = useState(0);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
 
   const steps = [
     {
@@ -37,7 +38,20 @@ export default function OnboardingScreen() {
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
+      // Fade out animation
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => {
+        setCurrentStep(currentStep + 1);
+        // Fade in animation
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+      });
     } else {
       router.push('/user-type-selection');
     }
@@ -71,7 +85,7 @@ export default function OnboardingScreen() {
         </View>
 
         {/* Main Content */}
-        <View style={styles.mainContent}>
+        <Animated.View style={[styles.mainContent, { opacity: fadeAnim }]}>
           {/* Image Container */}
           <View style={styles.imageContainer}>
             {currentStepData?.image && (
@@ -97,24 +111,32 @@ export default function OnboardingScreen() {
             <Text style={styles.title}>{currentStepData?.title || 'Welcome'}</Text>
             <Text style={styles.subtitle}>{currentStepData?.subtitle || 'Loading...'}</Text>
           </View>
-        </View>
+        </Animated.View>
 
         {/* Bottom Section */}
         <View style={styles.bottomSection}>
           {/* Progress Indicators */}
           <View style={styles.progressContainer}>
-            {steps.map((_, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.progressDot,
-                  {
-                    backgroundColor: index === currentStep ? '#F59E0B' : 'rgba(255, 255, 255, 0.3)',
-                    width: index === currentStep ? 24 : 8,
-                  }
-                ]}
-              />
-            ))}
+            {/* Progress Numbers */}
+            <Text style={styles.progressNumbers}>
+              {currentStep + 1} of {steps.length}
+            </Text>
+            
+            {/* Progress Dots */}
+            <View style={styles.progressDots}>
+              {steps.map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.progressDot,
+                    {
+                      backgroundColor: index === currentStep ? '#F59E0B' : 'rgba(255, 255, 255, 0.3)',
+                      width: index === currentStep ? 24 : 8,
+                    }
+                  ]}
+                />
+              ))}
+            </View>
           </View>
 
           {/* Next Button */}
@@ -144,8 +166,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: getResponsiveHeight(screenData.isSmall ? 50 : 60),
-    paddingBottom: getResponsivePadding(30),
+    paddingTop: getResponsiveHeight(screenData.isSmall ? 40 : 45),
+    paddingBottom: getResponsivePadding(20),
     alignItems: 'center',
   },
   logoContainer: {
@@ -229,10 +251,20 @@ const styles = StyleSheet.create({
     paddingBottom: getResponsivePadding(screenData.isSmall ? 40 : 50),
   },
   progressContainer: {
+    alignItems: 'center',
+    marginBottom: getResponsiveMargin(screenData.isSmall ? 30 : 40),
+  },
+  progressNumbers: {
+    fontSize: fontSizes.sm,
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontWeight: '500',
+    marginBottom: getResponsiveMargin(12),
+    letterSpacing: 0.5,
+  },
+  progressDots: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: getResponsiveMargin(screenData.isSmall ? 30 : 40),
   },
   progressDot: {
     height: getResponsiveHeight(4),
