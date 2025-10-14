@@ -9,8 +9,7 @@ import {
     getResponsiveHeight,
     getResponsiveMargin,
     getResponsivePadding,
-    getResponsiveWidth,
-    screenData
+    getResponsiveWidth
 } from '../src/utils/dimensions';
 import { showErrorToast, showSuccessToast } from '../src/utils/toastConfig';
 
@@ -227,7 +226,7 @@ const styles = StyleSheet.create({
   resetButton: {
     backgroundColor: '#2da898ff',
     borderRadius: getResponsiveBorderRadius(25),
-    paddingVertical: getResponsivePadding(screenData.isSmall ? 16 : 18),
+    paddingVertical: getResponsivePadding(16),
     alignItems: 'center',
     marginBottom: getResponsiveMargin(16),
     shadowColor: '#000',

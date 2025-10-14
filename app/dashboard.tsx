@@ -2,7 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { Dimensions, Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
-import Footer from '../src/components/Footer';
+import Footer, { FOOTER_HEIGHT } from '../src/components/Footer';
 import {
     fontSizes,
     getResponsiveBorderRadius,
@@ -573,7 +573,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: getResponsiveHeight(screenData.isSmall ? 50 : 60),
+    paddingTop: getResponsiveHeight(screenData.isSmall ? 65 : 80), // Increased top spacing
     paddingBottom: getResponsivePadding(20),
     paddingHorizontal: getResponsivePadding(screenData.isSmall ? 16 : 20),
   },
@@ -1168,6 +1168,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   bottomSpacer: {
-    height: getResponsiveHeight(100),
+    height: FOOTER_HEIGHT + getResponsiveHeight(30), // Footer height + extra padding
   },
 });

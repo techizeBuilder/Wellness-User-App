@@ -2,7 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Dimensions, Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
-import Footer from '../src/components/Footer';
+import Footer, { FOOTER_HEIGHT } from '../src/components/Footer';
 import {
   getResponsiveBorderRadius,
   getResponsiveFontSize,
@@ -583,6 +583,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   bottomSpacer: {
-    height: getResponsiveHeight(100),
+    height: FOOTER_HEIGHT + getResponsiveHeight(30), // Footer height + extra padding
   },
 });

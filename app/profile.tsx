@@ -2,7 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
-import Footer from '../src/components/Footer';
+import Footer, { FOOTER_HEIGHT } from '../src/components/Footer';
 import { colors } from '../src/utils/colors';
 import {
   fontSizes,
@@ -618,7 +618,7 @@ const styles = StyleSheet.create({
     color: '#EF4444',
   },
   bottomSpacer: {
-    height: 100,
+    height: FOOTER_HEIGHT + getResponsiveHeight(30), // Footer height + extra padding
   },
   // Enhanced Notification Styles
   iconContainerDisabled: {
