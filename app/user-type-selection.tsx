@@ -1,7 +1,8 @@
 ﻿import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Dimensions, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { router } from 'expo-router';
+import React, { useRef, useState } from 'react';
+import { Animated, Dimensions, Pressable, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Svg, { Circle, Path } from 'react-native-svg';
 import {
   fontSizes,
   getResponsiveBorderRadius,
@@ -15,9 +16,121 @@ import {
 
 const { width, height } = Dimensions.get('window');
 
+// Custom SVG Icon Components
+const UserIcon = ({ size = 40, isSelected = false }) => (
+  <Svg width={size} height={size} viewBox="0 0 40 40" fill="none">
+    {/* Head */}
+    <Circle 
+      cx="20" 
+      cy="13" 
+      r="6" 
+      stroke={isSelected ? "#F59E0B" : "#14B8A6"} 
+      strokeWidth="2" 
+      fill="none" 
+    />
+    {/* Body/Torso */}
+    <Path 
+      d="M8 36C8 29 13 24 20 24S32 29 32 36" 
+      stroke={isSelected ? "#F59E0B" : "#14B8A6"} 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      fill="none"
+    />
+    {/* Business Shirt Collar */}
+    <Path 
+      d="M16 24L18 27L20 25L22 27L24 24" 
+      stroke={isSelected ? "#F59E0B" : "#14B8A6"} 
+      strokeWidth="1.5" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+      fill="none"
+    />
+    {/* Tie */}
+    <Path 
+      d="M20 25V32" 
+      stroke={isSelected ? "#F59E0B" : "#14B8A6"} 
+      strokeWidth="1.5" 
+      strokeLinecap="round"
+      fill="none"
+    />
+  </Svg>
+);
+
+const ExpertIcon = ({ size = 40, isSelected = false }) => (
+  <Svg width={size} height={size} viewBox="0 0 40 40" fill="none">
+    {/* Graduation Cap Base */}
+    <Path 
+      d="M6 18L20 12L34 18L20 24L6 18Z" 
+      stroke={isSelected ? "#F59E0B" : "#14B8A6"} 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+      fill="none"
+    />
+    {/* Cap Top */}
+    <Path 
+      d="M14 20V26C14 28 16.5 30 20 30S26 28 26 26V20" 
+      stroke={isSelected ? "#F59E0B" : "#14B8A6"} 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+      fill="none"
+    />
+    {/* Tassel */}
+    <Path 
+      d="M32 20V25" 
+      stroke={isSelected ? "#F59E0B" : "#14B8A6"} 
+      strokeWidth="2" 
+      strokeLinecap="round"
+      fill="none"
+    />
+    <Circle 
+      cx="32" 
+      cy="27" 
+      r="1.5" 
+      fill={isSelected ? "#F59E0B" : "#14B8A6"}
+    />
+    {/* Academic Excellence Star */}
+    <Path 
+      d="M20 6L21.5 9.5L25 10L22.5 12.5L23 16L20 14.5L17 16L17.5 12.5L15 10L18.5 9.5L20 6Z" 
+      stroke={isSelected ? "#F59E0B" : "#14B8A6"} 
+      strokeWidth="1.5" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+      fill="none"
+    />
+  </Svg>
+);
+
 export default function UserTypeSelection() {
   const [selectedType, setSelectedType] = useState<'user' | 'expert' | null>(null);
-  const router = useRouter();
+  
+  // Animation refs for card scaling
+  const userCardScale = useRef(new Animated.Value(1)).current;
+  const expertCardScale = useRef(new Animated.Value(1)).current;
+
+  const animateCardPress = (cardType: 'user' | 'expert') => {
+    const scaleValue = cardType === 'user' ? userCardScale : expertCardScale;
+    
+    // Scale up to 1.05x then back to 1x
+    Animated.sequence([
+      Animated.timing(scaleValue, {
+        toValue: 1.05,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleValue, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const handleRoleSelection = (type: 'user' | 'expert') => {
+    setSelectedType(type);
+    animateCardPress(type);
+  };
 
   const handleContinue = () => {
     if (selectedType === 'user') {
@@ -49,44 +162,66 @@ export default function UserTypeSelection() {
           {/* Form Section */}
           <View style={styles.formSection}>
             {/* User Option */}
-            <TouchableOpacity
-              style={[styles.optionCard, selectedType === 'user' && styles.selectedOption]}
-              onPress={() => setSelectedType('user')}
-              activeOpacity={0.8}
-            >
-              <View style={[styles.iconContainer, selectedType === 'user' && styles.selectedIconContainer]}>
-                <Text style={styles.icon}>👩‍🦰</Text>
-              </View>
-              <Text style={styles.optionTitle}>I'm a User</Text>
-              <Text style={styles.optionDescription}>
-                Join classes and find wellness experts.
-              </Text>
-            </TouchableOpacity>
+            <Animated.View style={{ transform: [{ scale: userCardScale }] }}>
+              <TouchableOpacity
+                style={[styles.optionCard, selectedType === 'user' && styles.selectedOption]}
+                onPress={() => handleRoleSelection('user')}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.iconContainer, selectedType === 'user' && styles.selectedIconContainer]}>
+                  <UserIcon size={50} isSelected={selectedType === 'user'} />
+                </View>
+                <Text style={styles.optionTitle}>I'm a User</Text>
+                <Text style={styles.optionDescription}>
+                  Join classes and find wellness experts.
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
 
             {/* Expert Option */}
-            <TouchableOpacity
-              style={[styles.optionCard, selectedType === 'expert' && styles.selectedOption]}
-              onPress={() => setSelectedType('expert')}
-              activeOpacity={0.8}
-            >
-              <View style={[styles.iconContainer, selectedType === 'expert' && styles.selectedIconContainer]}>
-                <Text style={styles.icon}>⭐</Text>
-              </View>
-              <Text style={styles.optionTitle}>I'm an Expert</Text>
-              <Text style={styles.optionDescription}>
-                Offer your services as certified provider.
-              </Text>
-            </TouchableOpacity>
+            <Animated.View style={{ transform: [{ scale: expertCardScale }] }}>
+              <TouchableOpacity
+                style={[styles.optionCard, selectedType === 'expert' && styles.selectedOption]}
+                onPress={() => handleRoleSelection('expert')}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.iconContainer, selectedType === 'expert' && styles.selectedIconContainer]}>
+                  <ExpertIcon size={50} isSelected={selectedType === 'expert'} />
+                </View>
+                <Text style={styles.optionTitle}>I'm an Expert</Text>
+                <Text style={styles.optionDescription}>
+                  Offer your services as certified provider.
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
 
             {/* Continue Button */}
-            <TouchableOpacity
-              style={[styles.continueButton, !selectedType && styles.disabledButton]}
-              onPress={handleContinue}
-              disabled={!selectedType}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.buttonText}>Continue</Text>
-            </TouchableOpacity>
+            {selectedType ? (
+              <LinearGradient
+                colors={['#F59E0B', '#D97706', '#B45309']}
+                style={styles.continueButton}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <TouchableOpacity
+                  style={styles.gradientButtonContent}
+                  onPress={handleContinue}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.buttonText}>
+                    Continue as {selectedType === 'user' ? 'User' : 'Expert'}
+                  </Text>
+                </TouchableOpacity>
+              </LinearGradient>
+            ) : (
+              <TouchableOpacity
+                style={[styles.continueButton, styles.disabledButton]}
+                disabled={true}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.buttonText}>Continue</Text>
+              </TouchableOpacity>
+            )}
 
             {/* Login Link */}
             <View style={styles.loginContainer}>
@@ -95,13 +230,21 @@ export default function UserTypeSelection() {
                 <Text style={styles.loginLink}>Log In</Text>
               </TouchableOpacity>
             </View>
-          </View>
 
-          {/* Footer Section */}
-          <View style={styles.footerSection}>
-            <Text style={styles.footerText}>
-              By continuing, you agree to our Terms of Service and Privacy Policy.
-            </Text>
+             {/* Footer Section */}
+            <View style={styles.termsContainer}>
+              <Text style={styles.footerText}>
+                By continuing, you agree to our{' '}
+              </Text>
+              <Pressable onPress={() => router.push('/terms-of-service')}>
+                <Text style={styles.termsLink}>Terms of Service</Text>
+              </Pressable>
+              <Text style={styles.footerText}> and </Text>
+              <Pressable onPress={() => router.push('/privacy-policy')}>
+                <Text style={styles.termsLink}>Privacy Policy</Text>
+              </Pressable>
+              <Text style={styles.footerText}>.</Text>
+            </View>
           </View>
         </ScrollView>
       </LinearGradient>
@@ -133,10 +276,12 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: fontSizes.xxxl,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#f3f3f3ff',
     textAlign: 'center',
     marginBottom: getResponsiveMargin(12),
+    letterSpacing: -0.8,
+    lineHeight: fontSizes.xxxl * 1.1,
   },
   subtitle: {
     fontSize: fontSizes.md,
@@ -191,9 +336,6 @@ const styles = StyleSheet.create({
   selectedIconContainer: {
     backgroundColor: '#2da898ff',
   },
-  icon: {
-    fontSize: getResponsiveFontSize(screenData.isSmall ? 28 : 32),
-  },
   optionTitle: {
     fontSize: fontSizes.xl,
     fontWeight: 'bold',
@@ -209,7 +351,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsivePadding(screenData.isSmall ? 8 : 0),
   },
   continueButton: {
-    backgroundColor: '#2da898ff',
     borderRadius: getResponsiveBorderRadius(25),
     paddingVertical: getResponsivePadding(screenData.isSmall ? 16 : 18),
     alignItems: 'center',
@@ -221,6 +362,11 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
     minHeight: getResponsiveHeight(screenData.isSmall ? 50 : 56),
+  },
+  gradientButtonContent: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   disabledButton: {
     backgroundColor: '#9CA3AF',
@@ -251,12 +397,24 @@ const styles = StyleSheet.create({
     paddingTop: getResponsivePadding(16),
     paddingBottom: getResponsivePadding(8),
   },
+  termsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: getResponsivePadding(20),
+  },
   footerText: {
     fontSize: fontSizes.xs,
     color: '#666666',
-    textAlign: 'center',
     lineHeight: fontSizes.xs * 1.5,
     opacity: 0.8,
-    paddingHorizontal: getResponsivePadding(screenData.isSmall ? 20 : 0),
+  },
+  termsLink: {
+    fontSize: fontSizes.xs,
+    color: '#F59E0B', // Gold accent color matching Zenovia brand
+    lineHeight: fontSizes.xs * 1.5,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });

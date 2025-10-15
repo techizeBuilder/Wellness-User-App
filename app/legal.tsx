@@ -4,12 +4,12 @@ import React from 'react';
 import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../src/utils/colors';
 import {
-  getResponsiveBorderRadius,
-  getResponsiveFontSize,
-  getResponsiveHeight,
-  getResponsiveMargin,
-  getResponsivePadding,
-  getResponsiveWidth
+    getResponsiveBorderRadius,
+    getResponsiveFontSize,
+    getResponsiveHeight,
+    getResponsiveMargin,
+    getResponsivePadding,
+    getResponsiveWidth
 } from '../src/utils/dimensions';
 
 export default function LegalScreen() {
@@ -36,7 +36,10 @@ export default function LegalScreen() {
             colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
             style={styles.legalItem}
           >
-            <Pressable style={styles.legalContent}>
+            <Pressable 
+              style={styles.legalContent}
+              onPress={() => router.push('/terms-of-service')}
+            >
               <Text style={styles.legalIcon}>📋</Text>
               <View style={styles.legalInfo}>
                 <Text style={styles.legalTitle}>Terms of Service</Text>
@@ -50,7 +53,10 @@ export default function LegalScreen() {
             colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
             style={styles.legalItem}
           >
-            <Pressable style={styles.legalContent}>
+            <Pressable 
+              style={styles.legalContent}
+              onPress={() => router.push('/privacy-policy')}
+            >
               <Text style={styles.legalIcon}>🔒</Text>
               <View style={styles.legalInfo}>
                 <Text style={styles.legalTitle}>Privacy Policy</Text>
@@ -64,7 +70,10 @@ export default function LegalScreen() {
             colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
             style={styles.legalItem}
           >
-            <Pressable style={styles.legalContent}>
+            <Pressable 
+              style={styles.legalContent}
+              onPress={() => router.push('/cookie-policy')}
+            >
               <Text style={styles.legalIcon}>🍪</Text>
               <View style={styles.legalInfo}>
                 <Text style={styles.legalTitle}>Cookie Policy</Text>

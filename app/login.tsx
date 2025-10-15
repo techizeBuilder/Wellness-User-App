@@ -6,11 +6,11 @@ import AppleLogo from '../src/components/AppleLogo';
 import GoogleLogo from '../src/components/GoogleLogo';
 import authService, { ApiError } from '../src/services/authService';
 import {
-  getResponsiveBorderRadius,
-  getResponsiveFontSize,
-  getResponsiveMargin,
-  getResponsivePadding,
-  screenData
+    getResponsiveBorderRadius,
+    getResponsiveFontSize,
+    getResponsiveMargin,
+    getResponsivePadding,
+    screenData
 } from '../src/utils/dimensions';
 import { showErrorToast, showSuccessToast } from '../src/utils/toastConfig';
 
@@ -160,9 +160,19 @@ export default function LoginScreen() {
             </View>
 
             {/* Terms and Privacy */}
-            <Text style={styles.termsText}>
-              By continuing, you agree to our Terms of Service and Privacy Policy.
-            </Text>
+            <View style={styles.termsContainer}>
+              <Text style={styles.termsText}>
+                By continuing, you agree to our{' '}
+              </Text>
+              <Pressable onPress={() => router.push('/terms-of-service')}>
+                <Text style={styles.termsLink}>Terms of Service</Text>
+              </Pressable>
+              <Text style={styles.termsText}> and </Text>
+              <Pressable onPress={() => router.push('/privacy-policy')}>
+                <Text style={styles.termsLink}>Privacy Policy</Text>
+              </Pressable>
+              <Text style={styles.termsText}>.</Text>
+            </View>
           </View>
         </ScrollView>
       </LinearGradient>
@@ -339,11 +349,24 @@ const styles = StyleSheet.create({
     color: '#2da898ff',
     fontWeight: '700',
   },
+  termsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: getResponsivePadding(20),
+    marginTop: getResponsiveMargin(10),
+  },
   termsText: {
     fontSize: getResponsiveFontSize(12),
     color: '#6B7280',
-    textAlign: 'center',
     lineHeight: 18,
-    paddingHorizontal: getResponsivePadding(20),
+  },
+  termsLink: {
+    fontSize: getResponsiveFontSize(12),
+    color: '#F59E0B', // Gold accent color matching Zenovia brand
+    lineHeight: 18,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });

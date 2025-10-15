@@ -125,9 +125,19 @@ export default function ForgotPasswordScreen() {
 
           {/* Footer Section */}
           <View style={styles.footerSection}>
-            <Text style={styles.footerText}>
-              By continuing, you agree to our Terms of Service and Privacy Policy.
-            </Text>
+            <View style={styles.termsContainer}>
+              <Text style={styles.footerText}>
+                By continuing, you agree to our{' '}
+              </Text>
+              <Pressable onPress={() => router.push('/terms-of-service')}>
+                <Text style={styles.termsLink}>Terms of Service</Text>
+              </Pressable>
+              <Text style={styles.footerText}> and </Text>
+              <Pressable onPress={() => router.push('/privacy-policy')}>
+                <Text style={styles.termsLink}>Privacy Policy</Text>
+              </Pressable>
+              <Text style={styles.footerText}>.</Text>
+            </View>
           </View>
         </ScrollView>
       </LinearGradient>
@@ -261,12 +271,24 @@ const styles = StyleSheet.create({
     paddingTop: getResponsivePadding(20),
     paddingBottom: getResponsivePadding(20),
   },
+  termsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: getResponsivePadding(20),
+  },
   footerText: {
     fontSize: fontSizes.xs,
     color: '#666666',
-    textAlign: 'center',
     lineHeight: fontSizes.xs * 1.5,
     opacity: 0.8,
-    paddingHorizontal: getResponsivePadding(screenData.isSmall ? 20 : 0),
+  },
+  termsLink: {
+    fontSize: fontSizes.xs,
+    color: '#F59E0B', // Gold accent color matching Zenovia brand
+    lineHeight: fontSizes.xs * 1.5,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });
