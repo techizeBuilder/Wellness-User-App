@@ -231,8 +231,9 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: fontSizes.sm,
     fontWeight: '500',
-    color: '#f3f3f3ff',
+    color: '#575623ff',
     marginBottom: getResponsiveMargin(8),
+    paddingLeft: getResponsivePadding(11),
   },
   input: {
     backgroundColor: '#FFFFFF',
@@ -285,8 +286,9 @@ const styles = StyleSheet.create({
   },
   passwordRequirement: {
     fontSize: fontSizes.xs,
-    color: '#f3f3f3ff',
-    marginTop: getResponsiveMargin(4),
+    color: '#575623ff',
+    marginTop: getResponsiveMargin(7),
+    paddingLeft: getResponsivePadding(11),
   },
   createButton: {
     backgroundColor: '#2da898ff',
@@ -319,12 +321,12 @@ const styles = StyleSheet.create({
   },
   loginText: {
     fontSize: fontSizes.md,
-    color: '#f3f3f3ff',
+    color: '#575623ff',
   },
   loginLink: {
     fontSize: fontSizes.md,
-    color: '#F59E0B',
+    color: '#575623ff',
     fontWeight: '600',
-    textDecorationLine: 'underline',
+    textDecorationLine: 'none',
   },
 });

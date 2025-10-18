@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
   },
   backToLoginText: {
     fontSize: getResponsiveFontSize(16),
-    color: '#F59E0B',
+    color: '#575623ff',
     fontWeight: '600',
   },
 });

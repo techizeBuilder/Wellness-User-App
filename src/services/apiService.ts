@@ -17,7 +17,7 @@ class ApiService {
     
     const baseUrls = isProduction ? [
       this.baseUrl, // Production URL from config
-      'https://helthbackend.onrender.com/api' // Backup production URL
+      'https://apiwellness.shrawantravels.com/api' // Backup production URL
     ] : [
       this.baseUrl,
       'http://localhost:3001/api',

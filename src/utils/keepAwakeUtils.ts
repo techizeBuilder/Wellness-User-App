@@ -1,4 +1,4 @@
-import { activateKeepAwakeAsync, deactivateKeepAwakeAsync } from 'expo-keep-awake';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { useEffect, useState } from 'react';
 
 /**
@@ -19,7 +19,7 @@ export const safeActivateKeepAwake = async (tag?: string): Promise<boolean> => {
  */
 export const safeDeactivateKeepAwake = async (tag?: string): Promise<boolean> => {
   try {
-    await deactivateKeepAwakeAsync(tag);
+    await deactivateKeepAwake(tag);
     return true;
   } catch (error) {
     console.warn('Failed to deactivate keep awake:', error);

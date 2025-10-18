@@ -47,8 +47,8 @@ export const ENV_CONFIG = {
   
   // Production settings
   production: {
-    API_BASE_URL: 'https://helthbackend.onrender.com/api',
-    UPLOADS_BASE_URL: 'https://helthbackend.onrender.com/uploads',
+    API_BASE_URL: 'https://apiwellness.shrawantravels.com/api',
+    UPLOADS_BASE_URL: 'https://apiwellness.shrawantravels.com/uploads',
     DEBUG: false,
   } as EnvConfig
 };

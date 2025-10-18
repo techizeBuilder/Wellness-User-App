@@ -4,13 +4,13 @@ import React, { useState } from 'react';
 import { Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import authService, { ApiError } from '../src/services/authService';
 import {
-    fontSizes,
-    getResponsiveBorderRadius,
-    getResponsiveHeight,
-    getResponsiveMargin,
-    getResponsivePadding,
-    getResponsiveWidth,
-    screenData
+  fontSizes,
+  getResponsiveBorderRadius,
+  getResponsiveHeight,
+  getResponsiveMargin,
+  getResponsivePadding,
+  getResponsiveWidth,
+  screenData
 } from '../src/utils/dimensions';
 import { showErrorToast, showSuccessToast } from '../src/utils/toastConfig';
 
@@ -31,15 +31,12 @@ export default function ForgotPasswordScreen() {
       return;
     }
 
-    console.log(`🚀 === FORGOT PASSWORD BUTTON PRESSED ===`);
-    console.log(`📧 Email entered: ${email}`);
+    console.log(`🚀 Forgot password button pressed`);
 
     setIsLoading(true);
     try {
       // Use forgotPassword method which has enhanced logging
       const response = await authService.forgotPassword({ email });
-      
-      console.log(`✅ Forgot password response:`, response);
       
       if (response.success) {
         showSuccessToast('Success', 'OTP sent to your email!');
@@ -50,12 +47,11 @@ export default function ForgotPasswordScreen() {
         });
       }
     } catch (error: any) {
-      console.error(`❌ Forgot password error:`, error);
       const apiError = error as ApiError;
       showErrorToast('Failed to Send OTP', apiError.message || 'Unable to send OTP. Please try again.');
     } finally {
       setIsLoading(false);
-      console.log(`🏁 === FORGOT PASSWORD REQUEST COMPLETE ===`);
+      console.log(`🏁 Forgot password request complete`);
     }
   };
 
@@ -286,7 +282,7 @@ const styles = StyleSheet.create({
   },
   termsLink: {
     fontSize: fontSizes.xs,
-    color: '#F59E0B', // Gold accent color matching Zenovia brand
+    color: '#575623ff', // Gold accent color matching Zenovia brand
     lineHeight: fontSizes.xs * 1.5,
     fontWeight: '600',
     textDecorationLine: 'underline',

@@ -1,5 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { Text, View, StyleSheet } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 interface Props {
   children?: ReactNode;
@@ -18,7 +18,9 @@ export class ErrorBoundary extends Component<Props, State> {
   public static getDerivedStateFromError(error: Error): State {
     // Check if it's a keep awake error and suppress it
     if (error.message?.includes('keep awake') || 
-        error.message?.includes('Unable to activate keep awake')) {
+        error.message?.includes('Unable to activate keep awake') ||
+        error.message?.includes('keep-awake') ||
+        error.message?.includes('ExpoKeepAwake')) {
       console.warn('Keep awake error caught and suppressed:', error.message);
       return { hasError: false }; // Don't show error UI for keep awake issues
     }
@@ -29,7 +31,9 @@ export class ErrorBoundary extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Check if it's a keep awake error and suppress it
     if (error.message?.includes('keep awake') || 
-        error.message?.includes('Unable to activate keep awake')) {
+        error.message?.includes('Unable to activate keep awake') ||
+        error.message?.includes('keep-awake') ||
+        error.message?.includes('ExpoKeepAwake')) {
       console.warn('Keep awake error boundary triggered and suppressed:', error.message);
       return;
     }

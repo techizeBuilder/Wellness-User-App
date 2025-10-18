@@ -10,6 +10,7 @@ import {
     getResponsiveWidth,
     screenData
 } from '../src/utils/dimensions';
+import '../src/utils/errorSuppression'; // Must be first import
 
 export default function Index() {
   const [animatedValues] = useState(() => 

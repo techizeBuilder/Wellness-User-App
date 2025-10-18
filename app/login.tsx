@@ -6,11 +6,11 @@ import AppleLogo from '../src/components/AppleLogo';
 import GoogleLogo from '../src/components/GoogleLogo';
 import authService, { ApiError } from '../src/services/authService';
 import {
-    getResponsiveBorderRadius,
-    getResponsiveFontSize,
-    getResponsiveMargin,
-    getResponsivePadding,
-    screenData
+  getResponsiveBorderRadius,
+  getResponsiveFontSize,
+  getResponsiveMargin,
+  getResponsivePadding,
+  screenData
 } from '../src/utils/dimensions';
 import { showErrorToast, showSuccessToast } from '../src/utils/toastConfig';
 
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
   },
   forgotPasswordText: {
     fontSize: getResponsiveFontSize(14),
-    color: '#2da898ff',
+    color: '#575623ff',
     fontWeight: '600',
   },
   orContainer: {
@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
   },
   signUpLink: {
     fontSize: getResponsiveFontSize(14),
-    color: '#2da898ff',
+    color: '#575623ff',
     fontWeight: '700',
   },
   termsContainer: {
@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: getResponsivePadding(20),
-    marginTop: getResponsiveMargin(10),
+    marginTop: getResponsiveMargin(1),
   },
   termsText: {
     fontSize: getResponsiveFontSize(12),
@@ -364,9 +364,9 @@ const styles = StyleSheet.create({
   },
   termsLink: {
     fontSize: getResponsiveFontSize(12),
-    color: '#F59E0B', // Gold accent color matching Zenovia brand
+    color: '#575623ff', // Gold accent color matching Zenovia brand
     lineHeight: 18,
     fontWeight: '600',
-    textDecorationLine: 'underline',
+    textDecorationLine: 'none',
   },
 });

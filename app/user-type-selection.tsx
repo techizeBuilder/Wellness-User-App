@@ -6,7 +6,6 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import {
   fontSizes,
   getResponsiveBorderRadius,
-  getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveMargin,
   getResponsivePadding,
@@ -412,7 +411,7 @@ const styles = StyleSheet.create({
   },
   termsLink: {
     fontSize: fontSizes.xs,
-    color: '#F59E0B', // Gold accent color matching Zenovia brand
+    color: '#575623ff', // Gold accent color matching Zenovia brand
     lineHeight: fontSizes.xs * 1.5,
     fontWeight: '600',
     textDecorationLine: 'underline',

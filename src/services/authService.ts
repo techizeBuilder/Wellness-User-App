@@ -74,9 +74,7 @@ class AuthService {
   // Test network connectivity
   private async testConnectivity(): Promise<boolean> {
     try {
-      console.log(`🔌 Testing connectivity to backend...`);
       const healthUrl = this.baseUrl + '/health';
-      console.log(`🏥 Health check URL: ${healthUrl}`);
       
       const response = await fetch(healthUrl, {
         method: 'GET',
@@ -85,10 +83,8 @@ class AuthService {
         },
       });
       
-      console.log(`🏥 Health check response: ${response.status}`);
       return response.ok;
     } catch (error) {
-      console.error(`❌ Connectivity test failed:`, error);
       return false;
     }
   }
@@ -98,10 +94,8 @@ class AuthService {
     try {
       // Test connectivity first for debugging
       const isConnected = await this.testConnectivity();
-      console.log(`🔌 Backend connectivity: ${isConnected ? 'CONNECTED' : 'FAILED'}`);
       
       console.log(`🌐 Making request to: ${url}`);
-      console.log(`📤 Request options:`, JSON.stringify(options, null, 2));
       
       const config: RequestInit = {
         headers: {
@@ -110,17 +104,15 @@ class AuthService {
         },
         ...options,
       };
-
-      console.log(`📋 Final config:`, JSON.stringify(config, null, 2));
       
       const response = await fetch(url, config);
       console.log(`📡 Response status: ${response.status} ${response.statusText}`);
       
       const data = await response.json();
-      console.log(`📥 Response data from ${url}:`, JSON.stringify(data, null, 2));
-
+      
       if (!response.ok) {
-        console.error(`❌ HTTP Error: ${response.status} - ${data.message || 'Unknown error'}`);
+        // Log only the status for debugging, not the full error details
+        console.log(`📡 API responded with status: ${response.status}`);
         throw {
           success: false,
           message: data.message || `HTTP error! status: ${response.status}`,
@@ -129,15 +121,12 @@ class AuthService {
       }
 
       console.log(`✅ Request successful for ${url}`);
+
       return data;
     } catch (error: any) {
-      console.error(`❌ API Error for ${url}:`, error);
-      console.error(`❌ Error type:`, typeof error);
-      console.error(`❌ Error details:`, JSON.stringify(error, null, 2));
-      
       // Check for network connectivity issues
       if (error.message?.includes('Network request failed') || error.message?.includes('fetch')) {
-        console.error(`🔌 Network connectivity issue detected. Check if backend server is running on port 3001`);
+        console.log(`🔌 Network connectivity issue detected. Check if backend server is running on port 3001`);
       }
       
       // If it's already a formatted error, throw it as is
@@ -185,18 +174,14 @@ class AuthService {
 
   // Alias for convenience - same as requestPasswordReset
   async forgotPassword(request: ForgotPasswordRequest): Promise<ForgotPasswordResponse> {
-    console.log(`🔑 === FORGOT PASSWORD REQUEST START ===`);
-    console.log(`🔑 Email: ${request.email}`);
-    console.log(`🔑 Target URL: ${API_URLS.AUTH.FORGOT_PASSWORD}`);
-    console.log(`🔑 Base URL extracted: ${this.baseUrl}`);
+    console.log(`🔑 Processing forgot password request`);
     
     try {
       const result = await this.requestPasswordReset(request);
-      console.log(`🔑 === FORGOT PASSWORD SUCCESS ===`);
+      console.log(`🔑 Forgot password request completed successfully`);
       return result;
     } catch (error) {
-      console.error(`🔑 === FORGOT PASSWORD FAILED ===`);
-      console.error(`🔑 Error:`, error);
+      console.log(`🔑 Forgot password request failed`);
       throw error;
     }
   }
