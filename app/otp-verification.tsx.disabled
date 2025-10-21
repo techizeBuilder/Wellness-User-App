@@ -1,52 +1,32 @@
-import { LinearGradient } from 'expo-linear-gradient';
-import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
-import authService, { ApiError } from '../src/services/authService';
-import { colors } from '../src/utils/colors';
-import {
-  fontSizes,
-  getResponsiveBorderRadius,
-  getResponsiveFontSize,
-  getResponsiveHeight,
-  getResponsiveMargin,
-  getResponsivePadding,
-  getResponsiveWidth,
-  screenData
-} from '../src/utils/dimensions';
-import { showErrorToast, showSuccessToast } from '../src/utils/toastConfig';
+import { router } from 'expo-router';import { router } from 'expo-router';
 
-export default function OTPVerificationScreen() {
-  const { email, type } = useLocalSearchParams();
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [isLoading, setIsLoading] = useState(false);
-  const [resendLoading, setResendLoading] = useState(false);
-  const [hasAutoVerified, setHasAutoVerified] = useState(false);
-  
-  // Refs for auto-focus and auto-fill
-  const inputRefs = useRef<(TextInput | null)[]>([]);
+import React, { useEffect } from 'react';import React, { useEffect } from 'react';
 
-  // IMMEDIATELY redirect - no OTP verification for registration
-  useEffect(() => {
-    console.log('=== OTP VERIFICATION SCREEN ACCESSED ===');
-    console.log('Type parameter:', type);
-    
-    if (!type || type !== 'password_reset') {
-      console.log('Redirecting from OTP verification to login (registration flow)');
-      showSuccessToast('Success', 'Account verified! Please log in.');
-      router.replace('/login');
-      return;
-    }
-    console.log('Allowing OTP verification for password reset');
-  }, [type]);
+import { View } from 'react-native';import { View } from 'react-native';
 
-  // Show loading screen for registration flows while redirecting
-  if (!type || type !== 'password_reset') {
-    return <View style={{ flex: 1, backgroundColor: '#2da898ff' }} />;
-  }
+import { showSuccessToast } from '../src/utils/toastConfig';import { showSuccessToast } from '../src/utils/toastConfig';
 
-  // Auto-verify when all 6 digits are entered (only once)
-  useEffect(() => {
+
+
+export default function OTPVerificationScreen() {export default function OTPVerificationScreen() {
+
+  // COMPLETELY DISABLE - IMMEDIATE REDIRECT  // COMPLETELY DISABLE - IMMEDIATE REDIRECT
+
+  useEffect(() => {  useEffect(() => {
+
+    console.log('=== OTP VERIFICATION DISABLED - REDIRECTING TO LOGIN ===');    console.log('=== OTP VERIFICATION DISABLED - REDIRECTING TO LOGIN ===');
+
+    showSuccessToast('Success', 'Registration successful! Please log in.');    showSuccessToast('Success', 'Registration successful! Please log in.');
+
+    router.replace('/login');    router.replace('/login');
+
+  }, []);  }, []);
+
+
+
+  return <View style={{ flex: 1, backgroundColor: '#2da898ff' }} />;  return <View style={{ flex: 1, backgroundColor: '#2da898ff' }} />;
+
+}}
     const otpCode = otp.join('');
     if (otpCode.length === 6 && !isLoading && !hasAutoVerified) {
       setHasAutoVerified(true);

@@ -6,11 +6,11 @@ import AppleLogo from '../src/components/AppleLogo';
 import GoogleLogo from '../src/components/GoogleLogo';
 import authService, { ApiError } from '../src/services/authService';
 import {
-  getResponsiveBorderRadius,
-  getResponsiveFontSize,
-  getResponsiveMargin,
-  getResponsivePadding,
-  screenData
+    getResponsiveBorderRadius,
+    getResponsiveFontSize,
+    getResponsiveMargin,
+    getResponsivePadding,
+    screenData
 } from '../src/utils/dimensions';
 import { showErrorToast, showSuccessToast } from '../src/utils/toastConfig';
 
@@ -36,14 +36,18 @@ export default function LoginScreen() {
 
     setIsLoading(true);
     try {
+      console.log('Attempting unified login with:', { email, password: '***' });
+      
+      // Use the regular auth service which now hits the unified login endpoint
       const response = await authService.login({ email, password });
       
       if (response.success) {
-        showSuccessToast('Success', 'Login successful!');
-        // Navigate to main dashboard after login
+        const accountType = (response as any).data?.accountType || 'User';
+        showSuccessToast('Success', `${accountType} login successful!`);
         router.replace('/dashboard');
       }
     } catch (error: any) {
+      console.log('Login failed:', error);
       const apiError = error as ApiError;
       showErrorToast('Login Failed', apiError.message || 'Please check your credentials and try again');
     } finally {
@@ -84,7 +88,7 @@ export default function LoginScreen() {
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.textInput}
-                placeholder="Email or Phone"
+                placeholder="Email"
                 placeholderTextColor="#9CA3AF"
                 value={email}
                 onChangeText={setEmail}
@@ -135,7 +139,9 @@ export default function LoginScreen() {
 
             {/* OR Divider */}
             <View style={styles.orContainer}>
+              <View style={styles.orLine} />
               <Text style={styles.orText}>Or continue with</Text>
+              <View style={styles.orLine} />
             </View>
 
             {/* Social Login Buttons */}
@@ -194,36 +200,38 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: getResponsivePadding(20),
-    paddingVertical: getResponsivePadding(40),
+    paddingVertical: getResponsivePadding(screenData.isSmall ? 30 : 40),
+    minHeight: screenData.height - getResponsivePadding(60),
   },
   headerSection: {
     alignItems: 'center',
-    marginBottom: getResponsiveMargin(60),
-    paddingTop: getResponsivePadding(screenData.isSmall ? 60 : 80),
+    marginBottom: getResponsiveMargin(screenData.isSmall ? 35 : 45),
+    paddingTop: getResponsivePadding(screenData.isSmall ? 20 : 30),
   },
   title: {
-    fontSize: getResponsiveFontSize(screenData.isSmall ? 28 : 32),
+    fontSize: getResponsiveFontSize(screenData.isSmall ? 34 : screenData.isMedium ? 38 : 42),
     fontWeight: 'bold',
     color: '#FFFFFF',
     textAlign: 'center',
-    marginBottom: getResponsiveMargin(12),
+    marginBottom: getResponsiveMargin(16),
     textShadowColor: 'rgba(0, 0, 0, 0.1)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
+    letterSpacing: 0.5,
   },
   subtitle: {
-    fontSize: getResponsiveFontSize(16),
+    fontSize: getResponsiveFontSize(screenData.isSmall ? 16 : screenData.isMedium ? 17 : 18),
     color: '#FFFFFF',
     textAlign: 'center',
-    opacity: 0.9,
-    lineHeight: 24,
+    opacity: 0.95,
+    lineHeight: getResponsiveFontSize(screenData.isSmall ? 24 : screenData.isMedium ? 26 : 28),
+    fontWeight: '400',
   },
   formContainer: {
-    flex: 1,
-    justifyContent: 'center',
+    alignItems: 'stretch',
   },
   inputContainer: {
-    marginBottom: getResponsiveMargin(20),
+    marginBottom: getResponsiveMargin(screenData.isSmall ? 18 : 20),
   },
   textInput: {
     borderWidth: 2,
@@ -297,13 +305,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   orContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: getResponsiveMargin(30),
+    paddingHorizontal: getResponsivePadding(20),
+  },
+  orLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   orText: {
     fontSize: getResponsiveFontSize(14),
     color: '#6B7280',
     fontWeight: '500',
+    paddingHorizontal: getResponsivePadding(16),
   },
   socialButtonsContainer: {
     flexDirection: 'row',
@@ -338,7 +354,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: getResponsiveMargin(30),
+    marginBottom: getResponsiveMargin(screenData.isSmall ? 20 : 25),
   },
   signUpText: {
     fontSize: getResponsiveFontSize(14),
@@ -355,7 +371,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: getResponsivePadding(20),
-    marginTop: getResponsiveMargin(1),
+    marginTop: getResponsiveMargin(0),
+    paddingBottom: getResponsivePadding(screenData.isSmall ? 10 : 15),
   },
   termsText: {
     fontSize: getResponsiveFontSize(12),

@@ -6,12 +6,12 @@ import React, { useState } from 'react';
 import { Modal, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import { apiService, handleApiError } from '../src/services/apiService';
 import {
-  getResponsiveBorderRadius,
-  getResponsiveFontSize,
-  getResponsiveHeight,
-  getResponsiveMargin,
-  getResponsivePadding,
-  getResponsiveWidth
+    getResponsiveBorderRadius,
+    getResponsiveFontSize,
+    getResponsiveHeight,
+    getResponsiveMargin,
+    getResponsivePadding,
+    getResponsiveWidth
 } from '../src/utils/dimensions';
 import { showErrorToast, showSuccessToast } from '../src/utils/toastConfig';
 
@@ -20,13 +20,11 @@ export default function ExpertRegistrationScreen() {
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
-  const [profession, setProfession] = useState('');
   const [specialization, setSpecialization] = useState('');
   const [experience, setExperience] = useState('');
   const [qualifications, setQualifications] = useState('');
   const [bio, setBio] = useState('');
   const [consultationFee, setConsultationFee] = useState('');
-  const [availability, setAvailability] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [profileImage, setProfileImage] = useState<any>(null);
@@ -84,8 +82,8 @@ export default function ExpertRegistrationScreen() {
       return;
     }
 
-    if (!profession.trim() || !specialization.trim() || !experience.trim()) {
-      showErrorToast('Error', 'Please fill in all professional information fields');
+    if (!specialization.trim()) {
+      showErrorToast('Error', 'Please select your specialization');
       return;
     }
 
@@ -102,16 +100,14 @@ export default function ExpertRegistrationScreen() {
       return;
     }
 
-    // Experience validation
-    const expNum = parseInt(experience);
-    if (isNaN(expNum) || expNum < 0) {
+    // Experience validation (only if provided)
+    if (experience.trim() && (isNaN(parseInt(experience)) || parseInt(experience) < 0)) {
       showErrorToast('Error', 'Please enter valid years of experience');
       return;
     }
 
-    // Consultation fee validation
-    const feeNum = parseFloat(consultationFee);
-    if (isNaN(feeNum) || feeNum < 0) {
+    // Consultation fee validation (only if provided)
+    if (consultationFee.trim() && (isNaN(parseFloat(consultationFee)) || parseFloat(consultationFee) < 0)) {
       showErrorToast('Error', 'Please enter valid consultation fee');
       return;
     }
@@ -121,20 +117,28 @@ export default function ExpertRegistrationScreen() {
       // Create FormData for file upload
       const formData = new FormData();
       
-      // Add text fields
-      formData.append('fullName', fullName);
+      // Add text fields with correct field names that backend expects
+      formData.append('fullName', fullName); // Send fullName instead of splitting
       formData.append('email', email);
-      formData.append('phoneNumber', phoneNumber);
+      formData.append('phone', phoneNumber); // Backend expects 'phone', not 'phoneNumber'
       formData.append('password', password);
-      formData.append('profession', profession);
       formData.append('specialization', specialization);
-      formData.append('experience', experience);
-      formData.append('qualifications', qualifications);
-      formData.append('bio', bio);
-      formData.append('consultationFee', consultationFee);
-      formData.append('availability', availability.split(',').map(s => s.trim()));
+      
+      // Add optional fields only if they have values
+      if (experience && experience.trim()) {
+        formData.append('experience', experience);
+      }
+      if (bio && bio.trim()) {
+        formData.append('bio', bio);
+      }
+      if (consultationFee && consultationFee.trim()) {
+        formData.append('hourlyRate', consultationFee); // Backend expects 'hourlyRate'
+      }
+      if (qualifications && qualifications.trim()) {
+        formData.append('qualifications', qualifications);
+      }
 
-      // Add profile image if selected
+      // Add profile image if selected (backend expects 'profileImage' field)
       if (profileImage) {
         formData.append('profileImage', {
           uri: profileImage.uri,
@@ -143,14 +147,27 @@ export default function ExpertRegistrationScreen() {
         } as any);
       }
 
-      // Add documents if selected
-      documents.forEach((doc, index) => {
-        formData.append('documents', {
-          uri: doc.uri,
-          type: doc.mimeType || 'application/pdf',
-          name: doc.name || `document${index}.pdf`,
-        } as any);
-      });
+      console.log('FormData contents:');
+      console.log('fullName:', fullName);
+      console.log('email:', email);
+      console.log('phone:', phoneNumber);
+      console.log('specialization:', specialization);
+      console.log('experience:', experience || 'not provided');
+      console.log('hasProfileImage:', !!profileImage);
+
+      // Debug: Log all required fields to ensure they're not empty
+      console.log('=== REQUIRED FIELDS CHECK ===');
+      console.log('fullName valid:', fullName && fullName.trim().length > 0);
+      console.log('email valid:', email && email.trim().length > 0);
+      console.log('phone valid:', phoneNumber && phoneNumber.trim().length > 0);
+      console.log('password valid:', password && password.trim().length > 0);
+      console.log('specialization valid:', specialization && specialization.trim().length > 0);
+
+      // Note: Documents handling might need separate endpoint - backend uses single('profileImage')
+      // For now, we'll skip documents to get basic registration working
+      if (documents.length > 0) {
+        console.log(`Note: ${documents.length} documents selected but will be uploaded separately`);
+      }
 
       const response = await apiService.registerExpert(formData);
       
@@ -175,7 +192,7 @@ export default function ExpertRegistrationScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="#A0F0E4" />
       
       <LinearGradient
-        colors={['#A0F0E4', '#C2F8ED']}
+        colors={['#2da898ff', '#abeee6ff']}
         style={styles.backgroundGradient}
       >
         <ScrollView 
@@ -224,6 +241,18 @@ export default function ExpertRegistrationScreen() {
                 value={phoneNumber}
                 onChangeText={setPhoneNumber}
                 keyboardType="phone-pad"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Years of Experience (Optional)</Text>
+              <TextInput
+                style={[styles.input, experience ? styles.inputFilled : null]}
+                placeholder="e.g., 5"
+                placeholderTextColor="#999"
+                value={experience}
+                onChangeText={setExperience}
+                keyboardType="numeric"
               />
             </View>
 
@@ -385,19 +414,21 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveMargin(40),
   },
   title: {
-    fontSize: getResponsiveFontSize(28),
+    fontSize: getResponsiveFontSize(32),
     fontWeight: 'bold',
-    color: '#333',
+    color: '#ffffff',
     marginBottom: getResponsiveMargin(8),
     textAlign: 'center',
-    lineHeight: getResponsiveHeight(34),
+    lineHeight: getResponsiveHeight(38),
+    letterSpacing: 1,
   },
   subtitle: {
     fontSize: getResponsiveFontSize(16),
-    color: '#666',
+    color: '#ffffff',
     textAlign: 'center',
     maxWidth: getResponsiveWidth(300),
     lineHeight: getResponsiveHeight(22),
+    opacity: 0.95,
   },
   formSection: {
     flex: 1,
@@ -407,16 +438,17 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: getResponsiveFontSize(14),
-    fontWeight: '500',
-    color: '#333',
+    fontWeight: '600',
+    color: '#575623ff',
     marginBottom: getResponsiveMargin(8),
+    paddingLeft: getResponsivePadding(10),
   },
   input: {
-    backgroundColor: '#fff',
-    borderRadius: getResponsiveBorderRadius(12),
+    backgroundColor: '#ffffff',
+    borderRadius: getResponsiveBorderRadius(25),
     padding: getResponsivePadding(16),
     fontSize: getResponsiveFontSize(16),
-    color: '#333',
+    color: '#333333',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -425,23 +457,23 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: getResponsiveBorderRadius(8),
     elevation: 4,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
   },
   inputFilled: {
-    borderColor: '#00C6A7',
+    borderColor: '#2da898ff',
     borderWidth: 2,
   },
   passwordContainer: {
     position: 'relative',
   },
   passwordInput: {
-    backgroundColor: '#fff',
-    borderRadius: getResponsiveBorderRadius(12),
+    backgroundColor: '#ffffff',
+    borderRadius: getResponsiveBorderRadius(25),
     padding: getResponsivePadding(16),
     paddingRight: getResponsivePadding(50),
     fontSize: getResponsiveFontSize(16),
-    color: '#333',
+    color: '#333333',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -450,8 +482,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: getResponsiveBorderRadius(8),
     elevation: 4,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
   },
   eyeIcon: {
     position: 'absolute',
@@ -464,29 +496,29 @@ const styles = StyleSheet.create({
   },
   passwordRequirement: {
     fontSize: 12,
-    color: '#666',
+    color: '#575623ff',
     marginTop: 4,
   },
   createButton: {
     marginTop: getResponsiveMargin(20),
     marginBottom: getResponsiveMargin(20),
-    borderRadius: getResponsiveBorderRadius(12),
+    borderRadius: getResponsiveBorderRadius(25),
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: getResponsiveHeight(4),
     },
-    shadowOpacity: 0.3,
-    shadowRadius: getResponsiveBorderRadius(8),
-    elevation: 8,
-    backgroundColor: '#00C6A7',
+    shadowOpacity: 0.2,
+    shadowRadius: getResponsiveBorderRadius(6),
+    elevation: 4,
+    backgroundColor: '#2da898ff',
     paddingVertical: getResponsivePadding(16),
     alignItems: 'center',
     justifyContent: 'center',
   },
   createButtonText: {
-    color: '#fff',
+    color: '#ffffff',
     fontSize: getResponsiveFontSize(18),
     fontWeight: 'bold',
   },
@@ -499,25 +531,27 @@ const styles = StyleSheet.create({
   },
   loginText: {
     fontSize: getResponsiveFontSize(16),
-    color: '#666',
+    color: '#575623ff',
   },
   loginLink: {
     fontSize: getResponsiveFontSize(16),
-    color: '#00C6A7',
+    color: '#575623ff',
     fontWeight: '600',
+    textDecorationLine: 'none',
   },
   uploadSection: {
     marginBottom: getResponsiveMargin(20),
   },
   uploadLabel: {
     fontSize: getResponsiveFontSize(14),
-    fontWeight: '500',
-    color: '#333',
+    fontWeight: '600',
+    color: '#575623ff',
     marginBottom: getResponsiveMargin(8),
+    paddingLeft: getResponsivePadding(16),
   },
   uploadButton: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    borderRadius: 25,
     padding: 16,
     alignItems: 'center',
     shadowColor: '#000',
@@ -529,27 +563,27 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
     borderWidth: 2,
-    borderColor: '#00C6A7',
+    borderColor: '#2da898ff',
     borderStyle: 'dashed',
   },
   uploadButtonText: {
     fontSize: 16,
-    color: '#00C6A7',
-    fontWeight: '500',
+    color: '#2da898ff',
+    fontWeight: '600',
   },
   uploadNote: {
     fontSize: 12,
-    color: '#666',
+    color: '#575623ff',
     marginTop: 4,
     textAlign: 'center',
   },
   // Dropdown styles
   dropdownButton: {
-    backgroundColor: '#fff',
-    borderRadius: getResponsiveBorderRadius(12),
+    backgroundColor: '#ffffff',
+    borderRadius: getResponsiveBorderRadius(25),
     padding: getResponsivePadding(16),
     fontSize: getResponsiveFontSize(16),
-    color: '#333',
+    color: '#333333',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -558,8 +592,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: getResponsiveBorderRadius(8),
     elevation: 4,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -657,8 +691,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dropdownOptionSelected: {
-    backgroundColor: '#00C6A7',
-    borderColor: '#00C6A7',
+    backgroundColor: '#2da898ff',
+    borderColor: '#2da898ff',
   },
   dropdownOptionText: {
     fontSize: getResponsiveFontSize(16),
@@ -677,8 +711,8 @@ const styles = StyleSheet.create({
   },
   // Enhanced upload styles
   uploadCard: {
-    backgroundColor: '#fff',
-    borderRadius: getResponsiveBorderRadius(16),
+    backgroundColor: '#ffffff',
+    borderRadius: getResponsiveBorderRadius(25),
     padding: getResponsivePadding(24),
     alignItems: 'center',
     justifyContent: 'center',
@@ -691,7 +725,7 @@ const styles = StyleSheet.create({
     shadowRadius: getResponsiveBorderRadius(12),
     elevation: 6,
     borderWidth: 2,
-    borderColor: '#00C6A7',
+    borderColor: '#2da898ff',
     borderStyle: 'dashed',
     minHeight: getResponsiveHeight(120),
   },
@@ -705,7 +739,7 @@ const styles = StyleSheet.create({
   uploadTitle: {
     fontSize: getResponsiveFontSize(16),
     fontWeight: '600',
-    color: '#00C6A7',
+    color: '#2da898ff',
     marginBottom: getResponsiveMargin(8),
     textAlign: 'center',
   },

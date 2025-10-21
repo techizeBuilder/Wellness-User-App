@@ -6,6 +6,7 @@ import authService, { ApiError } from '../src/services/authService';
 import {
   fontSizes,
   getResponsiveBorderRadius,
+  getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveMargin,
   getResponsivePadding,
@@ -83,7 +84,7 @@ export default function ForgotPasswordScreen() {
           <View style={styles.headerSection}>
             <Text style={styles.title}>Forgot Password</Text>
             <Text style={styles.subtitle}>
-              Enter your email or phone number to receive{'\n'}a one-time password (OTP).
+              Enter your email number to receive{'\n'}a one-time password (OTP).
             </Text>
           </View>
 
@@ -92,7 +93,7 @@ export default function ForgotPasswordScreen() {
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
-                placeholder="Email or Phone Number"
+                placeholder="Email"
                 placeholderTextColor="#999"
                 value={email}
                 onChangeText={setEmail}
@@ -154,14 +155,16 @@ const styles = StyleSheet.create({
   scrollViewContent: {
     flexGrow: 1,
     paddingHorizontal: getResponsivePadding(screenData.isSmall ? 20 : screenData.isMedium ? 24 : 32),
-    paddingTop: getResponsiveHeight(screenData.isSmall ? 40 : 60),
-    paddingBottom: getResponsiveHeight(30),
-    minHeight: screenData.height - getResponsiveHeight(100),
+    paddingTop: getResponsiveHeight(screenData.isSmall ? 50 : 60),
+    paddingBottom: getResponsiveHeight(40),
+    justifyContent: 'center',
+    minHeight: screenData.height - getResponsiveHeight(80),
   },
   headerContainer: {
-    paddingTop: 0,
-    paddingBottom: getResponsivePadding(20),
-    alignItems: 'flex-start',
+    position: 'absolute',
+    top: getResponsiveHeight(screenData.isSmall ? 50 : 60),
+    left: getResponsivePadding(screenData.isSmall ? 20 : screenData.isMedium ? 24 : 32),
+    zIndex: 10,
   },
   backButton: {
     width: getResponsiveWidth(40),
@@ -180,29 +183,30 @@ const styles = StyleSheet.create({
   },
   headerSection: {
     alignItems: 'center',
-    marginBottom: getResponsiveMargin(screenData.isSmall ? 40 : 60),
-    marginTop: getResponsiveMargin(30),
+    marginBottom: getResponsiveMargin(screenData.isSmall ? 25 : 35),
+    marginTop: getResponsiveMargin(0),
   },
   title: {
-    fontSize: fontSizes.xxxl,
+    fontSize: getResponsiveFontSize(screenData.isSmall ? 32 : screenData.isMedium ? 36 : 40),
     fontWeight: 'bold',
-    color: '#f3f3f3ff',
+    color: '#ffffff',
     textAlign: 'center',
-    marginBottom: getResponsiveMargin(12),
+    marginBottom: getResponsiveMargin(16),
+    letterSpacing: 0.5,
   },
   subtitle: {
-    fontSize: fontSizes.md,
-    color: '#f3f3f3ff',
+    fontSize: getResponsiveFontSize(screenData.isSmall ? 16 : screenData.isMedium ? 17 : 18),
+    color: '#ffffff',
     textAlign: 'center',
-    lineHeight: fontSizes.md * 1.5,
+    lineHeight: getResponsiveFontSize(screenData.isSmall ? 24 : screenData.isMedium ? 26 : 28),
     fontWeight: '400',
     paddingHorizontal: getResponsivePadding(screenData.isSmall ? 10 : 0),
+    opacity: 0.95,
   },
   formSection: {
     maxWidth: getResponsiveWidth(400),
     alignSelf: 'center',
     width: '100%',
-    marginBottom: getResponsiveMargin(40),
     paddingHorizontal: getResponsivePadding(4),
   },
   inputContainer: {
@@ -249,7 +253,7 @@ const styles = StyleSheet.create({
   loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: getResponsiveMargin(20),
+    marginBottom: getResponsiveMargin(screenData.isSmall ? 15 : 20),
     flexWrap: 'wrap',
   },
   loginText: {
@@ -263,8 +267,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   footerSection: {
-    marginTop: 'auto',
-    paddingTop: getResponsivePadding(20),
+    marginTop: getResponsiveMargin(screenData.isSmall ? 20 : 30),
     paddingBottom: getResponsivePadding(20),
   },
   termsContainer: {

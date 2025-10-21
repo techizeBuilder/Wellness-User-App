@@ -1,7 +1,7 @@
 ﻿import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useRef, useState } from 'react';
-import { Animated, Dimensions, Pressable, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Dimensions, Pressable, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import {
   fontSizes,
@@ -147,11 +147,7 @@ export default function UserTypeSelection() {
         colors={['#2da898ff', '#abeee6ff']}
         style={styles.backgroundGradient}
       >
-        <ScrollView 
-          style={styles.scrollView} 
-          contentContainerStyle={styles.scrollViewContent}
-          showsVerticalScrollIndicator={false}
-        >
+        <View style={styles.contentContainer}>
           {/* Header Section */}
           <View style={styles.headerSection}>
             <Text style={styles.title}>Join Zenovia</Text>
@@ -245,7 +241,7 @@ export default function UserTypeSelection() {
               <Text style={styles.footerText}>.</Text>
             </View>
           </View>
-        </ScrollView>
+        </View>
       </LinearGradient>
     </View>
   );
@@ -258,41 +254,41 @@ const styles = StyleSheet.create({
   backgroundGradient: {
     flex: 1,
   },
-  scrollView: {
+  contentContainer: {
     flex: 1,
-  },
-  scrollViewContent: {
-    flexGrow: 1,
     paddingHorizontal: getResponsivePadding(screenData.isSmall ? 20 : screenData.isMedium ? 24 : 32),
-    paddingTop: getResponsiveHeight(screenData.isSmall ? 40 : 60),
+    paddingTop: getResponsiveHeight(screenData.isSmall ? 80 : 100),
     paddingBottom: getResponsiveHeight(30),
-    justifyContent: 'center',
-    minHeight: screenData.height - getResponsiveHeight(100),
+    justifyContent: 'space-between',
   },
   headerSection: {
     alignItems: 'center',
     marginBottom: getResponsiveMargin(screenData.isSmall ? 30 : 40),
   },
   title: {
-    fontSize: fontSizes.xxxl,
+    fontSize: screenData.isSmall ? 36 : screenData.isMedium ? 42 : 48,
     fontWeight: '700',
-    color: '#f3f3f3ff',
+    color: '#ffffff',
     textAlign: 'center',
-    marginBottom: getResponsiveMargin(12),
-    letterSpacing: -0.8,
-    lineHeight: fontSizes.xxxl * 1.1,
+    marginBottom: getResponsiveMargin(16),
+    letterSpacing: -0.5,
+    lineHeight: screenData.isSmall ? 40 : screenData.isMedium ? 46 : 52,
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   subtitle: {
-    fontSize: fontSizes.md,
-    color: '#f3f3f3ff',
+    fontSize: screenData.isSmall ? 18 : screenData.isMedium ? 20 : 22,
+    color: '#ffffff',
     textAlign: 'center',
-    lineHeight: fontSizes.md * 1.5,
+    lineHeight: screenData.isSmall ? 24 : screenData.isMedium ? 26 : 28,
     fontWeight: '400',
-    paddingHorizontal: getResponsivePadding(screenData.isSmall ? 10 : 0),
+    paddingHorizontal: getResponsivePadding(screenData.isSmall ? 20 : 10),
+    opacity: 0.95,
   },
   formSection: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     maxWidth: getResponsiveWidth(400),
     alignSelf: 'center',
     width: '100%',
@@ -306,11 +302,11 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#F59E0B',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
-    shadowRadius: 12,
+    shadowRadius: 10,
     elevation: 4,
-    minHeight: getResponsiveHeight(screenData.isSmall ? 140 : 160),
+    minHeight: getResponsiveHeight(screenData.isSmall ? 130 : 150),
   },
   selectedOption: {
     borderColor: '#2da898ff',
@@ -324,9 +320,9 @@ const styles = StyleSheet.create({
     transform: [{ scale: 1.02 }],
   },
   iconContainer: {
-    width: getResponsiveWidth(screenData.isSmall ? 56 : 64),
-    height: getResponsiveHeight(screenData.isSmall ? 56 : 64),
-    borderRadius: getResponsiveBorderRadius(screenData.isSmall ? 28 : 32),
+    width: getResponsiveWidth(screenData.isSmall ? 60 : 70),
+    height: getResponsiveHeight(screenData.isSmall ? 60 : 70),
+    borderRadius: getResponsiveBorderRadius(screenData.isSmall ? 30 : 35),
     backgroundColor: '#F59E0B',
     justifyContent: 'center',
     alignItems: 'center',
@@ -336,31 +332,31 @@ const styles = StyleSheet.create({
     backgroundColor: '#2da898ff',
   },
   optionTitle: {
-    fontSize: fontSizes.xl,
+    fontSize: screenData.isSmall ? 20 : 22,
     fontWeight: 'bold',
     color: '#333333',
-    marginBottom: getResponsiveMargin(8),
+    marginBottom: getResponsiveMargin(10),
     textAlign: 'center',
   },
-  optionDescription: {
+optionDescription: {
     fontSize: fontSizes.sm,
     color: '#666666',
     textAlign: 'center',
     lineHeight: fontSizes.sm * 1.4,
     paddingHorizontal: getResponsivePadding(screenData.isSmall ? 8 : 0),
   },
-  continueButton: {
+continueButton: {
     borderRadius: getResponsiveBorderRadius(25),
-    paddingVertical: getResponsivePadding(screenData.isSmall ? 16 : 18),
+    paddingVertical: getResponsivePadding(screenData.isSmall ? 14 : 16),
     alignItems: 'center',
-    marginTop: getResponsiveMargin(24),
-    marginBottom: getResponsiveMargin(24),
+    marginTop: getResponsiveMargin(16),
+    marginBottom: getResponsiveMargin(16),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 6,
     elevation: 4,
-    minHeight: getResponsiveHeight(screenData.isSmall ? 50 : 56),
+    minHeight: getResponsiveHeight(screenData.isSmall ? 45 : 50),
   },
   gradientButtonContent: {
     width: '100%',

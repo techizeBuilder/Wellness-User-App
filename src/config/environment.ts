@@ -1,24 +1,32 @@
-import { Platform } from 'react-native';
 
 // Helper to get the correct API URL based on platform
 const getApiBaseUrl = () => {
-  if (Platform.OS === 'android') {
-    return 'http://192.168.1.4:3001/api'; // Use PC's IP for real device connectivity
-  } else if (Platform.OS === 'ios') {
-    return 'http://192.168.1.4:3001/api'; // Use PC's IP for real device connectivity
-  } else {
-    return 'http://192.168.1.4:3001/api'; // Use PC's IP for web/other platforms
-  }
+  // Use your computer's network IP address for all platforms
+  // This works for both emulators and physical devices on the same network
+  return 'http://192.168.1.3:3001/api';
+  
+  // Alternative platform-specific URLs (commented out)
+  // if (Platform.OS === 'android') {
+  //   return 'http://10.0.2.2:3001/api'; // Android emulator localhost
+  // } else if (Platform.OS === 'ios') {
+  //   return 'http://localhost:3001/api'; // iOS simulator localhost
+  // } else {
+  //   return 'http://localhost:3001/api'; // Web/other platforms localhost
+  // }
 };
 
 const getUploadsBaseUrl = () => {
-  if (Platform.OS === 'android') {
-    return 'http://192.168.1.4:3001/uploads'; // Use PC's IP for real device connectivity
-  } else if (Platform.OS === 'ios') {
-    return 'http://192.168.1.4:3001/uploads'; // Use PC's IP for real device connectivity
-  } else {
-    return 'http://192.168.1.4:3001/uploads'; // Use PC's IP for web/other platforms
-  }
+  // Use your computer's network IP address for all platforms
+  return 'http://192.168.1.3:3001/uploads';
+  
+  // Alternative platform-specific URLs (commented out)
+  // if (Platform.OS === 'android') {
+  //   return 'http://10.0.2.2:3001/uploads'; // Android emulator localhost
+  // } else if (Platform.OS === 'ios') {
+  //   return 'http://localhost:3001/uploads'; // iOS simulator localhost
+  // } else {
+  //   return 'http://localhost:3001/uploads'; // Web/other platforms localhost
+  // }
 };
 
 interface EnvConfig {

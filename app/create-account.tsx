@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import { apiService, handleApiError } from '../src/services/apiService';
 import {
   fontSizes,
@@ -24,29 +24,36 @@ export default function CreateAccountScreen() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleCreateAccount = async () => {
-    // Validation
+    // Basic validation
     if (!fullName.trim() || !email.trim() || !phoneNumber.trim() || !password.trim()) {
-      showErrorToast('Error', 'Please fill in all fields');
+      showErrorToast('Validation Error', 'Please fill in all fields');
+      return;
+    }
+
+    // Name validation - ensure we have at least first name
+    const nameParts = fullName.trim().split(' ');
+    if (nameParts.length < 1 || nameParts[0].length < 2) {
+      showErrorToast('Validation Error', 'Please enter your full name (at least first name with 2+ characters)');
       return;
     }
 
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      showErrorToast('Error', 'Please enter a valid email address');
+      showErrorToast('Validation Error', 'Please enter a valid email address');
       return;
     }
 
-    // Password validation
+    // Enhanced password validation 
     if (password.length < 6) {
-      showErrorToast('Error', 'Password must be at least 6 characters long');
+      showErrorToast('Validation Error', 'Password must be at least 6 characters long');
       return;
     }
 
     // Phone number validation
     const phoneRegex = /^[\+]?[0-9\s\-\(\)]{10,}$/;
     if (!phoneRegex.test(phoneNumber)) {
-      showErrorToast('Error', 'Please enter a valid phone number');
+      showErrorToast('Validation Error', 'Please enter a valid phone number (at least 10 digits)');
       return;
     }
 
@@ -60,11 +67,14 @@ export default function CreateAccountScreen() {
       });
       
       if (response.success) {
-        showSuccessToast('Success', 'Account created successfully!');
-        // Navigate to login or dashboard
-        router.replace('/login');
+        showSuccessToast('Success', 'Account created successfully! You can now log in.');
+        // Skip OTP verification screen and go to login
+        router.replace('/login' as any);
+      } else {
+        showErrorToast('Registration Failed', response.message || 'Unknown error occurred');
       }
     } catch (error) {
+      console.error('Registration error:', error);
       const errorMessage = handleApiError(error);
       showErrorToast('Registration Failed', errorMessage);
     } finally {
@@ -77,18 +87,15 @@ export default function CreateAccountScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <LinearGradient
+      colors={['#2da898ff', '#abeee6ff']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
+      style={styles.container}
+    >
       <StatusBar barStyle="dark-content" backgroundColor="#A0F0E4" />
       
-      <LinearGradient
-        colors={['#2da898ff', '#abeee6ff']}
-        style={styles.backgroundGradient}
-      >
-        <ScrollView 
-          style={styles.scrollView} 
-          contentContainerStyle={styles.scrollViewContent}
-          showsVerticalScrollIndicator={false}
-        >
+        <View style={styles.mainContainer}>
           {/* Header Section */}
           <View style={styles.headerSection}>
             <Text style={styles.title}>Create Account</Text>
@@ -154,7 +161,7 @@ export default function CreateAccountScreen() {
                 </Pressable>
               </View>
               <Text style={styles.passwordRequirement}>
-                Must be at least 8 characters.
+                Must be at least 6 characters.
               </Text>
             </View>
 
@@ -175,9 +182,8 @@ export default function CreateAccountScreen() {
               </Pressable>
             </View>
           </View>
-        </ScrollView>
-      </LinearGradient>
-    </View>
+        </View>
+    </LinearGradient>
   );
 }
 
@@ -188,52 +194,49 @@ const styles = StyleSheet.create({
   backgroundGradient: {
     flex: 1,
   },
-  scrollView: {
+  mainContainer: {
     flex: 1,
-  },
-  scrollViewContent: {
-    flexGrow: 1,
     paddingHorizontal: getResponsivePadding(screenData.isSmall ? 20 : screenData.isMedium ? 24 : 32),
-    paddingTop: getResponsiveHeight(screenData.isSmall ? 40 : 60),
-    paddingBottom: getResponsiveHeight(30),
+    paddingTop: getResponsiveHeight(screenData.isSmall ? 60 : 80),
+    paddingBottom: getResponsiveHeight(screenData.isSmall ? 40 : 50),
     justifyContent: 'center',
-    minHeight: screenData.height - getResponsiveHeight(100),
   },
   headerSection: {
     alignItems: 'center',
-    marginBottom: getResponsiveMargin(screenData.isSmall ? 24 : 40),
+    marginBottom: getResponsiveMargin(screenData.isSmall ? 25 : 30),
+    marginTop: getResponsiveMargin(screenData.isSmall ? 0 : 10),
   },
   title: {
-    fontSize: fontSizes.xxxl,
+    fontSize: getResponsiveFontSize(screenData.isSmall ? 34 : screenData.isMedium ? 38 : 42),
     fontWeight: 'bold',
-    color: '#f3f3f3ff',
+    color: '#ffffff',
     textAlign: 'center',
     marginBottom: getResponsiveMargin(12),
+    letterSpacing: 0.5,
   },
   subtitle: {
-    fontSize: fontSizes.md,
-    color: '#f3f3f3ff',
+    fontSize: getResponsiveFontSize(screenData.isSmall ? 14 : screenData.isMedium ? 16 : 17),
+    color: '#ffffff',
     textAlign: 'center',
-    lineHeight: fontSizes.md * 1.5,
+    lineHeight: getResponsiveFontSize(screenData.isSmall ? 20 : screenData.isMedium ? 24 : 26),
     fontWeight: '400',
     paddingHorizontal: getResponsivePadding(screenData.isSmall ? 10 : 0),
+    opacity: 0.95,
   },
   formSection: {
-    flex: 1,
-    justifyContent: 'center',
     maxWidth: getResponsiveWidth(400),
     alignSelf: 'center',
     width: '100%',
   },
   inputGroup: {
-    marginBottom: getResponsiveMargin(16),
+    marginBottom: getResponsiveMargin(screenData.isSmall ? 14 : 16),
   },
   inputLabel: {
-    fontSize: fontSizes.sm,
-    fontWeight: '500',
-    color: '#575623ff',
-    marginBottom: getResponsiveMargin(8),
-    paddingLeft: getResponsivePadding(11),
+    fontSize: getResponsiveFontSize(screenData.isSmall ? 13 : 14),
+    fontWeight: '600',
+    color: '#4a5568',
+    marginBottom: getResponsiveMargin(8), 
+    paddingLeft: getResponsivePadding(12),
   },
   input: {
     backgroundColor: '#FFFFFF',
@@ -249,7 +252,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
-    minHeight: getResponsiveHeight(screenData.isSmall ? 48 : 54),
+    minHeight: getResponsiveHeight(screenData.isSmall ? 45 : 50),
   },
   inputFilled: {
     borderColor: '#2da898ff',
@@ -273,60 +276,66 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
-    minHeight: getResponsiveHeight(screenData.isSmall ? 48 : 54),
+    minHeight: getResponsiveHeight(screenData.isSmall ? 45 : 50),
   },
   eyeIcon: {
     position: 'absolute',
     right: getResponsivePadding(20),
-    top: getResponsivePadding(screenData.isSmall ? 14 : 16),
+    top: getResponsivePadding(screenData.isSmall ? 12 : 14),
     padding: getResponsivePadding(4),
   },
   eyeIconText: {
     fontSize: getResponsiveFontSize(18),
   },
   passwordRequirement: {
-    fontSize: fontSizes.xs,
-    color: '#575623ff',
-    marginTop: getResponsiveMargin(7),
-    paddingLeft: getResponsivePadding(11),
+    fontSize: getResponsiveFontSize(screenData.isSmall ? 12 : 13),
+    color: '#6b7280',
+    marginTop: getResponsiveMargin(8),
+    paddingLeft: getResponsivePadding(12),
+    fontWeight: '400',
   },
   createButton: {
     backgroundColor: '#2da898ff',
     borderRadius: getResponsiveBorderRadius(25),
     paddingVertical: getResponsivePadding(screenData.isSmall ? 16 : 18),
     alignItems: 'center',
-    marginTop: getResponsiveMargin(30),
-    marginBottom: getResponsiveMargin(30),
+    justifyContent: 'center',
+    marginTop: getResponsiveMargin(screenData.isSmall ? 20 : 25),
+    marginBottom: getResponsiveMargin(screenData.isSmall ? 15 : 20),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 6,
     elevation: 4,
-    minHeight: getResponsiveHeight(screenData.isSmall ? 50 : 56),
+    minHeight: getResponsiveHeight(screenData.isSmall ? 50 : 54),
   },
   createButtonDisabled: {
     backgroundColor: '#9CA3AF',
   },
   createButtonText: {
     color: '#ffffff',
-    fontSize: fontSizes.lg,
+    fontSize: getResponsiveFontSize(screenData.isSmall ? 16 : screenData.isMedium ? 17 : 18),
     fontWeight: 'bold',
+    textAlign: 'center',
   },
   loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: getResponsiveMargin(20),
+    marginTop: getResponsiveMargin(screenData.isSmall ? 10 : 15),
+    marginBottom: getResponsiveMargin(screenData.isSmall ? 15 : 20),
     flexWrap: 'wrap',
+    paddingHorizontal: getResponsivePadding(20),
   },
   loginText: {
-    fontSize: fontSizes.md,
-    color: '#575623ff',
+    fontSize: getResponsiveFontSize(screenData.isSmall ? 14 : 15),
+    color: '#4a5568',
+    textAlign: 'center',
   },
   loginLink: {
-    fontSize: fontSizes.md,
+    fontSize: getResponsiveFontSize(screenData.isSmall ? 14 : 15),
     color: '#575623ff',
     fontWeight: '600',
-    textDecorationLine: 'none',
+    textDecorationLine: 'none q',
   },
 });

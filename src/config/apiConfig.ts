@@ -21,6 +21,7 @@ export const ENDPOINTS = {
   },
   EXPERTS: {
     REGISTER: '/experts/register',
+    LOGIN: '/experts/login',
     LIST: '/experts',
     DETAIL: '/experts',
   }

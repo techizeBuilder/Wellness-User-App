@@ -31,7 +31,7 @@ export default function ExpertRegistrationScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="#A0F0E4" />
       
       <LinearGradient
-        colors={['#A0F0E4', '#C2F8ED']}
+        colors={['#2da898ff', '#abeee6ff']}
         style={styles.backgroundGradient}
       >
         <ScrollView 
@@ -190,16 +190,17 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#ffffff',
     marginBottom: 8,
     textAlign: 'center',
     letterSpacing: 1,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: '#ffffff',
     textAlign: 'center',
     maxWidth: 300,
+    opacity: 0.95,
   },
   formSection: {
     flex: 1,
@@ -209,16 +210,16 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
+    fontWeight: '600',
+    color: '#575623ff',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    borderRadius: 25,
     padding: 16,
     fontSize: 16,
-    color: '#333',
+    color: '#333333',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -227,23 +228,23 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
   },
   inputFilled: {
-    borderColor: '#00C6A7',
+    borderColor: '#2da898ff',
     borderWidth: 2,
   },
   passwordContainer: {
     position: 'relative',
   },
   passwordInput: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    borderRadius: 25,
     padding: 16,
     paddingRight: 50,
     fontSize: 16,
-    color: '#333',
+    color: '#333333',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -252,8 +253,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
   },
   eyeIcon: {
     position: 'absolute',
@@ -269,13 +270,13 @@ const styles = StyleSheet.create({
   },
   uploadLabel: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
+    fontWeight: '600',
+    color: '#575623ff',
     marginBottom: 8,
   },
   uploadButton: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    borderRadius: 25,
     padding: 16,
     alignItems: 'center',
     shadowColor: '#000',
@@ -287,40 +288,40 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
     borderWidth: 2,
-    borderColor: '#00C6A7',
+    borderColor: '#2da898ff',
     borderStyle: 'dashed',
   },
   uploadButtonText: {
     fontSize: 16,
-    color: '#00C6A7',
-    fontWeight: '500',
+    color: '#2da898ff',
+    fontWeight: '600',
   },
   uploadNote: {
     fontSize: 12,
-    color: '#666',
+    color: '#575623ff',
     marginTop: 4,
     textAlign: 'center',
   },
   registerButton: {
     marginTop: 20,
     marginBottom: 30,
-    borderRadius: 12,
+    borderRadius: 25,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 4,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-    backgroundColor: '#00C6A7',
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
+    backgroundColor: '#2da898ff',
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   registerButtonText: {
-    color: '#fff',
+    color: '#ffffff',
     fontSize: 18,
     fontWeight: 'bold',
   },
@@ -333,11 +334,12 @@ const styles = StyleSheet.create({
   },
   loginText: {
     fontSize: 16,
-    color: '#666',
+    color: '#575623ff',
   },
   loginLink: {
     fontSize: 16,
-    color: '#00C6A7',
+    color: '#575623ff',
     fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });

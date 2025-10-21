@@ -1,6 +1,7 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
-import { Pressable, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import authService, { ApiError } from '../src/services/authService';
 import { colors } from '../src/utils/colors';
 import {
@@ -65,20 +66,37 @@ export default function ResetPasswordScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
+      <StatusBar barStyle="light-content" backgroundColor="#2da898ff" />
       
-      <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backArrow}>←</Text>
-        </Pressable>
-        
-        <Text style={styles.title}>Reset Password</Text>
-        <Text style={styles.subtitle}>
-          Create a new password for your Zenovia account.
-        </Text>
-      </View>
+      <LinearGradient
+        colors={['#2da898ff', '#abeee6ff']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
+      >
+        <ScrollView 
+          style={styles.scrollView} 
+          contentContainerStyle={styles.scrollViewContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Header with back button */}
+          <View style={styles.headerContainer}>
+            <Pressable style={styles.backButton} onPress={() => router.back()}>
+              <Text style={styles.backArrow}>←</Text>
+            </Pressable>
+          </View>
 
-      <View style={styles.form}>
+          {/* Header Section */}
+          <View style={styles.headerSection}>
+            <Text style={styles.title}>Reset Password</Text>
+            <Text style={styles.subtitle}>
+              Create a new password for your Zenovia account.
+            </Text>
+          </View>
+
+          {/* Form Section */}
+          <View style={styles.formContainer}>
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>New Password</Text>
           <TextInput
@@ -119,26 +137,28 @@ export default function ResetPasswordScreen() {
           </Pressable>
         </View>
 
-        <Text style={styles.requirement}>
-          Password must be at least 8 characters long
-        </Text>
-      </View>
+            <Text style={styles.requirement}>
+              Password must be at least 8 characters long
+            </Text>
 
-      <View style={styles.footer}>
-        <Pressable 
-          style={[styles.resetButton, isLoading && styles.resetButtonDisabled]} 
-          onPress={handleResetPassword}
-          disabled={isLoading}
-        >
-          <Text style={styles.resetButtonText}>
-            {isLoading ? 'Resetting Password...' : 'Reset Password'}
-          </Text>
-        </Pressable>
+            {/* Reset Button */}
+            <Pressable 
+              style={[styles.resetButton, isLoading && styles.resetButtonDisabled]} 
+              onPress={handleResetPassword}
+              disabled={isLoading}
+            >
+              <Text style={styles.resetButtonText}>
+                {isLoading ? 'Resetting Password...' : 'Reset Password'}
+              </Text>
+            </Pressable>
 
-        <Pressable style={styles.backToLogin} onPress={() => router.push('/login')}>
-          <Text style={styles.backToLoginText}>Back to Login</Text>
-        </Pressable>
-      </View>
+            {/* Back to Login */}
+            <Pressable style={styles.backToLogin} onPress={() => router.push('/login')}>
+              <Text style={styles.backToLoginText}>Back to Login</Text>
+            </Pressable>
+          </View>
+        </ScrollView>
+      </LinearGradient>
     </View>
   );
 }
@@ -146,56 +166,73 @@ export default function ResetPasswordScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#2da898ff',
   },
-  header: {
-    paddingTop: getResponsivePadding(50),
-    paddingHorizontal: getResponsivePadding(24),
-    paddingBottom: getResponsivePadding(40),
+  scrollView: {
+    flex: 1,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    paddingHorizontal: getResponsivePadding(20),
+    paddingTop: getResponsiveHeight(20),
+    paddingBottom: getResponsiveHeight(30),
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: getResponsiveMargin(20),
+    paddingTop: getResponsivePadding(20),
   },
   backButton: {
     width: getResponsiveWidth(40),
     height: getResponsiveHeight(40),
     borderRadius: getResponsiveBorderRadius(20),
-    backgroundColor: '#F8F9FA',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: getResponsiveMargin(24),
   },
   backArrow: {
     fontSize: getResponsiveFontSize(20),
-    color: colors.deepTeal,
+    color: colors.white,
     fontWeight: 'bold',
   },
+  headerSection: {
+    alignItems: 'center',
+    marginBottom: getResponsiveMargin(30),
+    paddingHorizontal: getResponsivePadding(20),
+  },
   title: {
-    fontSize: getResponsiveFontSize(24),
+    fontSize: getResponsiveFontSize(28),
     fontWeight: 'bold',
-    color: colors.deepTeal,
-    marginBottom: getResponsiveMargin(8),
+    color: colors.white,
+    marginBottom: getResponsiveMargin(12),
     textAlign: 'center',
   },
   subtitle: {
     fontSize: getResponsiveFontSize(16),
-    color: '#666',
+    color: colors.white,
     lineHeight: getResponsiveHeight(22),
     textAlign: 'center',
+    opacity: 0.9,
   },
-  form: {
-    flex: 1,
-    paddingHorizontal: getResponsivePadding(24),
+  formContainer: {
+    alignItems: 'center',
+    maxWidth: getResponsiveWidth(400),
+    alignSelf: 'center',
+    width: '100%',
   },
   inputContainer: {
     position: 'relative',
     marginBottom: getResponsiveMargin(20),
+    width: '100%',
   },
   inputLabel: {
     fontSize: getResponsiveFontSize(16),
     fontWeight: '600',
-    color: colors.deepTeal,
+    color: '#575623ff',
     marginBottom: getResponsiveMargin(8),
   },
   input: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderRadius: getResponsiveBorderRadius(12),
     paddingHorizontal: getResponsivePadding(16),
     paddingVertical: getResponsivePadding(16),
@@ -203,52 +240,65 @@ const styles = StyleSheet.create({
     color: '#333333',
     borderWidth: 2,
     borderColor: '#F59E0B',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
   eyeIcon: {
     position: 'absolute',
     right: getResponsiveWidth(16),
     top: getResponsiveHeight(44),
     padding: getResponsivePadding(4),
+    zIndex: 1,
   },
   eyeIconText: {
-    fontSize: getResponsiveFontSize(16),
+    fontSize: getResponsiveFontSize(18),
+    color: '#666',
   },
   requirement: {
     fontSize: getResponsiveFontSize(14),
-    color: '#666',
+    color: '#575623ff',
     marginTop: getResponsiveMargin(8),
+    marginBottom: getResponsiveMargin(30),
     paddingHorizontal: getResponsivePadding(4),
-  },
-  footer: {
-    paddingHorizontal: getResponsivePadding(24),
-    paddingBottom: getResponsivePadding(40),
+    textAlign: 'center',
   },
   resetButton: {
     backgroundColor: '#2da898ff',
     borderRadius: getResponsiveBorderRadius(25),
     paddingVertical: getResponsivePadding(16),
+    paddingHorizontal: getResponsivePadding(40),
     alignItems: 'center',
-    marginBottom: getResponsiveMargin(16),
+    justifyContent: 'center',
+    marginTop: getResponsiveMargin(20),
+    marginBottom: getResponsiveMargin(20),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 6,
     elevation: 4,
+    minHeight: getResponsiveHeight(56),
+    width: '80%',
+    alignSelf: 'center',
   },
   resetButtonDisabled: {
     backgroundColor: '#9CA3AF',
   },
   resetButtonText: {
-    fontSize: getResponsiveFontSize(16),
+    fontSize: getResponsiveFontSize(18),
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: colors.white,
   },
   backToLogin: {
     alignItems: 'center',
+    marginTop: getResponsiveMargin(10),
   },
   backToLoginText: {
     fontSize: getResponsiveFontSize(16),
     color: '#575623ff',
     fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });

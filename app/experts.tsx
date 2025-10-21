@@ -114,9 +114,9 @@ export default function ExpertsScreen() {
 
   return (
     <LinearGradient
-     colors={['#23a897ff', '#269184ff', '#188d83ff']}
-      start={{ x: 0.5, y: 0 }}
-      end={{ x: 0.5, y: 1 }}
+      colors={['#2da898ff', '#abeee6ff']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
       style={styles.container}
     >
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
@@ -142,7 +142,7 @@ export default function ExpertsScreen() {
           <TextInput
             style={styles.searchInput}
             placeholder="Search for experts"
-            placeholderTextColor="rgba(255,255,255,0.7)"
+            placeholderTextColor="#999999"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
@@ -231,9 +231,9 @@ export default function ExpertsScreen() {
       <ScrollView style={styles.expertsContainer} showsVerticalScrollIndicator={false}>
         {filteredExperts.map((expert, index) => {
           const gradients = [
-                 ['rgba(247, 246, 250, 0.9)', 'rgba(248, 248, 248, 0.9)'], // Purple gradient
-                ['rgba(247, 246, 250, 0.9)', 'rgba(248, 248, 248, 0.9)'], // Green gradient  
-                ['rgba(247, 246, 250, 0.9)', 'rgba(248, 248, 248, 0.9)'],// Pink gradient
+                 ['#ffffff', '#f8f9fa'], // White card theme
+                ['#ffffff', '#f8f9fa'], // White card theme  
+                ['#ffffff', '#f8f9fa'], // White card theme
           ];
           return (
             <LinearGradient
@@ -266,7 +266,7 @@ export default function ExpertsScreen() {
                       <Text style={styles.price}>{expert.price}</Text>
                     </View>
                     <LinearGradient
-                      colors={['#4DD0E1', '#00CED1']}
+                      colors={['#2da898ff', '#2da898ff']}
                       style={styles.viewProfileButton}
                     >
                       <Text style={styles.viewProfileText}>View Profile</Text>
@@ -319,12 +319,17 @@ const styles = StyleSheet.create({
   compactSearchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: '#ffffff',
     borderRadius: getResponsiveBorderRadius(25),
     paddingHorizontal: getResponsivePadding(16),
     paddingVertical: getResponsivePadding(10),
     borderWidth: 2,
     borderColor: '#F59E0B',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   // Compact Categories Styles
   compactCategoriesContainer: {
@@ -341,8 +346,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   compactCategoryChipActive: {
-    backgroundColor: '#F59E0B',
-    borderColor: '#D97706',
+    backgroundColor: '#575623ff',
+    borderColor: '#575623ff',
   },
   compactCategoryChipText: {
     fontSize: getResponsiveFontSize(14),
@@ -404,12 +409,12 @@ const styles = StyleSheet.create({
   searchIcon: {
     fontSize: getResponsiveFontSize(16),
     marginRight: getResponsiveMargin(12),
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#575623ff',
   },
   searchInput: {
     flex: 1,
     fontSize: getResponsiveFontSize(16),
-    color: '#ffffff',
+    color: '#333333',
   },
   filtersContainer: {
     paddingLeft: getResponsivePadding(20),
@@ -423,7 +428,7 @@ const styles = StyleSheet.create({
   filterLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#ffffff',
+    color: '#575623ff',
     marginBottom: 8,
   },
   filterOptions: {
@@ -439,8 +444,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   filterChipActive: {
-    backgroundColor: '#F59E0B',
-    borderColor: '#D97706',
+    backgroundColor: '#575623ff',
+    borderColor: '#575623ff',
   },
   filterChipText: {
     fontSize: getResponsiveFontSize(12),
@@ -532,13 +537,13 @@ const styles = StyleSheet.create({
   },
   expertSpecialty: {
     fontSize: getResponsiveFontSize(12),
-    color: '#666',
+    color: '#575623ff',
     fontWeight: '600',
     marginBottom: getResponsiveMargin(2),
   },
   expertExperience: {
     fontSize: getResponsiveFontSize(11),
-    color: '#555',
+    color: '#575623ff',
     marginBottom: getResponsiveMargin(6),
   },
   expertDescription: {
@@ -571,7 +576,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsivePadding(12),
     paddingVertical: getResponsivePadding(6),
     borderRadius: getResponsiveBorderRadius(12),
-    shadowColor: '#4DD0E1',
+    shadowColor: '#2da898ff',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 3,
@@ -583,6 +588,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   bottomSpacer: {
-    height: FOOTER_HEIGHT + getResponsiveHeight(30), // Footer height + extra padding
+    height: FOOTER_HEIGHT + getResponsiveHeight(60), // Footer height + extra padding for better spacing
   },
 });

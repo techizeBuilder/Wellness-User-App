@@ -1,15 +1,16 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import { colors } from '../src/utils/colors';
 import {
-    getResponsiveBorderRadius,
-    getResponsiveFontSize,
-    getResponsiveHeight,
-    getResponsiveMargin,
-    getResponsivePadding,
-    getResponsiveWidth
+  fontSizes,
+  getResponsiveBorderRadius,
+  getResponsiveFontSize,
+  getResponsiveHeight,
+  getResponsiveMargin,
+  getResponsivePadding,
+  getResponsiveWidth
 } from '../src/utils/dimensions';
 
 export default function ContactInfoScreen() {
@@ -33,64 +34,60 @@ export default function ContactInfoScreen() {
   };
 
   return (
-    <LinearGradient
-      colors={['#2DD4BF', '#14B8A6', '#0D9488']}
-      start={{ x: 0.5, y: 0 }}
-      end={{ x: 0.5, y: 1 }}
-      style={styles.container}
-    >
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#2da898ff" />
       
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backArrow}>←</Text>
-        </Pressable>
-        <Text style={styles.headerTitle}>Contact Info</Text>
-        <Pressable 
-          style={styles.editButton}
-          onPress={() => setIsEditing(!isEditing)}
-        >
-          <Text style={styles.editButtonText}>
-            {isEditing ? 'Cancel' : 'Edit'}
-          </Text>
-        </Pressable>
-      </View>
-
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Profile Image Section */}
-        <LinearGradient
-          colors={['rgba(255, 255, 255, 0.15)', 'rgba(255, 255, 255, 0.1)']}
-          style={styles.profileSection}
-        >
-          <View style={styles.profileImageContainer}>
-            <Image
-              source={{ uri: 'https://images.unsplash.com/photo-1494790108755-2616b612b2e5?w=150&h=150&fit=crop&crop=face' }}
-              style={styles.profileImage}
-            />
-            {isEditing && (
-              <Pressable style={styles.changePhotoButton}>
-                <Text style={styles.changePhotoText}>📸</Text>
-              </Pressable>
-            )}
-          </View>
-          <Text style={styles.profileName}>{fullName}</Text>
-          <Text style={styles.profileSubtitle}>Yoga & Meditation Enthusiast</Text>
-        </LinearGradient>
-
-        {/* Contact Information */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Personal Information</Text>
-          
-          <LinearGradient
-            colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
-            style={styles.infoCard}
+      <LinearGradient
+        colors={['#2da898ff', '#abeee6ff']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <Pressable style={styles.backButton} onPress={() => router.back()}>
+            <Text style={styles.backArrow}>←</Text>
+          </Pressable>
+          <Text style={styles.headerTitle}>Contact Info</Text>
+          <Pressable 
+            style={styles.editButton}
+            onPress={() => setIsEditing(!isEditing)}
           >
-            <View style={styles.infoItem}>
+            <Text style={styles.editButtonText}>
+              {isEditing ? 'Cancel' : 'Edit'}
+            </Text>
+          </Pressable>
+        </View>
+
+        <ScrollView 
+          style={styles.scrollView} 
+          contentContainerStyle={styles.scrollViewContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Profile Section */}
+          <View style={styles.profileCard}>
+            <View style={styles.profileImageContainer}>
+              <View style={styles.profileImagePlaceholder}>
+                <Text style={styles.profileImageText}>👤</Text>
+              </View>
+              {isEditing && (
+                <Pressable style={styles.changePhotoButton}>
+                  <Text style={styles.changePhotoText}>📸</Text>
+                </Pressable>
+              )}
+            </View>
+            <Text style={styles.profileName}>{fullName}</Text>
+            <Text style={styles.profileSubtitle}>Yoga & Meditation Enthusiast</Text>
+          </View>
+
+          {/* Personal Information Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Personal Information</Text>
+            
+            {/* Full Name Card */}
+            <View style={styles.infoCard}>
               <View style={styles.infoHeader}>
-                <View style={styles.iconContainer}>
-                  <Text style={styles.icon}>👤</Text>
-                </View>
+                <Text style={styles.infoIcon}>👤</Text>
                 <Text style={styles.infoLabel}>Full Name</Text>
               </View>
               {isEditing ? (
@@ -99,19 +96,17 @@ export default function ContactInfoScreen() {
                   value={fullName}
                   onChangeText={setFullName}
                   placeholder="Enter your full name"
+                  placeholderTextColor="#999"
                 />
               ) : (
                 <Text style={styles.infoValue}>{fullName}</Text>
               )}
             </View>
 
-            <View style={styles.divider} />
-
-            <View style={styles.infoItem}>
+            {/* Email Card */}
+            <View style={styles.infoCard}>
               <View style={styles.infoHeader}>
-                <View style={styles.iconContainer}>
-                  <Text style={styles.icon}>📧</Text>
-                </View>
+                <Text style={styles.infoIcon}>📧</Text>
                 <Text style={styles.infoLabel}>Email Address</Text>
               </View>
               {isEditing ? (
@@ -120,6 +115,7 @@ export default function ContactInfoScreen() {
                   value={email}
                   onChangeText={setEmail}
                   placeholder="Enter your email"
+                  placeholderTextColor="#999"
                   keyboardType="email-address"
                 />
               ) : (
@@ -127,13 +123,10 @@ export default function ContactInfoScreen() {
               )}
             </View>
 
-            <View style={styles.divider} />
-
-            <View style={styles.infoItem}>
+            {/* Phone Card */}
+            <View style={styles.infoCard}>
               <View style={styles.infoHeader}>
-                <View style={styles.iconContainer}>
-                  <Text style={styles.icon}>📱</Text>
-                </View>
+                <Text style={styles.infoIcon}>📱</Text>
                 <Text style={styles.infoLabel}>Phone Number</Text>
               </View>
               {isEditing ? (
@@ -142,6 +135,7 @@ export default function ContactInfoScreen() {
                   value={phone}
                   onChangeText={setPhone}
                   placeholder="Enter your phone number"
+                  placeholderTextColor="#999"
                   keyboardType="phone-pad"
                 />
               ) : (
@@ -149,13 +143,10 @@ export default function ContactInfoScreen() {
               )}
             </View>
 
-            <View style={styles.divider} />
-
-            <View style={styles.infoItem}>
+            {/* Date of Birth Card */}
+            <View style={styles.infoCard}>
               <View style={styles.infoHeader}>
-                <View style={styles.iconContainer}>
-                  <Text style={styles.icon}>🎂</Text>
-                </View>
+                <Text style={styles.infoIcon}>🎂</Text>
                 <Text style={styles.infoLabel}>Date of Birth</Text>
               </View>
               {isEditing ? (
@@ -164,27 +155,21 @@ export default function ContactInfoScreen() {
                   value={dateOfBirth}
                   onChangeText={setDateOfBirth}
                   placeholder="Enter your date of birth"
+                  placeholderTextColor="#999"
                 />
               ) : (
                 <Text style={styles.infoValue}>{dateOfBirth}</Text>
               )}
             </View>
-          </LinearGradient>
-        </View>
+          </View>
 
-        {/* Address Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Address Information</Text>
-          
-          <LinearGradient
-            colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
-            style={styles.infoCard}
-          >
-            <View style={styles.infoItem}>
+          {/* Address Information Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Address Information</Text>
+            
+            <View style={styles.infoCard}>
               <View style={styles.infoHeader}>
-                <View style={styles.iconContainer}>
-                  <Text style={styles.icon}>🏠</Text>
-                </View>
+                <Text style={styles.infoIcon}>🏠</Text>
                 <Text style={styles.infoLabel}>Home Address</Text>
               </View>
               {isEditing ? (
@@ -193,6 +178,7 @@ export default function ContactInfoScreen() {
                   value={address}
                   onChangeText={setAddress}
                   placeholder="Enter your address"
+                  placeholderTextColor="#999"
                   multiline
                   numberOfLines={3}
                 />
@@ -200,22 +186,15 @@ export default function ContactInfoScreen() {
                 <Text style={styles.infoValue}>{address}</Text>
               )}
             </View>
-          </LinearGradient>
-        </View>
+          </View>
 
-        {/* Emergency Contact */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Emergency Contact</Text>
-          
-          <LinearGradient
-            colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.25)']}
-            style={styles.infoCard}
-          >
-            <View style={styles.infoItem}>
+          {/* Emergency Contact Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Emergency Contact</Text>
+            
+            <View style={styles.infoCard}>
               <View style={styles.infoHeader}>
-                <View style={styles.iconContainer}>
-                  <Text style={styles.icon}>🚨</Text>
-                </View>
+                <Text style={styles.infoIcon}>🚨</Text>
                 <Text style={styles.infoLabel}>Emergency Contact</Text>
               </View>
               {isEditing ? (
@@ -224,20 +203,16 @@ export default function ContactInfoScreen() {
                   value={emergencyContact}
                   onChangeText={setEmergencyContact}
                   placeholder="Name - Phone number"
+                  placeholderTextColor="#999"
                 />
               ) : (
                 <Text style={styles.infoValue}>{emergencyContact}</Text>
               )}
             </View>
-          </LinearGradient>
-        </View>
+          </View>
 
-        {/* Privacy Notice */}
-        <View style={styles.privacySection}>
-          <LinearGradient
-            colors={['rgba(129, 199, 132, 0.1)', 'rgba(200, 230, 201, 0.2)']}
-            style={styles.privacyCard}
-          >
+          {/* Privacy Section */}
+          <View style={styles.privacyCard}>
             <Text style={styles.privacyIcon}>🔒</Text>
             <View style={styles.privacyContent}>
               <Text style={styles.privacyTitle}>Privacy Protected</Text>
@@ -245,35 +220,23 @@ export default function ContactInfoScreen() {
                 Your personal information is encrypted and secure. We never share your data with third parties.
               </Text>
             </View>
-          </LinearGradient>
-        </View>
-
-        {/* Save Button */}
-        {isEditing && (
-          <View style={styles.actionSection}>
-            <Pressable style={styles.saveButton} onPress={handleSave}>
-              <LinearGradient
-                colors={[colors.coralAccent, '#E55A50']}
-                style={styles.saveButtonGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              >
-                <Text style={styles.saveButtonText}>Save Changes</Text>
-              </LinearGradient>
-            </Pressable>
           </View>
-        )}
 
-        <View style={styles.bottomSpacer} />
-      </ScrollView>
-    </LinearGradient>
+          {/* Save Button */}
+          {isEditing && (
+            <Pressable style={styles.saveButton} onPress={handleSave}>
+              <Text style={styles.saveButtonText}>Save Changes</Text>
+            </Pressable>
+          )}
+        </ScrollView>
+      </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.lightMistTeal,
   },
   header: {
     flexDirection: 'row',
@@ -287,165 +250,159 @@ const styles = StyleSheet.create({
     width: getResponsiveWidth(40),
     height: getResponsiveHeight(40),
     borderRadius: getResponsiveBorderRadius(20),
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   backArrow: {
-    fontSize: getResponsiveFontSize(18),
+    fontSize: getResponsiveFontSize(20),
     color: colors.white,
     fontWeight: 'bold',
   },
   headerTitle: {
-    fontSize: getResponsiveFontSize(20),
+    fontSize: fontSizes.xl,
     fontWeight: 'bold',
     color: colors.white,
   },
   editButton: {
     paddingHorizontal: getResponsivePadding(16),
     paddingVertical: getResponsivePadding(8),
-    borderRadius: getResponsiveBorderRadius(16),
+    borderRadius: getResponsiveBorderRadius(20),
     backgroundColor: 'rgba(255, 215, 0, 0.3)',
   },
   editButtonText: {
-    fontSize: getResponsiveFontSize(14),
+    fontSize: fontSizes.sm,
     color: colors.white,
     fontWeight: '600',
   },
   scrollView: {
     flex: 1,
   },
-  profileSection: {
-    alignItems: 'center',
-    paddingVertical: getResponsivePadding(32),
-    marginHorizontal: getResponsiveMargin(20),
-    marginTop: getResponsiveMargin(16),
+  scrollViewContent: {
+    paddingHorizontal: getResponsivePadding(20),
+    paddingBottom: getResponsivePadding(30),
+  },
+  profileCard: {
+    backgroundColor: colors.white,
     borderRadius: getResponsiveBorderRadius(20),
+    padding: getResponsivePadding(24),
+    alignItems: 'center',
+    marginBottom: getResponsiveMargin(24),
   },
   profileImageContainer: {
     position: 'relative',
     marginBottom: getResponsiveMargin(16),
   },
-  profileImage: {
+  profileImagePlaceholder: {
     width: getResponsiveWidth(120),
     height: getResponsiveHeight(120),
     borderRadius: getResponsiveBorderRadius(60),
-    borderWidth: 4,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: '#E8F5F4',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#2da898ff',
+  },
+  profileImageText: {
+    fontSize: getResponsiveFontSize(50),
+    color: '#2da898ff',
   },
   changePhotoButton: {
     position: 'absolute',
     bottom: 0,
     right: 0,
-    width: getResponsiveWidth(36),
-    height: getResponsiveHeight(36),
-    borderRadius: getResponsiveBorderRadius(18),
-    backgroundColor: colors.coralAccent,
+    width: getResponsiveWidth(30),
+    height: getResponsiveHeight(30),
+    borderRadius: getResponsiveBorderRadius(15),
+    backgroundColor: '#F59E0B',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: 'rgba(255, 255, 255, 0.8)',
+    borderWidth: 2,
+    borderColor: colors.white,
   },
   changePhotoText: {
-    fontSize: getResponsiveFontSize(16),
+    fontSize: getResponsiveFontSize(14),
   },
   profileName: {
-    fontSize: getResponsiveFontSize(24),
+    fontSize: fontSizes.xl,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#333333',
     marginBottom: getResponsiveMargin(4),
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: getResponsiveHeight(1) },
-    textShadowRadius: getResponsiveBorderRadius(2),
+    textAlign: 'center',
   },
   profileSubtitle: {
-    fontSize: getResponsiveFontSize(16),
-    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: fontSizes.md,
+    color: '#666666',
+    textAlign: 'center',
   },
   section: {
-    paddingHorizontal: getResponsivePadding(20),
-    marginTop: getResponsiveMargin(24),
+    marginBottom: getResponsiveMargin(24),
   },
   sectionTitle: {
-    fontSize: getResponsiveFontSize(18),
+    fontSize: fontSizes.lg,
     fontWeight: 'bold',
-    color: 'rgba(255, 255, 255, 0.9)',
-    marginBottom: getResponsiveMargin(16),
-    paddingLeft: getResponsivePadding(4),
+    color: colors.white,
+    marginBottom: getResponsiveMargin(12),
   },
   infoCard: {
+    backgroundColor: colors.white,
     borderRadius: getResponsiveBorderRadius(16),
     padding: getResponsivePadding(20),
-    shadowColor: 'rgba(0, 0, 0, 0.15)',
-    shadowOffset: { width: 0, height: getResponsiveHeight(3) },
-    shadowOpacity: 0.4,
-    shadowRadius: getResponsiveBorderRadius(6),
-    elevation: 4,
-    marginBottom: getResponsiveMargin(8),
-  },
-  infoItem: {
-    marginVertical: getResponsiveMargin(8),
+    marginBottom: getResponsiveMargin(16),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
   },
   infoHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: getResponsiveMargin(12),
+    marginBottom: getResponsiveMargin(8),
   },
-  iconContainer: {
-    width: getResponsiveWidth(32),
-    height: getResponsiveHeight(32),
-    borderRadius: getResponsiveBorderRadius(16),
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
+  infoIcon: {
+    fontSize: getResponsiveFontSize(20),
     marginRight: getResponsiveMargin(12),
-  },
-  icon: {
-    fontSize: getResponsiveFontSize(16),
+    width: getResponsiveWidth(24),
   },
   infoLabel: {
-    fontSize: getResponsiveFontSize(14),
-    color: 'white',
+    fontSize: fontSizes.md,
+    color: '#2da898ff',
     fontWeight: '600',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: getResponsiveHeight(1) },
-    textShadowRadius: getResponsiveBorderRadius(1),
   },
   infoValue: {
-    fontSize: getResponsiveFontSize(16),
-    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: fontSizes.md,
+    color: '#333333',
     lineHeight: getResponsiveHeight(22),
+    marginLeft: getResponsiveMargin(36),
   },
   editInput: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: getResponsiveBorderRadius(12),
-    paddingHorizontal: getResponsivePadding(16),
+    backgroundColor: '#F8F9FA',
+    borderRadius: getResponsiveBorderRadius(10),
+    paddingHorizontal: getResponsivePadding(14),
     paddingVertical: getResponsivePadding(12),
-    fontSize: getResponsiveFontSize(16),
-    color: 'white',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    fontSize: fontSizes.md,
+    color: '#333333',
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    marginLeft: getResponsiveMargin(36),
+    marginTop: getResponsiveMargin(4),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   multilineInput: {
-    minHeight: getResponsiveHeight(80),
+    minHeight: getResponsiveHeight(60),
     textAlignVertical: 'top',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    marginVertical: getResponsiveMargin(16),
-  },
-  privacySection: {
-    paddingHorizontal: getResponsivePadding(20),
-    marginTop: getResponsiveMargin(24),
   },
   privacyCard: {
     flexDirection: 'row',
-    backgroundColor: colors.sageGreen + '20',
+    backgroundColor: colors.white,
     borderRadius: getResponsiveBorderRadius(16),
     padding: getResponsivePadding(20),
-    borderWidth: 1,
-    borderColor: colors.sageGreen + '30',
+    marginBottom: getResponsiveMargin(20),
   },
   privacyIcon: {
     fontSize: getResponsiveFontSize(24),
@@ -455,44 +412,36 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   privacyTitle: {
-    fontSize: getResponsiveFontSize(16),
+    fontSize: fontSizes.md,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#2da898ff',
     marginBottom: getResponsiveMargin(8),
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: getResponsiveHeight(1) },
-    textShadowRadius: getResponsiveBorderRadius(1),
   },
   privacyText: {
-    fontSize: getResponsiveFontSize(14),
-    color: 'rgba(255, 255, 255, 0.8)',
-    lineHeight: getResponsiveHeight(20),
-  },
-  actionSection: {
-    paddingHorizontal: getResponsivePadding(20),
-    marginTop: getResponsiveMargin(32),
+    fontSize: fontSizes.sm,
+    color: '#666666',
+    lineHeight: getResponsiveHeight(18),
   },
   saveButton: {
-    borderRadius: getResponsiveBorderRadius(16),
-    overflow: 'hidden',
-    shadowColor: colors.coralAccent,
-    shadowOffset: { width: 0, height: getResponsiveHeight(4) },
-    shadowOpacity: 0.3,
-    shadowRadius: getResponsiveBorderRadius(8),
-    elevation: 6,
-  },
-  saveButtonGradient: {
-    paddingVertical: getResponsivePadding(16),
+    backgroundColor: '#2da898ff',
+    borderRadius: getResponsiveBorderRadius(25),
+    paddingVertical: getResponsivePadding(18),
+    paddingHorizontal: getResponsivePadding(50),
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: getResponsiveMargin(24),
+    marginBottom: getResponsiveMargin(24),
+    shadowColor: '#2da898ff',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
+    alignSelf: 'center',
+    minWidth: getResponsiveWidth(200),
   },
   saveButtonText: {
-    fontSize: getResponsiveFontSize(18),
+    fontSize: fontSizes.lg,
     fontWeight: 'bold',
     color: colors.white,
-    letterSpacing: 0.5,
-  },
-  bottomSpacer: {
-    height: getResponsiveHeight(40),
   },
 });

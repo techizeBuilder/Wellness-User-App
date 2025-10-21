@@ -20,9 +20,10 @@ class ApiService {
       'https://apiwellness.shrawantravels.com/api' // Backup production URL
     ] : [
       this.baseUrl,
-      'http://localhost:3001/api',
-      'http://10.0.2.2:3001/api',
-      'http://127.0.0.1:3001/api'
+      'http://192.168.1.3:3001/api', // Your computer's network IP (primary)
+      'http://10.0.2.2:3001/api', // Android emulator fallback
+      'http://localhost:3001/api', // iOS simulator fallback
+      'http://127.0.0.1:3001/api' // Local machine fallback
     ];
 
     let lastError: Error | null = null;
@@ -105,14 +106,15 @@ class ApiService {
     email: string;
     phoneNumber: string;
     password: string;
+    profileImage?: any; // For future image support
   }) {
     // Split fullName into firstName and lastName
     const nameParts = userData.fullName.trim().split(' ');
     const firstName = nameParts[0];
-    const lastName = nameParts.slice(1).join(' ') || '';
+    const lastName = nameParts.slice(1).join(' ') || firstName; // Use first name as last name if no last name provided
     
-    // Transform to match backend expectations
-    const backendData = {
+    // For now, use JSON registration (image upload can be added later)
+    const registrationData = {
       firstName,
       lastName,
       email: userData.email,
@@ -120,10 +122,73 @@ class ApiService {
       password: userData.password
     };
     
+    console.log('Sending registration data:', registrationData);
+    
     return this.request(ENDPOINTS.AUTH.REGISTER, {
       method: 'POST',
-      body: JSON.stringify(backendData),
+      body: JSON.stringify(registrationData),
     });
+  }
+
+  private async requestFormData(endpoint: string, options: RequestInit = {}): Promise<any> {
+    // Try multiple base URLs based on environment
+    const isProduction = ENV_CONFIG.CURRENT_ENV === 'production';
+    
+    const baseUrls = isProduction ? [
+      this.baseUrl, // Production URL from config
+      'https://apiwellness.shrawantravels.com/api' // Backup production URL
+    ] : [
+      this.baseUrl,
+      'http://192.168.1.3:3001/api', // Your computer's network IP (primary)
+      'http://10.0.2.2:3001/api', // Android emulator fallback
+      'http://localhost:3001/api', // iOS simulator fallback
+      'http://127.0.0.1:3001/api' // Local machine fallback
+    ];
+
+    let lastError: Error | null = null;
+
+    for (const baseUrl of baseUrls) {
+      try {
+        const url = `${baseUrl}${endpoint}`;
+        console.log(`🌐 Trying FormData API request to: ${url}`);
+        
+        const config: RequestInit = {
+          ...options,
+          headers: {
+            // Don't set Content-Type for FormData - let browser handle it
+            ...options.headers,
+          },
+        };
+
+        // Add auth token if available
+        const token = await this.getToken();
+        if (token) {
+          config.headers = {
+            ...config.headers,
+            Authorization: `Bearer ${token}`,
+          };
+        }
+
+        const response = await fetch(url, config);
+        
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({ message: `HTTP ${response.status}` }));
+          throw new Error(data.message || `HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log(`✅ FormData API request successful to: ${url}`);
+        return data;
+        
+      } catch (error) {
+        lastError = error as Error;
+        console.log(`❌ FormData API request failed for ${baseUrl}${endpoint}:`, error);
+        continue;
+      }
+    }
+
+    console.error('❌ All FormData API endpoints failed. Last error:', lastError);
+    throw lastError || new Error('Network request failed - all endpoints unreachable');
   }
 
   async login(credentials: { email: string; password: string }) {
@@ -174,15 +239,23 @@ class ApiService {
 
   // Expert APIs
   async registerExpert(formData: FormData) {
-    const token = await this.getToken();
-    return this.request(ENDPOINTS.EXPERTS.REGISTER, {
+    return this.requestFormData(ENDPOINTS.EXPERTS.REGISTER, {
       method: 'POST',
-      headers: {
-        // Don't set Content-Type for FormData, let the browser set it
-        Authorization: `Bearer ${token}`,
-      },
       body: formData,
     });
+  }
+
+  async loginExpert(credentials: { email: string; password: string }) {
+    const response = await this.request(ENDPOINTS.EXPERTS.LOGIN, {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    });
+    
+    if (response.data && response.data.token) {
+      await this.setToken(response.data.token);
+    }
+    
+    return response;
   }
 
   async getExpertProfile(expertId: string) {
@@ -255,12 +328,39 @@ export interface ResetPasswordData {
 
 // Error handling utility
 export const handleApiError = (error: any): string => {
-  if (error.message) {
+  console.log('API Error Details:', error);
+  
+  // Check if it's a validation error with details
+  if (error.message && error.message.includes('validation')) {
     return error.message;
+  }
+  
+  // Check for specific error messages
+  if (error.message) {
+    // Clean up common error messages
+    const message = error.message;
+    if (message.includes('User with this email already exists')) {
+      return 'An account with this email already exists. Please use a different email or try logging in.';
+    }
+    if (message.includes('User with this phone number already exists')) {
+      return 'An account with this phone number already exists. Please use a different number.';
+    }
+    if (message.includes('Password must contain')) {
+      return 'Password must contain at least one uppercase letter, one lowercase letter, and one number.';
+    }
+    if (message.includes('Network request failed')) {
+      return 'Network connection failed. Please check your internet connection and try again.';
+    }
+    return message;
   }
   
   if (typeof error === 'string') {
     return error;
+  }
+  
+  // Check if it's a fetch error
+  if (error.name === 'TypeError' && error.message.includes('fetch')) {
+    return 'Network connection failed. Please check your internet connection and try again.';
   }
   
   return 'An unexpected error occurred. Please try again.';

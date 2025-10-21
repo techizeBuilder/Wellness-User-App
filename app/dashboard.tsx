@@ -4,14 +4,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Dimensions, Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import Footer, { FOOTER_HEIGHT } from '../src/components/Footer';
 import {
-    fontSizes,
-    getResponsiveBorderRadius,
-    getResponsiveFontSize,
-    getResponsiveHeight,
-    getResponsiveMargin,
-    getResponsivePadding,
-    getResponsiveWidth,
-    screenData
+  fontSizes,
+  getResponsiveBorderRadius,
+  getResponsiveFontSize,
+  getResponsiveHeight,
+  getResponsiveMargin,
+  getResponsivePadding,
+  getResponsiveWidth,
+  screenData
 } from '../src/utils/dimensions';
 
 const { width } = Dimensions.get('window');
@@ -784,7 +784,7 @@ const styles = StyleSheet.create({
   },
   expertCard: {
     width: getResponsiveWidth(screenData.isSmall ? 280 : 320),
-    height: getResponsiveHeight(screenData.isSmall ? 190 : 220),
+    height: getResponsiveHeight(screenData.isSmall ? 210 : 230),
     marginRight: getResponsiveMargin(16),
     borderRadius: getResponsiveBorderRadius(24),
     borderWidth: 2,
@@ -1168,6 +1168,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   bottomSpacer: {
-    height: FOOTER_HEIGHT + getResponsiveHeight(30), // Footer height + extra padding
+    height: FOOTER_HEIGHT + getResponsiveHeight(60), // Footer height + extra padding for better spacing
   },
 });
