@@ -53,8 +53,41 @@ class ApiService {
         const response = await fetch(url, config);
         
         if (!response.ok) {
-          const data = await response.json().catch(() => ({ message: `HTTP ${response.status}` }));
-          throw new Error(data.message || `HTTP error! status: ${response.status}`);
+          let errorData = null;
+          let errorMessage = `HTTP error! status: ${response.status}`;
+          
+          try {
+            errorData = await response.json();
+            console.log('Error response data:', errorData);
+            
+            // Handle validation errors specifically
+            if (errorData.type === 'validation_error' && errorData.errors) {
+              errorMessage = errorData.message || errorData.errors.join(', ');
+            } else if (errorData.message) {
+              errorMessage = errorData.message;
+            } else if (errorData.error) {
+              errorMessage = errorData.error;
+            }
+            
+            // Create a more detailed error object
+            const customError = new Error(errorMessage);
+            if (errorData.type) {
+              (customError as any).type = errorData.type;
+            }
+            if (errorData.errors) {
+              (customError as any).errors = errorData.errors;
+            }
+            throw customError;
+            
+          } catch (parseError) {
+            // If JSON parsing fails, check if the error is not the JSON parsing itself
+            if (parseError instanceof Error && parseError.message !== errorMessage) {
+              throw parseError; // Re-throw our custom error
+            }
+            // Use status text if JSON parsing fails
+            errorMessage = response.statusText || errorMessage;
+            throw new Error(errorMessage);
+          }
         }
 
         const data = await response.json();
@@ -131,6 +164,11 @@ class ApiService {
   }
 
   private async requestFormData(endpoint: string, options: RequestInit = {}): Promise<any> {
+    // Validate FormData
+    if (options.body && !(options.body instanceof FormData)) {
+      throw new Error('Body must be a FormData instance for multipart requests');
+    }
+
     // Try multiple base URLs based on environment
     const isProduction = ENV_CONFIG.CURRENT_ENV === 'production';
     
@@ -155,10 +193,15 @@ class ApiService {
         const config: RequestInit = {
           ...options,
           headers: {
-            // Don't set Content-Type for FormData - let browser handle it
-            ...options.headers,
+            // Don't set Content-Type for FormData - let the system handle multipart boundary
+            ...((options.headers as Record<string, string>) || {}),
           },
         };
+
+        // Remove any manually set Content-Type for FormData
+        if (config.headers && 'Content-Type' in config.headers) {
+          delete (config.headers as any)['Content-Type'];
+        }
 
         // Add auth token if available
         const token = await this.getToken();
@@ -172,8 +215,15 @@ class ApiService {
         const response = await fetch(url, config);
         
         if (!response.ok) {
-          const data = await response.json().catch(() => ({ message: `HTTP ${response.status}` }));
-          throw new Error(data.message || `HTTP error! status: ${response.status}`);
+          let errorMessage = `HTTP error! status: ${response.status}`;
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch (parseError) {
+            // If JSON parsing fails, use status text
+            errorMessage = response.statusText || errorMessage;
+          }
+          throw new Error(errorMessage);
         }
 
         const data = await response.json();
@@ -331,8 +381,16 @@ export const handleApiError = (error: any): string => {
   console.log('API Error Details:', error);
   
   // Check if it's a validation error with details
-  if (error.message && error.message.includes('validation')) {
-    return error.message;
+  if (error.type === 'validation_error') {
+    if (error.errors && Array.isArray(error.errors)) {
+      return error.errors.join(', ');
+    }
+    return error.message || 'Validation error occurred';
+  }
+  
+  // Check if it's a duplicate error
+  if (error.type === 'duplicate_error') {
+    return error.message || 'Duplicate data found';
   }
   
   // Check for specific error messages
@@ -359,7 +417,7 @@ export const handleApiError = (error: any): string => {
   }
   
   // Check if it's a fetch error
-  if (error.name === 'TypeError' && error.message.includes('fetch')) {
+  if (error.name === 'TypeError' && error.message && error.message.includes('fetch')) {
     return 'Network connection failed. Please check your internet connection and try again.';
   }
   
