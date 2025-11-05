@@ -2,17 +2,18 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
-import { apiService, handleApiError } from '../src/services/apiService';
+import { apiService } from '../src/services/apiService';
 import {
-  fontSizes,
-  getResponsiveBorderRadius,
-  getResponsiveFontSize,
-  getResponsiveHeight,
-  getResponsiveMargin,
-  getResponsivePadding,
-  getResponsiveWidth,
-  screenData
+    fontSizes,
+    getResponsiveBorderRadius,
+    getResponsiveFontSize,
+    getResponsiveHeight,
+    getResponsiveMargin,
+    getResponsivePadding,
+    getResponsiveWidth,
+    screenData
 } from '../src/utils/dimensions';
+import { handleRegistrationError, logErrorSafely } from '../src/utils/errorHandler';
 import { showErrorToast, showSuccessToast } from '../src/utils/toastConfig';
 
 export default function CreateAccountScreen() {
@@ -74,9 +75,10 @@ export default function CreateAccountScreen() {
         showErrorToast('Registration Failed', response.message || 'Unknown error occurred');
       }
     } catch (error) {
-      console.error('Registration error:', error);
-      const errorMessage = handleApiError(error);
-      showErrorToast('Registration Failed', errorMessage);
+      // Use enhanced error handling to avoid console spam for validation errors
+      const errorInfo = handleRegistrationError(error);
+      logErrorSafely(error, 'Registration error');
+      showErrorToast('Registration Failed', errorInfo.message);
     } finally {
       setIsLoading(false);
     }

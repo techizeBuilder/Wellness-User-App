@@ -4,15 +4,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Modal, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
-import { apiService, handleApiError } from '../src/services/apiService';
+import { apiService } from '../src/services/apiService';
 import {
-    getResponsiveBorderRadius,
-    getResponsiveFontSize,
-    getResponsiveHeight,
-    getResponsiveMargin,
-    getResponsivePadding,
-    getResponsiveWidth
+  getResponsiveBorderRadius,
+  getResponsiveFontSize,
+  getResponsiveHeight,
+  getResponsiveMargin,
+  getResponsivePadding,
+  getResponsiveWidth
 } from '../src/utils/dimensions';
+import { handleRegistrationError, logErrorSafely } from '../src/utils/errorHandler';
 import { showErrorToast, showSuccessToast } from '../src/utils/toastConfig';
 
 export default function ExpertRegistrationScreen() {
@@ -176,8 +177,10 @@ export default function ExpertRegistrationScreen() {
         router.replace('/login');
       }
     } catch (error) {
-      const errorMessage = handleApiError(error);
-      showErrorToast('Registration Failed', errorMessage);
+      // Use enhanced error handling to avoid console spam for validation errors
+      const errorInfo = handleRegistrationError(error);
+      logErrorSafely(error, 'Expert registration error');
+      showErrorToast('Registration Failed', errorInfo.message);
     } finally {
       setIsLoading(false);
     }

@@ -3,15 +3,16 @@ import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { Dimensions, Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import Footer, { FOOTER_HEIGHT } from '../src/components/Footer';
+import authService from '../src/services/authService';
 import {
-  fontSizes,
-  getResponsiveBorderRadius,
-  getResponsiveFontSize,
-  getResponsiveHeight,
-  getResponsiveMargin,
-  getResponsivePadding,
-  getResponsiveWidth,
-  screenData
+    fontSizes,
+    getResponsiveBorderRadius,
+    getResponsiveFontSize,
+    getResponsiveHeight,
+    getResponsiveMargin,
+    getResponsivePadding,
+    getResponsiveWidth,
+    screenData
 } from '../src/utils/dimensions';
 
 const { width } = Dimensions.get('window');
@@ -21,6 +22,27 @@ export default function DashboardScreen() {
   const [currentExpertIndex, setCurrentExpertIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
   const expertsScrollRef = useRef<ScrollView>(null);
+
+  // Check account type on component mount
+  useEffect(() => {
+    const checkAccountType = async () => {
+      try {
+        const accountType = await authService.getAccountType();
+        console.log('Dashboard - Account Type:', accountType);
+        
+        // If user is an Expert, redirect to expert dashboard
+        if (accountType === 'Expert') {
+          console.log('Redirecting Expert to expert dashboard');
+          router.replace('/expert-dashboard');
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking account type:', error);
+      }
+    };
+
+    checkAccountType();
+  }, []);
 
   const handleExpertsPress = () => {
     router.push('/experts');

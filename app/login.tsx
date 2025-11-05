@@ -44,7 +44,13 @@ export default function LoginScreen() {
       if (response.success) {
         const accountType = (response as any).data?.accountType || 'User';
         showSuccessToast('Success', `${accountType} login successful!`);
-        router.replace('/dashboard');
+        
+        // Redirect to appropriate dashboard based on account type
+        if (accountType === 'Expert') {
+          router.replace('/expert-dashboard');
+        } else {
+          router.replace('/dashboard');
+        }
       }
     } catch (error: any) {
       console.log('Login failed:', error);

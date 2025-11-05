@@ -20,6 +20,7 @@ export interface LoginResponse {
       isEmailVerified: boolean;
     };
     token: string;
+    accountType?: string; // Add accountType to handle User vs Expert
   };
 }
 
@@ -153,9 +154,13 @@ class AuthService {
       }
     );
 
-    // Store token in AsyncStorage/SecureStore for future requests
+    // Store token and account type in AsyncStorage for future requests
     if (response.success && response.data.token) {
       await this.storeToken(response.data.token);
+      
+      // Store account type if available
+      const accountType = response.data.accountType || 'User';
+      await this.storeAccountType(accountType);
     }
 
     return response;
@@ -222,6 +227,26 @@ class AuthService {
     }
   }
 
+  private async storeAccountType(accountType: string): Promise<void> {
+    try {
+      await AsyncStorage.setItem('accountType', accountType);
+      console.log('✅ Account type stored successfully in AsyncStorage');
+    } catch (error) {
+      console.error('❌ Error storing account type:', error);
+      throw error;
+    }
+  }
+
+  async getAccountType(): Promise<string | null> {
+    try {
+      const accountType = await AsyncStorage.getItem('accountType');
+      return accountType;
+    } catch (error) {
+      console.error('❌ Error retrieving account type:', error);
+      return null;
+    }
+  }
+
   async getToken(): Promise<string | null> {
     try {
       const token = await AsyncStorage.getItem('authToken');
@@ -235,7 +260,8 @@ class AuthService {
   async removeToken(): Promise<void> {
     try {
       await AsyncStorage.removeItem('authToken');
-      console.log('✅ Token removed successfully from AsyncStorage');
+      await AsyncStorage.removeItem('accountType');
+      console.log('✅ Token and account type removed successfully from AsyncStorage');
     } catch (error) {
       console.error('❌ Error removing token:', error);
       throw error;

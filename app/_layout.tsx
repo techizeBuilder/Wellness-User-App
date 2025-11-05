@@ -2,6 +2,7 @@ import { Stack } from "expo-router";
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
+import '../src/utils/consoleOverride'; // Global console override for clean UX
 import '../src/utils/errorSuppression'; // Must be first import
 
 export default function RootLayout() {

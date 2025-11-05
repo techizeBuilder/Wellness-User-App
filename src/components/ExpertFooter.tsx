@@ -4,49 +4,47 @@ import React from 'react';
 import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  fontSizes,
-  getResponsiveBorderRadius,
-  getResponsiveFontSize,
-  getResponsiveHeight,
-  getResponsiveMargin,
-  getResponsiveWidth
+    getResponsiveBorderRadius,
+    getResponsiveFontSize,
+    getResponsiveHeight,
+    getResponsiveWidth
 } from '../utils/dimensions';
 
-// Export footer height for use in other components (WhatsApp-style)
-export const FOOTER_HEIGHT = 75 + 25; // Base height + safe area buffer
+// Export footer height for use in other components
+export const EXPERT_FOOTER_HEIGHT = 75 + 25; // Base height + safe area buffer
 
-interface FooterProps {
+interface ExpertFooterProps {
   activeRoute: string;
 }
 
-export default function Footer({ activeRoute }: FooterProps) {
+export default function ExpertFooter({ activeRoute }: ExpertFooterProps) {
   const insets = useSafeAreaInsets();
   const { height: screenHeight } = Dimensions.get('window');
   
   const footerItems = [
     {
-      id: 'dashboard',
-      icon: '⌂',
-      label: 'Home',
-      route: '/dashboard'
+      id: 'expert-dashboard',
+      icon: '📊',
+      label: 'Dashboard',
+      route: '/expert-dashboard'
     },
     {
-      id: 'experts',
-      icon: '👥',
-      label: 'Experts',
-      route: '/experts'
-    },
-    {
-      id: 'sessions',
+      id: 'appointments',
       icon: '📅',
-      label: 'Sessions',
-      route: '/sessions'
+      label: 'Schedule',
+      route: '/expert-appointments'
     },
     {
-      id: 'content',
-      icon: '📚',
-      label: 'Content',
-      route: '/content'
+      id: 'patients',
+      icon: '👥',
+      label: 'Patients',
+      route: '/expert-patients'
+    },
+    {
+      id: 'earnings',
+      icon: '💰',
+      label: 'Earnings',
+      route: '/expert-earnings'
     },
     {
       id: 'profile',
@@ -57,7 +55,11 @@ export default function Footer({ activeRoute }: FooterProps) {
   ];
 
   const handlePress = (route: string) => {
-    if (route !== `/${activeRoute}`) {
+    // Special handling for profile route to keep expert context
+    if (route === '/profile') {
+      // Navigate to profile but store context that we came from expert dashboard
+      router.push('/profile?context=expert');
+    } else if (route !== `/${activeRoute}`) {
       router.push(route as any);
     }
   };
@@ -67,7 +69,7 @@ export default function Footer({ activeRoute }: FooterProps) {
       styles.bottomNav, 
       { 
         height: 75 + insets.bottom, // Add safe area to height
-        paddingBottom: insets.bottom, // Safe area at bottom like WhatsApp
+        paddingBottom: insets.bottom, // Safe area at bottom
       }
     ]}>
       <LinearGradient
@@ -152,7 +154,7 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveBorderRadius(20),
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: getResponsiveMargin(4),
+    marginBottom: 4,
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     shadowColor: '#4DD0E1',
     shadowOffset: { width: 0, height: 1 },
@@ -173,7 +175,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   navLabel: {
-    fontSize: fontSizes.xs,
+    fontSize: getResponsiveFontSize(10),
     fontWeight: '500',
     textAlign: 'center',
     marginTop: 2,
