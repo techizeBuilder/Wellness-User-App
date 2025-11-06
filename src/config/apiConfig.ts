@@ -1,12 +1,8 @@
 // API Configuration - Single source of truth for all API endpoints
-import { getCurrentEnvConfig } from './environment';
+import { BASE_URL, UPLOADS_BASE_URL } from './environment';
 
-// Get current environment configuration
-const currentConfig = getCurrentEnvConfig();
-
-// Export the current configuration
-export const BASE_URL = currentConfig.API_BASE_URL;
-export const UPLOADS_URL = currentConfig.UPLOADS_BASE_URL;
+// Export the configuration
+export const UPLOADS_URL = UPLOADS_BASE_URL;
 
 // Endpoint paths
 export const ENDPOINTS = {
