@@ -14,9 +14,10 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "types": ["react-native", "expo"],
+    "baseUrl": ".",
     "paths": {
       "@/*": [
-        "./*"
+        "./src/*"
       ]
     }
   },

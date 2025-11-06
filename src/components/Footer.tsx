@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React from 'react';
-import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   fontSizes,
@@ -10,7 +10,7 @@ import {
   getResponsiveHeight,
   getResponsiveMargin,
   getResponsiveWidth
-} from '../utils/dimensions';
+} from '@/utils/dimensions';
 
 // Export footer height for use in other components (WhatsApp-style)
 export const FOOTER_HEIGHT = 75 + 25; // Base height + safe area buffer
@@ -21,44 +21,51 @@ interface FooterProps {
 
 export default function Footer({ activeRoute }: FooterProps) {
   const insets = useSafeAreaInsets();
-  const { height: screenHeight } = Dimensions.get('window');
   
   const footerItems = [
     {
       id: 'dashboard',
       icon: '⌂',
       label: 'Home',
-      route: '/dashboard'
+      route: '/(user)/dashboard'
     },
     {
       id: 'experts',
       icon: '👥',
       label: 'Experts',
-      route: '/experts'
+      route: '/(user)/experts'
     },
     {
       id: 'sessions',
       icon: '📅',
       label: 'Sessions',
-      route: '/sessions'
+      route: '/(user)/sessions'
     },
     {
       id: 'content',
       icon: '📚',
       label: 'Content',
-      route: '/content'
+      route: '/(user)/content'
     },
     {
       id: 'profile',
       icon: '👤',
       label: 'Profile',
-      route: '/profile'
+      route: '/(user)/profile'
     }
   ];
 
   const handlePress = (route: string) => {
-    if (route !== `/${activeRoute}`) {
-      router.push(route as any);
+    // Check if we're already on this route
+    const currentRoute = activeRoute === 'dashboard' ? 'dashboard' :
+                         activeRoute === 'experts' ? 'experts' :
+                         activeRoute === 'sessions' ? 'sessions' :
+                         activeRoute === 'content' ? 'content' :
+                         activeRoute === 'profile' ? 'profile' : '';
+    
+    if (route !== `/(user)/${currentRoute}`) {
+      // Type assertion for route strings - routes are validated at compile time via types/router.d.ts
+      router.push(route as Parameters<typeof router.push>[0]);
     }
   };
 

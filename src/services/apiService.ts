@@ -1,7 +1,7 @@
 // API Configuration and Service Layer
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { BASE_URL, ENDPOINTS } from '../config/apiConfig';
-import { ENV_CONFIG } from '../config/environment';
+import { BASE_URL, ENDPOINTS } from '@/config/apiConfig';
+import { ENV_CONFIG } from '@/config/environment';
 
 // API Client Class
 class ApiService {

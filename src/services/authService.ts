@@ -1,6 +1,6 @@
 // Authentication Service - Handles all auth-related API calls
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URLS } from '../config/apiConfig';
+import { API_URLS } from '@/config/apiConfig';
 
 // Types for API requests and responses
 export interface LoginRequest {

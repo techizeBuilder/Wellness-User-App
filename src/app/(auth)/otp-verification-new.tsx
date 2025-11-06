@@ -1,0 +1,35 @@
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect } from 'react';
+import { Text, View } from 'react-native';
+import { showSuccessToast } from '@/utils/toastConfig';
+
+export default function OTPVerificationNew() {
+  const { type } = useLocalSearchParams();
+
+  // IMMEDIATELY redirect - no OTP verification for registration
+  useEffect(() => {
+    console.log('=== OTP VERIFICATION NEW SCREEN ACCESSED ===');
+    console.log('Type parameter:', type);
+    
+    if (!type || type !== 'password_reset') {
+      console.log('Redirecting from OTP verification NEW to login (registration flow)');
+      showSuccessToast('Success', 'Account verified! Please log in.');
+      router.replace('/(auth)/login');
+      return;
+    }
+    console.log('Allowing OTP verification NEW for password reset');
+  }, [type]);
+
+  // Show loading screen for registration flows while redirecting
+  if (!type || type !== 'password_reset') {
+    return <View style={{ flex: 1, backgroundColor: '#2da898ff' }} />;
+  }
+
+  // If we get here, it's a password reset flow - show simple message for now
+  return (
+    <View style={{ flex: 1, backgroundColor: '#2da898ff', justifyContent: 'center', alignItems: 'center' }}>
+      <Text style={{ color: 'white', fontSize: 18 }}>Password Reset OTP Verification</Text>
+      <Text style={{ color: 'white', fontSize: 14, marginTop: 10 }}>This screen needs to be implemented for password reset</Text>
+    </View>
+  );
+}

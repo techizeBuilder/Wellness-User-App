@@ -8,7 +8,7 @@ import {
     getResponsiveFontSize,
     getResponsiveHeight,
     getResponsiveWidth
-} from '../utils/dimensions';
+} from '@/utils/dimensions';
 
 // Export footer height for use in other components
 export const EXPERT_FOOTER_HEIGHT = 75 + 25; // Base height + safe area buffer
@@ -26,41 +26,51 @@ export default function ExpertFooter({ activeRoute }: ExpertFooterProps) {
       id: 'expert-dashboard',
       icon: '📊',
       label: 'Dashboard',
-      route: '/expert-dashboard'
+      route: '/(expert)/expert-dashboard'
     },
     {
       id: 'appointments',
       icon: '📅',
       label: 'Schedule',
-      route: '/expert-appointments'
+      route: '/(expert)/expert-appointments'
     },
     {
       id: 'patients',
       icon: '👥',
       label: 'Patients',
-      route: '/expert-patients'
+      route: '/(expert)/expert-patients'
     },
     {
       id: 'earnings',
       icon: '💰',
       label: 'Earnings',
-      route: '/expert-earnings'
+      route: '/(expert)/expert-earnings'
     },
     {
       id: 'profile',
       icon: '👤',
       label: 'Profile',
-      route: '/profile'
+      route: '/(user)/profile'
     }
   ];
 
   const handlePress = (route: string) => {
     // Special handling for profile route to keep expert context
-    if (route === '/profile') {
+    if (route === '/(user)/profile') {
       // Navigate to profile but store context that we came from expert dashboard
-      router.push('/profile?context=expert');
-    } else if (route !== `/${activeRoute}`) {
-      router.push(route as any);
+      router.push({ pathname: '/(user)/profile', params: { context: 'expert' } });
+    } else {
+      // Check if we're already on this route
+      const isActive = activeRoute === 'expert-dashboard' && route === '/(expert)/expert-dashboard' ||
+                       activeRoute === 'appointments' && route === '/(expert)/expert-appointments' ||
+                       activeRoute === 'patients' && route === '/(expert)/expert-patients' ||
+                       activeRoute === 'earnings' && route === '/(expert)/expert-earnings' ||
+                       activeRoute === 'profile' && route === '/(user)/profile';
+      
+      if (!isActive) {
+        // Type assertion for route strings - routes are validated at compile time via types/router.d.ts
+        router.push(route as Parameters<typeof router.push>[0]);
+      }
     }
   };
 
