@@ -20,6 +20,7 @@ export const ENDPOINTS = {
     LOGIN: '/experts/login',
     LIST: '/experts',
     DETAIL: '/experts',
+    PROFILE: '/experts/me',
   }
 };
 
@@ -41,5 +42,6 @@ export const API_URLS = {
     REGISTER: buildUrl(ENDPOINTS.EXPERTS.REGISTER),
     LIST: buildUrl(ENDPOINTS.EXPERTS.LIST),
     DETAIL: (id: string) => buildUrl(`${ENDPOINTS.EXPERTS.DETAIL}/${id}`),
+    PROFILE: buildUrl(ENDPOINTS.EXPERTS.PROFILE),
   }
 };

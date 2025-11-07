@@ -356,6 +356,10 @@ class ApiService {
     return this.request(`${ENDPOINTS.EXPERTS.DETAIL}/${expertId}`);
   }
 
+  async getCurrentExpertProfile() {
+    return this.request(ENDPOINTS.EXPERTS.PROFILE);
+  }
+
   async getAllExperts() {
     return this.request(ENDPOINTS.EXPERTS.LIST);
   }

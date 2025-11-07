@@ -1,6 +1,6 @@
-import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Dimensions,
@@ -12,441 +12,477 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  View
-} from 'react-native';
-import Svg, { Circle, Line, Path, Rect } from 'react-native-svg';
-import ExpertFooter, { EXPERT_FOOTER_HEIGHT } from '@/components/ExpertFooter';
-import authService from '@/services/authService';
+  View,
+} from "react-native";
+import ExpertFooter, { EXPERT_FOOTER_HEIGHT } from "@/components/ExpertFooter";
+import authService from "@/services/authService";
+import { apiService } from "@/services/apiService";
 import {
   getResponsiveBorderRadius,
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsivePadding,
-  getResponsiveWidth
-} from '@/utils/dimensions';
+  getResponsiveWidth,
+} from "@/utils/dimensions";
 
-const { width, height } = Dimensions.get('window');
-
-// SVG Icons for Expert Dashboard
-const CalendarIcon = ({ size = 24, color = "#14B8A6" }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke={color} strokeWidth="2"/>
-    <Line x1="16" y1="2" x2="16" y2="6" stroke={color} strokeWidth="2"/>
-    <Line x1="8" y1="2" x2="8" y2="6" stroke={color} strokeWidth="2"/>
-    <Line x1="3" y1="10" x2="21" y2="10" stroke={color} strokeWidth="2"/>
-  </Svg>
-);
-
-const DollarIcon = ({ size = 24, color = "#14B8A6" }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Line x1="12" y1="1" x2="12" y2="23" stroke={color} strokeWidth="2"/>
-    <Path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke={color} strokeWidth="2"/>
-  </Svg>
-);
-
-const UsersIcon = ({ size = 24, color = "#14B8A6" }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke={color} strokeWidth="2"/>
-    <Circle cx="9" cy="7" r="4" stroke={color} strokeWidth="2"/>
-    <Path d="M23 21v-2a4 4 0 0 0-3-3.87" stroke={color} strokeWidth="2"/>
-    <Path d="M16 3.13a4 4 0 0 1 0 7.75" stroke={color} strokeWidth="2"/>
-  </Svg>
-);
-
-const TrendingUpIcon = ({ size = 24, color = "#14B8A6" }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path d="M23 6l-9.5 9.5-5-5L1 18" stroke={color} strokeWidth="2"/>
-    <Path d="M17 6h6v6" stroke={color} strokeWidth="2"/>
-  </Svg>
-);
-
-const ClockIcon = ({ size = 24, color = "#14B8A6" }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2"/>
-    <Path d="M12 6v6l4 2" stroke={color} strokeWidth="2"/>
-  </Svg>
-);
-
-const VideoIcon = ({ size = 24, color = "#14B8A6" }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path d="M23 7l-7 5 7 5V7z" stroke={color} strokeWidth="2"/>
-    <Rect x="1" y="5" width="15" height="14" rx="2" ry="2" stroke={color} strokeWidth="2"/>
-  </Svg>
-);
-
-const StarIcon = ({ size = 24, color = "#F59E0B" }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
-    <Path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-  </Svg>
-);
+const { width } = Dimensions.get("window");
 
 export default function ExpertDashboardScreen() {
-  const [selectedTimeframe, setSelectedTimeframe] = useState('This Week');
   const [modalVisible, setModalVisible] = useState(false);
-  const [quickNoteText, setQuickNoteText] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [quickNoteText, setQuickNoteText] = useState("");
+  const [expertProfile, setExpertProfile] = useState<{
+    firstName?: string;
+    lastName?: string;
+    profileImage?: string;
+    specialization?: string;
+  } | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
-  // Check account type on component mount
+  // Check account type and fetch expert profile on component mount
   useEffect(() => {
-    const checkAccountType = async () => {
+    const checkAccountTypeAndFetchProfile = async () => {
       try {
         const accountType = await authService.getAccountType();
-        console.log('Expert Dashboard - Account Type:', accountType);
-        
+        console.log("Expert Dashboard - Account Type:", accountType);
+
         // If user is not an Expert, redirect to user dashboard
-        if (accountType !== 'Expert') {
-          console.log('Redirecting non-expert to user dashboard');
-          router.replace('/(user)/dashboard');
+        if (accountType !== "Expert") {
+          console.log("Redirecting non-expert to user dashboard");
+          router.replace("/(user)/dashboard");
           return;
         }
+
+        // Fetch expert profile
+        try {
+          const response = await apiService.getCurrentExpertProfile();
+          if (response.success && response.data?.expert) {
+            setExpertProfile({
+              firstName: response.data.expert.firstName,
+              lastName: response.data.expert.lastName,
+              profileImage: response.data.expert.profileImage,
+              specialization: response.data.expert.specialization,
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching expert profile:", error);
+        } finally {
+          setIsLoadingProfile(false);
+        }
       } catch (error) {
-        console.error('Error checking account type:', error);
+        console.error("Error checking account type:", error);
+        setIsLoadingProfile(false);
       }
     };
 
-    checkAccountType();
+    checkAccountTypeAndFetchProfile();
   }, []);
 
   // Dummy data for expert dashboard
   const expertData = {
     name: "Dr. Sarah Johnson",
     specialization: "Mental Health Counselor",
-    rating: 4.8,
-    totalPatients: 156,
+    rating: 4.9,
+    totalPatients: 112,
     totalEarnings: 12500,
+    monthlyEarnings: 12450,
+    dailyEarnings: 450,
+    weeklyEarnings: 3200,
     thisWeekEarnings: 1850,
     appointmentsToday: 6,
     upcomingAppointments: 3,
     patientSatisfaction: 98,
-    profileImage: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400"
+    profileImage:
+      "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400",
+    activeSubscribers: 34,
+    lastPayout: 4200,
+    lastPayoutDate: "29 Oct 2025",
+    nextPayoutDate: "05 Nov 2025",
+    totalSessionsThisMonth: 38,
+    clientFeedback: "amazing progress",
   };
 
-  const upcomingAppointments = [
+  const todaysAppointments = [
     {
       id: 1,
-      patientName: "John Smith",
-      time: "10:00 AM",
-      type: "Video Call",
-      duration: "45 min",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100"
+      time: "9:00 AM",
+      client: "Aarav Patel",
+      service: "Yoga (Prenatal)",
     },
     {
       id: 2,
-      patientName: "Emily Davis",
-      time: "2:30 PM",
-      type: "In-Person",
-      duration: "60 min",
-      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100"
+      time: "11:30 AM",
+      client: "Nisha Mehra",
+      service: "Ayurveda (Lifestyle)",
     },
     {
       id: 3,
-      patientName: "Michael Brown",
-      time: "4:15 PM",
-      type: "Video Call",
-      duration: "30 min",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100"
-    }
-  ];
-
-  const recentPatients = [
-    {
-      id: 1,
-      name: "Lisa Wilson",
-      lastSession: "Yesterday",
-      nextSession: "Tomorrow",
-      progress: "Excellent",
-      avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100",
-      condition: "Anxiety Management",
-      email: "lisa.wilson@email.com",
-      totalSessions: 12
-    },
-    {
-      id: 2,
-      name: "David Chen",
-      lastSession: "2 days ago",
-      nextSession: "Friday",
-      progress: "Good",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100",
-      condition: "Stress Management",
-      email: "david.chen@email.com",
-      totalSessions: 8
-    },
-    {
-      id: 3,
-      name: "Sarah Johnson",
-      lastSession: "Last week",
-      nextSession: "Monday",
-      progress: "Good",
-      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100",
-      condition: "Sleep Disorders",
-      email: "sarah.j@email.com",
-      totalSessions: 5
+      time: "4:00 PM",
+      client: "Rohan Verma",
+      service: "Diet Plan (PCOS)",
     },
     {
       id: 4,
-      name: "Michael Brown",
-      lastSession: "3 days ago",
-      nextSession: "Next week",
-      progress: "Excellent",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100",
-      condition: "Depression Support",
-      email: "m.brown@email.com",
-      totalSessions: 15
-    }
+      time: "6:30 PM",
+      client: "Tanya Singh",
+      service: "Mental Wellness (Stress)",
+    },
   ];
 
-  const filteredPatients = recentPatients.filter(patient =>
-    patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    patient.condition.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const notifications = [
+    { id: 1, icon: "🔔", text: "5 New Bookings" },
+    { id: 2, icon: "✅", text: "2 Plan Renewals" },
+    { id: 3, icon: "💬", text: "3 Unread Chat Messages" },
+    { id: 4, icon: "📦", text: "1 Subscription Upgrade" },
+  ];
 
-  const handleProfilePress = () => {
-    router.push('/(user)/profile');
-  };
+  const activeSubscriptions = [
+    {
+      category: "Yoga",
+      subscribers: 12,
+      sessionsLeft: 3,
+      renewalDate: "04 Nov",
+    },
+    {
+      category: "Ayurveda",
+      subscribers: 8,
+      sessionsLeft: 1,
+      renewalDate: "03 Nov",
+    },
+    {
+      category: "Diet",
+      subscribers: 9,
+      sessionsLeft: 2,
+      renewalDate: "06 Nov",
+    },
+    {
+      category: "Mental Wellness",
+      subscribers: 5,
+      sessionsLeft: 4,
+      renewalDate: "07 Nov",
+    },
+  ];
 
-  const handleAppointmentPress = (appointmentId: number) => {
-    Alert.alert(
-      "Appointment Details",
-      `View details for appointment ${appointmentId}?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "View", onPress: () => console.log(`Viewing appointment ${appointmentId}`) }
-      ]
-    );
-  };
-
-  const handlePatientPress = (patientId: number) => {
-    Alert.alert(
-      "Patient Profile",
-      `View patient profile for patient ${patientId}?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "View", onPress: () => console.log(`Viewing patient ${patientId}`) }
-      ]
-    );
-  };
-
-  const handleQuickNote = () => {
-    setModalVisible(true);
-  };
+  const [earningsTimeframe, setEarningsTimeframe] = useState<
+    "Daily" | "Weekly" | "Monthly" | "Total"
+  >("Monthly");
 
   const saveQuickNote = () => {
     if (quickNoteText.trim()) {
       Alert.alert("Note Saved", "Your quick note has been saved successfully!");
-      setQuickNoteText('');
+      setQuickNoteText("");
       setModalVisible(false);
     }
   };
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#2DD4BF" translucent />
-      
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="#2DD4BF"
+        translucent
+      />
+
       <LinearGradient
-        colors={['#2da898ff', '#abeee6ff']}
+        colors={["#2da898ff", "#abeee6ff"]}
         style={styles.backgroundGradient}
       >
-        <ScrollView 
+        <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollViewContent}
           showsVerticalScrollIndicator={false}
         >
           {/* Header Section */}
           <View style={styles.headerSection}>
-            <View style={styles.headerTop}>
-              <View style={styles.expertInfo}>
-                <Image 
-                  source={{ uri: expertData.profileImage }}
-                  style={styles.expertAvatar}
-                />
-                <View style={styles.expertDetails}>
-                  <Text style={styles.expertName}>{expertData.name}</Text>
-                  <Text style={styles.expertSpecialization}>{expertData.specialization}</Text>
-                  <View style={styles.ratingContainer}>
-                    <Text style={styles.ratingText}>⭐ {expertData.rating}</Text>
-                    <Text style={styles.ratingLabel}>Expert Rating</Text>
+            {/* Expert Profile Info */}
+            {expertProfile && (
+              <View style={styles.expertInfoSection}>
+                <View style={styles.expertInfo}>
+                  {expertProfile.profileImage ? (
+                    <Image
+                      source={{ uri: expertProfile.profileImage }}
+                      style={styles.expertAvatar}
+                    />
+                  ) : (
+                    <View
+                      style={[
+                        styles.expertAvatar,
+                        styles.expertAvatarPlaceholder,
+                      ]}
+                    >
+                      <Text style={styles.expertAvatarText}>
+                        {expertProfile.firstName?.[0] || "E"}
+                        {expertProfile.lastName?.[0] || ""}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={styles.expertDetails}>
+                    <Text style={styles.expertName}>
+                      Hi, {expertProfile.firstName} {expertProfile.lastName}
+                    </Text>
+                    {expertProfile.specialization && (
+                      <Text style={styles.expertSpecialization}>
+                        {expertProfile.specialization} Expert
+                      </Text>
+                    )}
                   </View>
                 </View>
+                <Pressable
+                  onPress={() => router.push("/(user)/profile")}
+                  style={styles.profileButton}
+                >
+                  <Text style={styles.profileButtonText}>Profile</Text>
+                </Pressable>
               </View>
-              <Pressable onPress={handleProfilePress} style={styles.profileButton}>
-                <Text style={styles.profileButtonText}>Profile</Text>
-              </Pressable>
-            </View>
-          </View>
-
-          {/* Quick Stats Grid */}
-          <View style={styles.statsContainer}>
-            <View style={styles.statsRow}>
-              <View style={styles.statCard}>
-                <CalendarIcon size={32} color="#059669" />
-                <Text style={styles.statNumber}>{expertData.appointmentsToday}</Text>
-                <Text style={styles.statLabel}>Today's Sessions</Text>
-              </View>
-              <View style={styles.statCard}>
-                <DollarIcon size={32} color="#059669" />
-                <Text style={styles.statNumber}>${expertData.thisWeekEarnings}</Text>
-                <Text style={styles.statLabel}>This Week</Text>
-              </View>
-            </View>
-            <View style={styles.statsRow}>
-              <View style={styles.statCard}>
-                <UsersIcon size={32} color="#059669" />
-                <Text style={styles.statNumber}>{expertData.totalPatients}</Text>
-                <Text style={styles.statLabel}>Total Patients</Text>
-              </View>
-              <View style={styles.statCard}>
-                <TrendingUpIcon size={32} color="#059669" />
-                <Text style={styles.statNumber}>{expertData.patientSatisfaction}%</Text>
-                <Text style={styles.statLabel}>Satisfaction</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Quick Actions */}
-          <View style={styles.quickActionsContainer}>
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
-            <View style={styles.actionButtonsRow}>
-              <Pressable style={styles.actionButton} onPress={() => router.push('/(expert)/expert-appointments')}>
-                <CalendarIcon size={24} color="#FFFFFF" />
-                <Text style={styles.actionButtonText}>Schedule</Text>
-              </Pressable>
-              <Pressable style={styles.actionButton} onPress={handleQuickNote}>
-                <Text style={[styles.actionButtonText, { fontSize: 20 }]}>📝</Text>
-                <Text style={styles.actionButtonText}>Quick Note</Text>
-              </Pressable>
-              <Pressable style={styles.actionButton} onPress={() => router.push('/(expert)/expert-earnings')}>
-                <TrendingUpIcon size={24} color="#FFFFFF" />
-                <Text style={styles.actionButtonText}>Reports</Text>
-              </Pressable>
-            </View>
+            )}
           </View>
 
           {/* Today's Appointments */}
           <View style={styles.appointmentsContainer}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Today's Appointments</Text>
-              <Pressable onPress={() => router.push('/(expert)/expert-appointments')}>
-                <Text style={styles.seeAllText}>See All</Text>
-              </Pressable>
-            </View>
-            
-            {upcomingAppointments.map((appointment) => (
-              <View 
-                key={appointment.id}
-                style={styles.appointmentCard}
-              >
-                <View style={styles.appointmentAvatarContainer}>
-                  <Image 
-                    source={{ uri: appointment.avatar }}
-                    style={styles.appointmentAvatar}
-                  />
-                </View>
-                <View style={styles.appointmentDetails}>
-                  <Text style={styles.appointmentPatientName}>{appointment.patientName}</Text>
-                  <View style={styles.appointmentMeta}>
-                    <ClockIcon size={16} color="#6B7280" />
-                    <Text style={styles.appointmentTime}>{appointment.time} • {appointment.duration}</Text>
-                  </View>
-                  <View style={styles.appointmentType}>
-                    {appointment.type === 'Video Call' ? (
-                      <VideoIcon size={16} color="#059669" />
-                    ) : (
-                      <Text style={styles.inPersonIcon}>🏥</Text>
-                    )}
-                    <Text style={styles.appointmentTypeText}>{appointment.type}</Text>
-                  </View>
-                </View>
-                <Pressable style={styles.joinButton}>
-                  <Text style={styles.joinButtonText}>Join</Text>
-                </Pressable>
+            <Text style={styles.sectionTitle}>
+              👩‍⚕ Today&apos;s Appointments
+            </Text>
+            <View style={styles.appointmentsTable}>
+              <View style={styles.tableHeader}>
+                <Text style={styles.tableHeaderText}>Time</Text>
+                <Text style={styles.tableHeaderText}>Client</Text>
+                <Text style={styles.tableHeaderText}>Service</Text>
               </View>
-            ))}
-          </View>
-
-          {/* Recent Patients */}
-          <View style={styles.patientsContainer}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Recent Patients</Text>
-              <Pressable onPress={() => router.push('/(expert)/expert-patients')}>
-                <Text style={styles.seeAllText}>See All</Text>
-              </Pressable>
-            </View>
-            
-            {recentPatients.slice(0, 3).map((patient) => (
-              <Pressable 
-                key={patient.id}
-                style={styles.patientCard}
-                onPress={() => router.push({
-                  pathname: '/patient-detail',
-                  params: {
-                    patientId: patient.id,
-                    patientName: patient.name,
-                    patientAvatar: patient.avatar,
-                    lastSession: patient.lastSession,
-                    nextSession: patient.nextSession,
-                    progress: patient.progress
-                  }
-                })}
-              >
-                <View style={styles.patientLeftSection}>
-                  <View style={styles.patientAvatarContainer}>
-                    <Image 
-                      source={{ uri: patient.avatar }}
-                      style={styles.patientAvatar}
-                    />
-                  </View>
-                  <View style={styles.patientDetails}>
-                    <Text style={styles.patientName}>{patient.name}</Text>
-                    <Text style={styles.patientCondition}>{patient.condition}</Text>
-                    <Text style={styles.patientEmail}>{patient.email}</Text>
-                    <Text style={styles.sessionInfo}>Last: {patient.lastSession}</Text>
-                    <Text style={styles.sessionInfo}>Next: {patient.nextSession}</Text>
-                    <Text style={styles.totalSessions}>Total Sessions: {patient.totalSessions}</Text>
-                  </View>
-                  <View style={styles.progressBadge}>
-                    <Text style={[
-                      styles.progressText,
-                      { 
-                        backgroundColor: patient.progress === 'Excellent' ? '#059669' : '#F59E0B',
-                        color: '#FFFFFF',
-                        paddingHorizontal: 12,
-                        paddingVertical: 6,
-                        borderRadius: 16,
-                        fontSize: 12,
-                        fontWeight: 'bold'
-                      }
-                    ]}>
-                      {patient.progress}
-                    </Text>
-                  </View>
+              {todaysAppointments.map((appointment) => (
+                <View key={appointment.id} style={styles.tableRow}>
+                  <Text style={styles.tableCell}>{appointment.time}</Text>
+                  <Text style={styles.tableCell}>{appointment.client}</Text>
+                  <Text style={styles.tableCell}>{appointment.service}</Text>
                 </View>
-              </Pressable>
-            ))}
-            
-           
+              ))}
+            </View>
+            <View style={styles.sectionDivider} />
           </View>
 
           {/* Earnings Overview */}
           <View style={styles.earningsContainer}>
-            <Text style={styles.sectionTitle}>Earnings Overview</Text>
+            <Text style={styles.sectionTitle}>💰 Earnings Overview</Text>
+            <View style={styles.earningsTabs}>
+              <Pressable
+                style={[
+                  styles.earningsTab,
+                  earningsTimeframe === "Daily" && styles.earningsTabActive,
+                ]}
+                onPress={() => setEarningsTimeframe("Daily")}
+              >
+                <Text
+                  style={[
+                    styles.earningsTabText,
+                    earningsTimeframe === "Daily" &&
+                      styles.earningsTabTextActive,
+                  ]}
+                >
+                  Daily
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.earningsTab,
+                  earningsTimeframe === "Weekly" && styles.earningsTabActive,
+                ]}
+                onPress={() => setEarningsTimeframe("Weekly")}
+              >
+                <Text
+                  style={[
+                    styles.earningsTabText,
+                    earningsTimeframe === "Weekly" &&
+                      styles.earningsTabTextActive,
+                  ]}
+                >
+                  Weekly
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.earningsTab,
+                  earningsTimeframe === "Monthly" && styles.earningsTabActive,
+                ]}
+                onPress={() => setEarningsTimeframe("Monthly")}
+              >
+                <Text
+                  style={[
+                    styles.earningsTabText,
+                    earningsTimeframe === "Monthly" &&
+                      styles.earningsTabTextActive,
+                  ]}
+                >
+                  Monthly
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.earningsTab,
+                  earningsTimeframe === "Total" && styles.earningsTabActive,
+                ]}
+                onPress={() => setEarningsTimeframe("Total")}
+              >
+                <Text
+                  style={[
+                    styles.earningsTabText,
+                    earningsTimeframe === "Total" &&
+                      styles.earningsTabTextActive,
+                  ]}
+                >
+                  Total
+                </Text>
+              </Pressable>
+            </View>
             <View style={styles.earningsCard}>
-              <View style={styles.earningsHeader}>
-                <Text style={styles.earningsTitle}>Total Earnings</Text>
-                <Text style={styles.earningsAmount}>${expertData.totalEarnings.toLocaleString()}</Text>
+              <Text style={styles.earningsAmount}>
+                ₹
+                {earningsTimeframe === "Daily"
+                  ? expertData.dailyEarnings
+                  : earningsTimeframe === "Weekly"
+                  ? expertData.weeklyEarnings
+                  : earningsTimeframe === "Monthly"
+                  ? expertData.monthlyEarnings
+                  : expertData.totalEarnings}
+                {earningsTimeframe === "Monthly" ? " (This Month)" : ""}
+              </Text>
+              <Text style={styles.activeSubscribersText}>
+                Active Subscribers: {expertData.activeSubscribers}
+              </Text>
+              <View style={styles.payoutInfo}>
+                <Text style={styles.payoutText}>
+                  🔸 Last Payout: ₹{expertData.lastPayout} (
+                  {expertData.lastPayoutDate})
+                </Text>
+                <Text style={styles.payoutText}>
+                  🔸 Next Payout Date: {expertData.nextPayoutDate}
+                </Text>
               </View>
-              <View style={styles.earningsBreakdown}>
-                <View style={styles.earningsStat}>
-                  <Text style={styles.earningsStatLabel}>This Week</Text>
-                  <Text style={styles.earningsStatValue}>${expertData.thisWeekEarnings}</Text>
+            </View>
+            <View style={styles.sectionDivider} />
+          </View>
+
+          {/* Notifications */}
+          <View style={styles.notificationsContainer}>
+            <Text style={styles.sectionTitle}>📢 Notifications</Text>
+            <View style={styles.notificationsCard}>
+              {notifications.map((notification) => (
+                <View key={notification.id} style={styles.notificationItem}>
+                  <Text style={styles.notificationIcon}>
+                    {notification.icon}
+                  </Text>
+                  <Text style={styles.notificationText}>
+                    {notification.text}
+                  </Text>
                 </View>
-                <View style={styles.earningsStat}>
-                  <Text style={styles.earningsStatLabel}>Sessions</Text>
-                  <Text style={styles.earningsStatValue}>{expertData.appointmentsToday}</Text>
+              ))}
+            </View>
+            <View style={styles.sectionDivider} />
+          </View>
+
+          {/* Quick Actions */}
+          <View style={styles.quickActionsContainer}>
+            <Text style={styles.sectionTitle}>⚡ Quick Actions</Text>
+            <View style={styles.quickActionsGrid}>
+              <Pressable
+                style={styles.quickActionButton}
+                onPress={() =>
+                  Alert.alert("Start Consultation", "Starting consultation...")
+                }
+              >
+                <Text style={styles.quickActionIcon}>🟩</Text>
+                <Text style={styles.quickActionText}>Start Consultation</Text>
+              </Pressable>
+              <Pressable
+                style={styles.quickActionButton}
+                onPress={() => router.push("/(expert)/expert-appointments")}
+              >
+                <Text style={styles.quickActionIcon}>📅</Text>
+                <Text style={styles.quickActionText}>View Calendar</Text>
+              </Pressable>
+              <Pressable
+                style={styles.quickActionButton}
+                onPress={() => router.push("/(expert)/expert-earnings")}
+              >
+                <Text style={styles.quickActionIcon}>📊</Text>
+                <Text style={styles.quickActionText}>Check Earnings</Text>
+              </Pressable>
+              <Pressable
+                style={styles.quickActionButton}
+                onPress={() =>
+                  Alert.alert("Manage Plans", "Opening plan management...")
+                }
+              >
+                <Text style={styles.quickActionIcon}>⚙</Text>
+                <Text style={styles.quickActionText}>Manage Plans</Text>
+              </Pressable>
+              <Pressable
+                style={styles.quickActionButton}
+                onPress={() =>
+                  Alert.alert("Payout History", "Opening payout history...")
+                }
+              >
+                <Text style={styles.quickActionIcon}>💳</Text>
+                <Text style={styles.quickActionText}>Payout History</Text>
+              </Pressable>
+            </View>
+            <View style={styles.sectionDivider} />
+          </View>
+
+          {/* Active Subscriptions */}
+          <View style={styles.subscriptionsContainer}>
+            <Text style={styles.sectionTitle}>📈 Active Subscriptions</Text>
+            <View style={styles.subscriptionsTable}>
+              <View style={styles.tableHeader}>
+                <Text style={styles.tableHeaderText}>Category</Text>
+                <Text style={styles.tableHeaderText}>Subscribers</Text>
+                <Text style={styles.tableHeaderText}>Sessions Left</Text>
+                <Text style={styles.tableHeaderText}>Renewal Date</Text>
+              </View>
+              {activeSubscriptions.map((subscription, index) => (
+                <View key={index} style={styles.tableRow}>
+                  <Text style={styles.tableCell}>{subscription.category}</Text>
+                  <Text style={styles.tableCell}>
+                    {subscription.subscribers}
+                  </Text>
+                  <Text style={styles.tableCell}>
+                    {subscription.sessionsLeft}
+                  </Text>
+                  <Text style={styles.tableCell}>
+                    {subscription.renewalDate}
+                  </Text>
                 </View>
-                <View style={styles.earningsStat}>
-                  <Text style={styles.earningsStatLabel}>Avg/Session</Text>
-                  <Text style={styles.earningsStatValue}>${Math.round(expertData.thisWeekEarnings / expertData.appointmentsToday)}</Text>
-                </View>
+              ))}
+            </View>
+            <View style={styles.sectionDivider} />
+          </View>
+
+          {/* Expert Performance Summary */}
+          <View style={styles.performanceContainer}>
+            <Text style={styles.sectionTitle}>
+              🧘‍♀ Expert Performance Summary
+            </Text>
+            <View style={styles.performanceCard}>
+              <View style={styles.performanceItem}>
+                <Text style={styles.performanceIcon}>⭐</Text>
+                <Text style={styles.performanceText}>
+                  Avg Rating: {expertData.rating}
+                </Text>
+              </View>
+              <View style={styles.performanceItem}>
+                <Text style={styles.performanceIcon}>🧍</Text>
+                <Text style={styles.performanceText}>
+                  Total Clients: {expertData.totalPatients}
+                </Text>
+              </View>
+              <View style={styles.performanceItem}>
+                <Text style={styles.performanceIcon}>🗓</Text>
+                <Text style={styles.performanceText}>
+                  Total Sessions This Month: {expertData.totalSessionsThisMonth}
+                </Text>
+              </View>
+              <View style={styles.performanceItem}>
+                <Text style={styles.performanceIcon}>💬</Text>
+                <Text style={styles.performanceText}>
+                  Client Feedback: &quot;{expertData.clientFeedback}&quot;
+                </Text>
               </View>
             </View>
           </View>
@@ -475,13 +511,13 @@ export default function ExpertDashboardScreen() {
                 textAlignVertical="top"
               />
               <View style={styles.modalButtons}>
-                <Pressable 
+                <Pressable
                   style={[styles.modalButton, styles.cancelButton]}
                   onPress={() => setModalVisible(false)}
                 >
                   <Text style={styles.cancelButtonText}>Cancel</Text>
                 </Pressable>
-                <Pressable 
+                <Pressable
                   style={[styles.modalButton, styles.saveButton]}
                   onPress={saveQuickNote}
                 >
@@ -500,7 +536,7 @@ export default function ExpertDashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#004D4D',
+    backgroundColor: "#004D4D",
   },
   backgroundGradient: {
     flex: 1,
@@ -513,16 +549,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveWidth(20),
   },
   headerSection: {
-    marginBottom: getResponsiveHeight(20),
+    marginBottom: getResponsiveHeight(24),
+    alignItems: "center",
   },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  zenoviaTitle: {
+    fontSize: getResponsiveFontSize(32),
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    marginBottom: getResponsiveHeight(8),
+    letterSpacing: 2,
+  },
+  zenoviaTagline: {
+    fontSize: getResponsiveFontSize(14),
+    color: "#E5F3F3",
+    marginBottom: getResponsiveHeight(12),
+  },
+  headerDivider: {
+    width: "100%",
+    height: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
+    marginBottom: getResponsiveHeight(16),
+  },
+  expertInfoSection: {
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: getResponsiveHeight(12),
   },
   expertInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   expertAvatar: {
@@ -531,137 +588,237 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveWidth(30),
     marginRight: getResponsiveWidth(12),
     borderWidth: 3,
-    borderColor: '#FFFFFF',
+    borderColor: "#FFFFFF",
+  },
+  expertAvatarPlaceholder: {
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  expertAvatarText: {
+    fontSize: getResponsiveFontSize(20),
+    fontWeight: "bold",
+    color: "#FFFFFF",
   },
   expertDetails: {
     flex: 1,
   },
   expertName: {
     fontSize: getResponsiveFontSize(18),
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: "bold",
+    color: "#FFFFFF",
     marginBottom: getResponsiveHeight(2),
   },
   expertSpecialization: {
     fontSize: getResponsiveFontSize(14),
-    color: '#E5F3F3',
-    marginBottom: getResponsiveHeight(4),
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  ratingText: {
-    fontSize: getResponsiveFontSize(14),
-    fontWeight: 'bold',
-    color: '#FCD34D',
-    marginRight: getResponsiveWidth(8),
-  },
-  ratingLabel: {
-    fontSize: getResponsiveFontSize(12),
-    color: '#E5F3F3',
+    color: "#E5F3F3",
   },
   profileButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     paddingHorizontal: getResponsiveWidth(16),
     paddingVertical: getResponsiveHeight(8),
     borderRadius: getResponsiveBorderRadius(20),
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: "rgba(255, 255, 255, 0.3)",
   },
   profileButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: getResponsiveFontSize(14),
-    fontWeight: '600',
+    fontWeight: "600",
   },
-  statsContainer: {
-    marginBottom: getResponsiveHeight(24),
+  sectionDivider: {
+    width: "100%",
+    height: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    marginTop: getResponsiveHeight(16),
   },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: getResponsiveHeight(12),
-  },
-  statCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+  appointmentsTable: {
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: getResponsiveBorderRadius(12),
-    padding: getResponsivePadding(16),
-    alignItems: 'center',
-    width: (width - 60) / 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    overflow: "hidden",
+    marginTop: getResponsiveHeight(12),
   },
-  statNumber: {
-    fontSize: getResponsiveFontSize(24),
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginTop: getResponsiveHeight(8),
-    marginBottom: getResponsiveHeight(4),
+  tableHeader: {
+    flexDirection: "row",
+    backgroundColor: "#059669",
+    paddingVertical: getResponsiveHeight(12),
+    paddingHorizontal: getResponsiveWidth(12),
   },
-  statLabel: {
-    fontSize: getResponsiveFontSize(12),
-    color: '#6B7280',
-    textAlign: 'center',
+  tableHeaderText: {
+    flex: 1,
+    fontSize: getResponsiveFontSize(14),
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    textAlign: "center",
+  },
+  tableRow: {
+    flexDirection: "row",
+    paddingVertical: getResponsiveHeight(12),
+    paddingHorizontal: getResponsiveWidth(12),
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  tableCell: {
+    flex: 1,
+    fontSize: getResponsiveFontSize(13),
+    color: "#1F2937",
+    textAlign: "center",
   },
   quickActionsContainer: {
     marginBottom: getResponsiveHeight(24),
   },
   sectionTitle: {
     fontSize: getResponsiveFontSize(18),
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: "bold",
+    color: "#FFFFFF",
     marginBottom: getResponsiveHeight(12),
   },
-  actionButtonsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  earningsTabs: {
+    flexDirection: "row",
+    marginTop: getResponsiveHeight(12),
+    marginBottom: getResponsiveHeight(12),
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderRadius: getResponsiveBorderRadius(8),
+    padding: getResponsivePadding(4),
   },
-  actionButton: {
-    backgroundColor: '#059669',
+  earningsTab: {
+    flex: 1,
+    paddingVertical: getResponsiveHeight(8),
+    alignItems: "center",
+    borderRadius: getResponsiveBorderRadius(6),
+  },
+  earningsTabActive: {
+    backgroundColor: "#FFFFFF",
+  },
+  earningsTabText: {
+    fontSize: getResponsiveFontSize(12),
+    color: "#FFFFFF",
+    fontWeight: "600",
+  },
+  earningsTabTextActive: {
+    color: "#059669",
+  },
+  activeSubscribersText: {
+    fontSize: getResponsiveFontSize(14),
+    color: "#1F2937",
+    marginTop: getResponsiveHeight(12),
+    textAlign: "center",
+  },
+  payoutInfo: {
+    marginTop: getResponsiveHeight(12),
+  },
+  payoutText: {
+    fontSize: getResponsiveFontSize(13),
+    color: "#4B5563",
+    marginBottom: getResponsiveHeight(6),
+  },
+  notificationsContainer: {
+    marginBottom: getResponsiveHeight(24),
+  },
+  notificationsCard: {
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: getResponsiveBorderRadius(12),
     padding: getResponsivePadding(16),
-    alignItems: 'center',
-    width: (width - 80) / 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    marginTop: getResponsiveHeight(12),
   },
-  actionButtonText: {
-    color: '#FFFFFF',
+  notificationItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: getResponsiveHeight(12),
+  },
+  notificationIcon: {
+    fontSize: getResponsiveFontSize(20),
+    marginRight: getResponsiveWidth(12),
+  },
+  notificationText: {
+    fontSize: getResponsiveFontSize(14),
+    color: "#1F2937",
+  },
+  quickActionsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    marginTop: getResponsiveHeight(12),
+  },
+  quickActionButton: {
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    borderRadius: getResponsiveBorderRadius(12),
+    padding: getResponsivePadding(16),
+    alignItems: "center",
+    width: (width - 60) / 2.5,
+    marginBottom: getResponsiveHeight(12),
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  quickActionIcon: {
+    fontSize: getResponsiveFontSize(24),
+    marginBottom: getResponsiveHeight(8),
+  },
+  quickActionText: {
     fontSize: getResponsiveFontSize(12),
-    fontWeight: '600',
-    marginTop: getResponsiveHeight(4),
-    textAlign: 'center',
+    color: "#1F2937",
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  subscriptionsContainer: {
+    marginBottom: getResponsiveHeight(24),
+  },
+  subscriptionsTable: {
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    borderRadius: getResponsiveBorderRadius(12),
+    overflow: "hidden",
+    marginTop: getResponsiveHeight(12),
+  },
+  performanceContainer: {
+    marginBottom: getResponsiveHeight(24),
+  },
+  performanceCard: {
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    borderRadius: getResponsiveBorderRadius(12),
+    padding: getResponsivePadding(20),
+    marginTop: getResponsiveHeight(12),
+  },
+  performanceItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: getResponsiveHeight(16),
+  },
+  performanceIcon: {
+    fontSize: getResponsiveFontSize(20),
+    marginRight: getResponsiveWidth(12),
+  },
+  performanceText: {
+    fontSize: getResponsiveFontSize(14),
+    color: "#1F2937",
+    flex: 1,
   },
   appointmentsContainer: {
     marginBottom: getResponsiveHeight(24),
   },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: getResponsiveHeight(12),
   },
   seeAllText: {
     fontSize: getResponsiveFontSize(14),
-    color: '#FCD34D',
-    fontWeight: '600',
+    color: "#FCD34D",
+    fontWeight: "600",
   },
   appointmentCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: getResponsiveBorderRadius(16),
     padding: getResponsivePadding(16),
     marginBottom: getResponsiveHeight(12),
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 2,
-    borderColor: '#F59E0B',
-    shadowColor: '#000',
+    borderColor: "#F59E0B",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
@@ -669,7 +826,7 @@ const styles = StyleSheet.create({
   },
   appointmentAvatarContainer: {
     borderWidth: 2,
-    borderColor: '#F59E0B',
+    borderColor: "#F59E0B",
     borderRadius: getResponsiveWidth(28),
     padding: 2,
     marginRight: getResponsiveWidth(12),
@@ -684,84 +841,84 @@ const styles = StyleSheet.create({
   },
   appointmentPatientName: {
     fontSize: getResponsiveFontSize(16),
-    fontWeight: 'bold',
-    color: '#1F2937',
+    fontWeight: "bold",
+    color: "#1F2937",
     marginBottom: getResponsiveHeight(4),
   },
   appointmentMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: getResponsiveHeight(6),
   },
   appointmentTime: {
     fontSize: getResponsiveFontSize(14),
-    color: '#6B7280',
+    color: "#6B7280",
     marginLeft: getResponsiveWidth(4),
   },
   appointmentDuration: {
     fontSize: getResponsiveFontSize(14),
-    color: '#6B7280',
+    color: "#6B7280",
     marginLeft: getResponsiveWidth(4),
   },
   appointmentType: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   appointmentTypeText: {
     fontSize: getResponsiveFontSize(12),
-    color: '#059669',
+    color: "#059669",
     marginLeft: getResponsiveWidth(4),
-    fontWeight: '600',
+    fontWeight: "600",
   },
   inPersonIcon: {
     fontSize: getResponsiveFontSize(16),
   },
   appointmentActions: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   joinButton: {
-    backgroundColor: '#059669',
+    backgroundColor: "#059669",
     paddingHorizontal: getResponsiveWidth(16),
     paddingVertical: getResponsiveHeight(8),
     borderRadius: getResponsiveBorderRadius(8),
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
   },
   joinButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: getResponsiveFontSize(14),
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontWeight: "bold",
+    textAlign: "center",
   },
   patientsContainer: {
     marginBottom: getResponsiveHeight(24),
   },
   viewMoreButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     borderRadius: getResponsiveBorderRadius(12),
     padding: getResponsivePadding(12),
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: getResponsiveHeight(8),
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: "rgba(255, 255, 255, 0.3)",
   },
   viewMoreText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: getResponsiveFontSize(14),
-    fontWeight: '600',
+    fontWeight: "600",
   },
   patientCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: getResponsiveBorderRadius(16),
     padding: getResponsivePadding(16),
     marginBottom: getResponsiveHeight(16),
-    flexDirection: 'row',
+    flexDirection: "row",
     borderWidth: 2,
-    borderColor: '#F59E0B',
-    shadowColor: '#000',
+    borderColor: "#F59E0B",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
@@ -769,15 +926,15 @@ const styles = StyleSheet.create({
   },
   patientLeftSection: {
     flex: 1,
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   patientAvatarContainer: {
     borderWidth: 2,
-    borderColor: '#F59E0B',
+    borderColor: "#F59E0B",
     borderRadius: getResponsiveWidth(27),
     padding: 2,
     marginRight: getResponsiveWidth(16),
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   patientAvatar: {
     width: getResponsiveWidth(50),
@@ -789,39 +946,39 @@ const styles = StyleSheet.create({
   },
   patientName: {
     fontSize: getResponsiveFontSize(18),
-    fontWeight: 'bold',
-    color: '#1F2937',
+    fontWeight: "bold",
+    color: "#1F2937",
     marginBottom: getResponsiveHeight(4),
   },
   patientCondition: {
     fontSize: getResponsiveFontSize(14),
-    color: '#059669',
-    fontWeight: '600',
+    color: "#059669",
+    fontWeight: "600",
     marginBottom: getResponsiveHeight(4),
   },
   patientEmail: {
     fontSize: getResponsiveFontSize(12),
-    color: '#6B7280',
+    color: "#6B7280",
     marginBottom: getResponsiveHeight(8),
   },
   sessionInfo: {
     fontSize: getResponsiveFontSize(12),
-    color: '#4B5563',
+    color: "#4B5563",
     marginBottom: getResponsiveHeight(2),
   },
   totalSessions: {
     fontSize: getResponsiveFontSize(12),
-    color: '#1F2937',
-    fontWeight: '600',
+    color: "#1F2937",
+    fontWeight: "600",
     marginTop: getResponsiveHeight(4),
   },
   progressBadge: {
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     marginTop: getResponsiveHeight(8),
   },
   ratingStars: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: getResponsiveHeight(8),
   },
   starsText: {
@@ -830,70 +987,54 @@ const styles = StyleSheet.create({
   },
   sessionTime: {
     fontSize: getResponsiveFontSize(12),
-    color: '#6B7280',
+    color: "#6B7280",
   },
   patientDescription: {
     fontSize: getResponsiveFontSize(14),
-    color: '#4B5563',
+    color: "#4B5563",
     lineHeight: getResponsiveHeight(20),
     marginTop: getResponsiveHeight(4),
   },
   progressText: {
     fontSize: getResponsiveFontSize(12),
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   earningsContainer: {
     marginBottom: getResponsiveHeight(24),
   },
   earningsCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: getResponsiveBorderRadius(16),
     padding: getResponsivePadding(20),
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 6,
   },
   earningsHeader: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: getResponsiveHeight(16),
   },
   earningsTitle: {
     fontSize: getResponsiveFontSize(16),
-    color: '#6B7280',
+    color: "#6B7280",
     marginBottom: getResponsiveHeight(4),
   },
   earningsAmount: {
-    fontSize: getResponsiveFontSize(32),
-    fontWeight: 'bold',
-    color: '#059669',
-  },
-  earningsBreakdown: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  earningsStat: {
-    alignItems: 'center',
-  },
-  earningsStatLabel: {
-    fontSize: getResponsiveFontSize(12),
-    color: '#6B7280',
-    marginBottom: getResponsiveHeight(4),
-  },
-  earningsStatValue: {
-    fontSize: getResponsiveFontSize(16),
-    fontWeight: 'bold',
-    color: '#1F2937',
+    fontSize: getResponsiveFontSize(28),
+    fontWeight: "bold",
+    color: "#059669",
+    textAlign: "center",
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   modalContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: getResponsiveBorderRadius(16),
     padding: getResponsivePadding(24),
     width: width - 40,
@@ -901,24 +1042,24 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: getResponsiveFontSize(18),
-    fontWeight: 'bold',
-    color: '#1F2937',
-    textAlign: 'center',
+    fontWeight: "bold",
+    color: "#1F2937",
+    textAlign: "center",
     marginBottom: getResponsiveHeight(16),
   },
   noteInput: {
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: "#D1D5DB",
     borderRadius: getResponsiveBorderRadius(8),
     padding: getResponsivePadding(12),
     fontSize: getResponsiveFontSize(16),
-    color: '#1F2937',
+    color: "#1F2937",
     height: getResponsiveHeight(100),
     marginBottom: getResponsiveHeight(16),
   },
   modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   modalButton: {
     flex: 1,
@@ -927,21 +1068,21 @@ const styles = StyleSheet.create({
     marginHorizontal: getResponsiveWidth(6),
   },
   cancelButton: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: "#F3F4F6",
   },
   saveButton: {
-    backgroundColor: '#059669',
+    backgroundColor: "#059669",
   },
   cancelButtonText: {
-    color: '#6B7280',
+    color: "#6B7280",
     fontSize: getResponsiveFontSize(16),
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: "600",
+    textAlign: "center",
   },
   saveButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: getResponsiveFontSize(16),
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: "600",
+    textAlign: "center",
   },
 });
