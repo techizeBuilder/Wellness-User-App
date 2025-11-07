@@ -247,6 +247,11 @@ class AuthService {
     }
   }
 
+  // Public method to store account type (for registration flows)
+  async setAccountType(accountType: string): Promise<void> {
+    await this.storeAccountType(accountType);
+  }
+
   async getToken(): Promise<string | null> {
     try {
       const token = await AsyncStorage.getItem('authToken');

@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Modal, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import { apiService } from '@/services/apiService';
+import { authService } from '@/services/authService';
 import {
   getResponsiveBorderRadius,
   getResponsiveFontSize,
@@ -181,8 +182,22 @@ export default function ExpertRegistrationScreen() {
       const response = await apiService.registerExpert(formData);
       
       if (response.success) {
-        showSuccessToast('Success', 'Expert registration successful!');
-        router.replace('/login');
+        // Store token and account type for automatic login
+        const responseData = response.data || response;
+        if (responseData.token) {
+          await apiService.setToken(responseData.token);
+          const accountType = responseData.accountType || 'Expert';
+          await authService.setAccountType(accountType);
+          
+          showSuccessToast('Success', 'Expert registration successful!');
+          
+          // Redirect to expert dashboard
+          router.replace('/(expert)/expert-dashboard');
+        } else {
+          // Fallback if token is not in response
+          showSuccessToast('Success', 'Expert registration successful! Please log in.');
+          router.replace('/(auth)/login');
+        }
       }
     } catch (error) {
       // Use enhanced error handling to avoid console spam for validation errors

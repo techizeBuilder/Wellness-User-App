@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import { apiService } from '@/services/apiService';
+import { authService } from '@/services/authService';
 import {
     fontSizes,
     getResponsiveBorderRadius,
@@ -68,9 +69,22 @@ export default function CreateAccountScreen() {
       });
       
       if (response.success) {
-        showSuccessToast('Success', 'Account created successfully! You can now log in.');
-        // Skip OTP verification screen and go to login
-        router.replace('/(auth)/login');
+        // Store token and account type for automatic login
+        const responseData = response.data || response;
+        if (responseData.token) {
+          await apiService.setToken(responseData.token);
+          const accountType = responseData.accountType || 'User';
+          await authService.setAccountType(accountType);
+          
+          showSuccessToast('Success', 'Account created successfully!');
+          
+          // Redirect to user dashboard
+          router.replace('/(user)/dashboard');
+        } else {
+          // Fallback if token is not in response
+          showSuccessToast('Success', 'Account created successfully! Please log in.');
+          router.replace('/(auth)/login');
+        }
       } else {
         showErrorToast('Registration Failed', response.message || 'Unknown error occurred');
       }
