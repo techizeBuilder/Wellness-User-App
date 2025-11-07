@@ -1,59 +1,110 @@
-import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
-import { Dimensions, Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
-import Footer, { FOOTER_HEIGHT } from '@/components/Footer';
-import authService from '@/services/authService';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
 import {
-    fontSizes,
-    getResponsiveBorderRadius,
-    getResponsiveFontSize,
-    getResponsiveHeight,
-    getResponsiveMargin,
-    getResponsivePadding,
-    getResponsiveWidth,
-    screenData
-} from '@/utils/dimensions';
+  Dimensions,
+  Image,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import Footer, { FOOTER_HEIGHT } from "@/components/Footer";
+import authService from "@/services/authService";
+import {
+  fontSizes,
+  getResponsiveBorderRadius,
+  getResponsiveFontSize,
+  getResponsiveHeight,
+  getResponsiveMargin,
+  getResponsivePadding,
+  getResponsiveWidth,
+  screenData,
+} from "@/utils/dimensions";
+import { logAllStorageData } from "@/utils/debugStorage";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 export default function DashboardScreen() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [currentExpertIndex, setCurrentExpertIndex] = useState(0);
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const scrollViewRef = useRef<ScrollView>(null);
   const expertsScrollRef = useRef<ScrollView>(null);
 
-  // Check account type on component mount
+  // Helper function to safely extract values from objects
+  const safeValue = (value, fallback) => {
+    if (value === null || value === undefined) return fallback;
+    if (typeof value === "object") {
+      return (
+        value.average || value.count || value.amount || value.value || fallback
+      );
+    }
+    return value;
+  };
+
+  // Check account type on component mount and load user data
   useEffect(() => {
-    const checkAccountType = async () => {
+    const initializeUser = async () => {
       try {
+        setLoading(true);
+
+        // Check account type
         const accountType = await authService.getAccountType();
-        console.log('Dashboard - Account Type:', accountType);
-        
+        console.log("Dashboard - Account Type:", accountType);
+
+        // Debug current AsyncStorage state
+        await logAllStorageData();
+
         // If user is an Expert, redirect to expert dashboard
-        if (accountType === 'Expert') {
-          console.log('Redirecting Expert to expert dashboard');
-          router.replace('/(expert)/expert-dashboard');
+        if (accountType === "Expert") {
+          console.log("Redirecting Expert to expert dashboard");
+          router.replace("/expert-dashboard");
           return;
         }
+
+        // Load user data from AsyncStorage
+        const userDataString = await AsyncStorage.getItem("userData");
+        console.log("User Dashboard - Raw userData:", userDataString);
+        if (userDataString) {
+          const parsedUserData = JSON.parse(userDataString);
+          console.log("User Dashboard - Parsed userData:", parsedUserData);
+          console.log("User Dashboard - firstName:", parsedUserData.firstName);
+          console.log("User Dashboard - lastName:", parsedUserData.lastName);
+          console.log("User Dashboard - name:", parsedUserData.name);
+          console.log("User Dashboard - fullName:", parsedUserData.fullName);
+          setUserData(parsedUserData);
+          console.log("User data loaded:", parsedUserData);
+        } else {
+          console.log("User Dashboard - No userData found in AsyncStorage");
+        }
       } catch (error) {
-        console.error('Error checking account type:', error);
+        console.error(
+          "Error checking account type or loading user data:",
+          error
+        );
+      } finally {
+        setLoading(false);
       }
     };
 
-    checkAccountType();
+    initializeUser();
   }, []);
 
   const handleExpertsPress = () => {
-    router.push('/(user)/experts');
+    router.push("/experts");
   };
 
   const handleContentPress = () => {
-    router.push('/(user)/content');
+    router.push("/content");
   };
 
   const handleProfilePress = () => {
-    router.push('/(user)/profile');
+    router.push("/profile");
   };
 
   // Expert navigation functions
@@ -85,7 +136,11 @@ export default function DashboardScreen() {
     const scrollX = event.nativeEvent.contentOffset.x;
     const cardWidth = 280;
     const newIndex = Math.round(scrollX / cardWidth);
-    if (newIndex !== currentExpertIndex && newIndex >= 0 && newIndex < experts.length) {
+    if (
+      newIndex !== currentExpertIndex &&
+      newIndex >= 0 &&
+      newIndex < experts.length
+    ) {
       setCurrentExpertIndex(newIndex);
     }
   };
@@ -94,28 +149,31 @@ export default function DashboardScreen() {
   const sliderData = [
     {
       id: 1,
-      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=300&h=150&fit=crop',
-      title: 'Wellness Journey',
-      subtitle: 'Start your daily routine'
+      image:
+        "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=300&h=150&fit=crop",
+      title: "Wellness Journey",
+      subtitle: "Start your daily routine",
     },
     {
       id: 2,
-      image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=300&h=150&fit=crop',
-      title: 'Meditation Classes',
-      subtitle: 'Find inner peace'
+      image:
+        "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=300&h=150&fit=crop",
+      title: "Meditation Classes",
+      subtitle: "Find inner peace",
     },
     {
       id: 3,
-      image: 'https://images.unsplash.com/photo-1599901860904-17e6ed7083a0?w=300&h=150&fit=crop',
-      title: 'Healthy Lifestyle',
-      subtitle: 'Expert guidance'
-    }
+      image:
+        "https://images.unsplash.com/photo-1599901860904-17e6ed7083a0?w=300&h=150&fit=crop",
+      title: "Healthy Lifestyle",
+      subtitle: "Expert guidance",
+    },
   ];
 
   // Auto-slider effect
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentSlide(prevSlide => {
+      setCurrentSlide((prevSlide) => {
         const nextSlide = (prevSlide + 1) % sliderData.length;
         const scrollX = nextSlide * (width - 40);
         scrollViewRef.current?.scrollTo({ x: scrollX, animated: true });
@@ -127,66 +185,108 @@ export default function DashboardScreen() {
   }, []);
 
   const categories = [
-    { name: 'Yoga', icon: '🧘‍♀️', backgroundColor: '#edebf0ff' },
-    { name: 'Ayurveda', icon: '🌿', backgroundColor: '#edebf0ff' },
-    { name: 'Diet', icon: '🥗', backgroundColor: '#edebf0ff' },
-    { name: 'Astro Health', icon: '🔮', backgroundColor: '#edebf0ff' },
-    { name: 'Meditation', icon: '🕯️', backgroundColor: '#edebf0ff' },
+    { name: "Yoga", icon: "🧘‍♀️", backgroundColor: "#edebf0ff" },
+    { name: "Ayurveda", icon: "🌿", backgroundColor: "#edebf0ff" },
+    { name: "Diet", icon: "🥗", backgroundColor: "#edebf0ff" },
+    { name: "Astro Health", icon: "🔮", backgroundColor: "#edebf0ff" },
+    { name: "Meditation", icon: "🕯️", backgroundColor: "#edebf0ff" },
   ];
 
   const experts = [
     {
       id: 1,
-      name: 'Dr. Anya Sharma',
-      specialty: 'Yoga',
-      experience: '5 years',
+      name: "Dr. Anya Sharma",
+      specialty: "Yoga",
+      experience: "5 years",
       rating: 4.9,
-      image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face',
-      description: 'Certified yoga instructor specializing in Hatha and Vinyasa yoga with focus on mindfulness and breathing techniques.',
-      sessionPrice: '₹800/session'
+      image:
+        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face",
+      description:
+        "Certified yoga instructor specializing in Hatha and Vinyasa yoga with focus on mindfulness and breathing techniques.",
+      sessionPrice: "₹800/session",
     },
     {
       id: 2,
-      name: 'Dr. Rohan Verma',
-      specialty: 'Ayurveda',
-      experience: '8 years',
+      name: "Dr. Rohan Verma",
+      specialty: "Ayurveda",
+      experience: "8 years",
       rating: 4.8,
-      image: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=150&h=150&fit=crop&crop=face',
-      description: 'Traditional Ayurvedic medicine practitioner with expertise in Panchakarma and holistic wellness solutions.',
-      sessionPrice: '₹1200/session'
+      image:
+        "https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=150&h=150&fit=crop&crop=face",
+      description:
+        "Traditional Ayurvedic medicine practitioner with expertise in Panchakarma and holistic wellness solutions.",
+      sessionPrice: "₹1200/session",
     },
     {
       id: 3,
-      name: 'Dr. Priya Kapoor',
-      specialty: 'Nutrition',
-      experience: '6 years',
+      name: "Dr. Priya Kapoor",
+      specialty: "Nutrition",
+      experience: "6 years",
       rating: 5.0,
-      image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face',
-      description: 'Certified nutritionist and dietitian focusing on plant-based nutrition and sustainable lifestyle changes.',
-      sessionPrice: '₹900/session'
-    }
+      image:
+        "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face",
+      description:
+        "Certified nutritionist and dietitian focusing on plant-based nutrition and sustainable lifestyle changes.",
+      sessionPrice: "₹900/session",
+    },
   ];
 
   return (
     <LinearGradient
-      colors={['#23a897ff', '#269184ff', '#188d83ff']}
+      colors={["#23a897ff", "#269184ff", "#188d83ff"]}
       start={{ x: 0.5, y: 0 }}
       end={{ x: 0.5, y: 1 }}
       style={styles.container}
     >
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="transparent"
+        translucent
+      />
+
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerContent}>
             <View>
-              <Text style={styles.greeting}>Good Morning, Jeetu</Text>
-              <Text style={styles.subGreeting}>Ready for your wellness journey?</Text>
+              <Text style={styles.greeting}>
+                Good Morning,{" "}
+                {loading
+                  ? "User"
+                  : userData
+                  ? String(
+                      userData.name ||
+                        userData.fullName ||
+                        (userData.firstName && userData.lastName
+                          ? `${userData.firstName} ${userData.lastName}`
+                          : null) ||
+                        userData.firstName ||
+                        userData.lastName ||
+                        (userData.email
+                          ? userData.email.split("@")[0]
+                          : null) ||
+                        "User"
+                    )
+                  : "User"}
+              </Text>
+              <Text style={styles.subGreeting}>
+                Ready for your wellness journey?
+              </Text>
             </View>
-            <Pressable style={styles.profileButton} onPress={handleProfilePress}>
+            <Pressable
+              style={styles.profileButton}
+              onPress={handleProfilePress}
+            >
               <Image
-                source={{ uri: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=50&h=50&fit=crop&crop=face' }}
+                source={{
+                  uri:
+                    userData?.profileImage ||
+                    userData?.avatar ||
+                    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=50&h=50&fit=crop&crop=face",
+                }}
                 style={styles.profileImage}
               />
             </Pressable>
@@ -195,9 +295,9 @@ export default function DashboardScreen() {
 
         {/* Professional Auto Slider Advertisement Section */}
         <View style={styles.sliderSection}>
-          <ScrollView 
-            horizontal 
-            pagingEnabled 
+          <ScrollView
+            horizontal
+            pagingEnabled
             showsHorizontalScrollIndicator={false}
             ref={scrollViewRef}
             decelerationRate="fast"
@@ -206,14 +306,21 @@ export default function DashboardScreen() {
             {sliderData.map((item, index) => (
               <View key={item.id} style={styles.sliderItem}>
                 <LinearGradient
-                  colors={['rgba(77, 208, 225, 0.9)', 'rgba(129, 199, 132, 0.9)', 'rgba(186, 104, 200, 0.9)']}
+                  colors={[
+                    "rgba(77, 208, 225, 0.9)",
+                    "rgba(129, 199, 132, 0.9)",
+                    "rgba(186, 104, 200, 0.9)",
+                  ]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.sliderGradientOverlay}
                 >
-                  <Image source={{ uri: item.image }} style={styles.sliderImage} />
+                  <Image
+                    source={{ uri: item.image }}
+                    style={styles.sliderImage}
+                  />
                   <LinearGradient
-                    colors={['transparent', 'rgba(0,0,0,0.7)']}
+                    colors={["transparent", "rgba(0,0,0,0.7)"]}
                     style={styles.sliderTextOverlay}
                   >
                     <View style={styles.sliderContent}>
@@ -232,8 +339,15 @@ export default function DashboardScreen() {
             {sliderData.map((_, index) => (
               <LinearGradient
                 key={index}
-                colors={currentSlide === index ? ['#2DD4BF', '#14B8A6'] : ['rgba(255,255,255,0.3)', 'rgba(255,255,255,0.3)']}
-                style={[styles.dot, { opacity: currentSlide === index ? 1 : 0.5 }]}
+                colors={
+                  currentSlide === index
+                    ? ["#2DD4BF", "#14B8A6"]
+                    : ["rgba(255,255,255,0.3)", "rgba(255,255,255,0.3)"]
+                }
+                style={[
+                  styles.dot,
+                  { opacity: currentSlide === index ? 1 : 0.5 },
+                ]}
               />
             ))}
           </View>
@@ -241,13 +355,19 @@ export default function DashboardScreen() {
 
         {/* Categories Horizontal Slider */}
         <View style={styles.categoriesSection}>
-          <ScrollView 
-            horizontal 
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.categoriesContainer}
           >
             {categories.map((category, index) => (
-              <View key={index} style={[styles.categoryCard, { backgroundColor: category.backgroundColor }]}>
+              <View
+                key={index}
+                style={[
+                  styles.categoryCard,
+                  { backgroundColor: category.backgroundColor },
+                ]}
+              >
                 <Pressable style={styles.categoryPressable}>
                   <View style={styles.categoryIconWrapper}>
                     <Text style={styles.categoryIcon}>{category.icon}</Text>
@@ -264,15 +384,24 @@ export default function DashboardScreen() {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Featured Experts</Text>
             <View style={styles.navigationArrows}>
-              <Pressable 
-                style={[styles.arrowButton, { opacity: currentExpertIndex === 0 ? 0.5 : 1 }]}
+              <Pressable
+                style={[
+                  styles.arrowButton,
+                  { opacity: currentExpertIndex === 0 ? 0.5 : 1 },
+                ]}
                 onPress={navigateExpertLeft}
                 disabled={currentExpertIndex === 0}
               >
                 <Text style={styles.arrowText}>←</Text>
               </Pressable>
-              <Pressable 
-                style={[styles.arrowButton, { opacity: currentExpertIndex === experts.length - 1 ? 0.5 : 1 }]}
+              <Pressable
+                style={[
+                  styles.arrowButton,
+                  {
+                    opacity:
+                      currentExpertIndex === experts.length - 1 ? 0.5 : 1,
+                  },
+                ]}
                 onPress={navigateExpertRight}
                 disabled={currentExpertIndex === experts.length - 1}
               >
@@ -280,19 +409,19 @@ export default function DashboardScreen() {
               </Pressable>
             </View>
           </View>
-          <ScrollView 
+          <ScrollView
             ref={expertsScrollRef}
-            horizontal 
-            showsHorizontalScrollIndicator={false} 
+            horizontal
+            showsHorizontalScrollIndicator={false}
             style={styles.expertsScroll}
             onScroll={handleExpertScroll}
             scrollEventThrottle={16}
           >
             {experts.map((expert, index) => {
               const gradients: [string, string][] = [
-                ['rgba(247, 246, 250, 0.9)', 'rgba(248, 248, 248, 0.9)'], // Purple gradient
-                ['rgba(247, 246, 250, 0.9)', 'rgba(248, 248, 248, 0.9)'], // Green gradient  
-                ['rgba(247, 246, 250, 0.9)', 'rgba(248, 248, 248, 0.9)'],// Pink gradient
+                ["rgba(247, 246, 250, 0.9)", "rgba(248, 248, 248, 0.9)"], // Purple gradient
+                ["rgba(247, 246, 250, 0.9)", "rgba(248, 248, 248, 0.9)"], // Green gradient
+                ["rgba(247, 246, 250, 0.9)", "rgba(248, 248, 248, 0.9)"], // Pink gradient
               ];
               return (
                 <LinearGradient
@@ -302,32 +431,47 @@ export default function DashboardScreen() {
                 >
                   <Pressable
                     style={styles.expertPressable}
-                    onPress={() => router.push(`/expert-detail?id=${expert.id}`)}
+                    onPress={() =>
+                      router.push(`/expert-detail?id=${expert.id}`)
+                    }
                   >
                     <View style={styles.expertImageContainer}>
-                      <Image source={{ uri: expert.image }} style={styles.expertImage} />
-                      <Text style={styles.expertSpecialtyBadge}>{expert.specialty}</Text>
+                      <Image
+                        source={{ uri: expert.image }}
+                        style={styles.expertImage}
+                      />
+                      <Text style={styles.expertSpecialtyBadge}>
+                        {expert.specialty}
+                      </Text>
                     </View>
                     <View style={styles.expertContent}>
                       <View style={styles.expertHeader}>
                         <Text style={styles.expertName}>{expert.name}</Text>
                       </View>
-                      
+
                       <View style={styles.expertDescriptionContainer}>
-                        <Text style={styles.expertDescription} numberOfLines={2} ellipsizeMode="tail">
+                        <Text
+                          style={styles.expertDescription}
+                          numberOfLines={2}
+                          ellipsizeMode="tail"
+                        >
                           {expert.description}
                         </Text>
                       </View>
-                      
+
                       <View style={styles.expertMetaInfo}>
                         <View style={styles.expertRating}>
-                          <Text style={styles.expertRatingText}>⭐ {expert.rating}</Text>
+                          <Text style={styles.expertRatingText}>
+                            ⭐ {expert.rating}
+                          </Text>
                         </View>
-                        <Text style={styles.expertPrice}>{expert.sessionPrice}</Text>
+                        <Text style={styles.expertPrice}>
+                          {expert.sessionPrice}
+                        </Text>
                       </View>
-                      
+
                       <LinearGradient
-                        colors={['#14B8A6', '#0D9488']}
+                        colors={["#14B8A6", "#0D9488"]}
                         style={styles.bookButton}
                       >
                         <Text style={styles.bookButtonText}>Book Now</Text>
@@ -343,11 +487,13 @@ export default function DashboardScreen() {
         {/* Upcoming Session */}
         <View style={styles.section}>
           <LinearGradient
-            colors={['rgba(241, 245, 243, 0.95)', 'rgba(241, 245, 241, 0.95)']}
+            colors={["rgba(241, 245, 243, 0.95)", "rgba(241, 245, 241, 0.95)"]}
             style={styles.sessionCard}
           >
             <Image
-              source={{ uri: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=80&h=80&fit=crop' }}
+              source={{
+                uri: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=80&h=80&fit=crop",
+              }}
               style={styles.sessionImage}
             />
             <View style={styles.sessionInfo}>
@@ -355,7 +501,7 @@ export default function DashboardScreen() {
               <Text style={styles.sessionTime}>Today, at 8:00 AM</Text>
             </View>
             <LinearGradient
-              colors={['#14B8A6', '#0D9488']}
+              colors={["#14B8A6", "#0D9488"]}
               style={styles.joinButton}
             >
               <Text style={styles.joinButtonText}>Join</Text>
@@ -366,7 +512,7 @@ export default function DashboardScreen() {
         {/* Daily Wellness Tip */}
         <View style={styles.section}>
           <LinearGradient
-            colors={['rgba(248, 248, 248, 0.9)', 'rgba(255, 248, 220, 0.9)']}
+            colors={["rgba(248, 248, 248, 0.9)", "rgba(255, 248, 220, 0.9)"]}
             style={styles.tipCard}
           >
             <View style={styles.tipIconContainer}>
@@ -374,7 +520,10 @@ export default function DashboardScreen() {
             </View>
             <View style={styles.tipContent}>
               <Text style={styles.tipTitle}>Daily Wellness Tip</Text>
-              <Text style={styles.tipDescription}>Start your day with 10 minutes of deep breathing for better focus.</Text>
+              <Text style={styles.tipDescription}>
+                Start your day with 10 minutes of deep breathing for better
+                focus.
+              </Text>
             </View>
           </LinearGradient>
         </View>
@@ -384,25 +533,25 @@ export default function DashboardScreen() {
           <Text style={styles.sectionTitle}>Your Progress</Text>
           <View style={styles.statsContainer}>
             <LinearGradient
-              colors={['rgba(76, 175, 80, 0.9)', 'rgba(129, 199, 132, 0.9)']}
+              colors={["rgba(76, 175, 80, 0.9)", "rgba(129, 199, 132, 0.9)"]}
               style={styles.statCard}
             >
               <Text style={styles.statIcon}>🧘‍♀️</Text>
               <Text style={styles.statNumber}>12</Text>
               <Text style={styles.statLabel}>Sessions This Month</Text>
             </LinearGradient>
-            
+
             <LinearGradient
-              colors={['rgba(33, 150, 243, 0.9)', 'rgba(100, 181, 246, 0.9)']}
+              colors={["rgba(33, 150, 243, 0.9)", "rgba(100, 181, 246, 0.9)"]}
               style={styles.statCard}
             >
               <Text style={styles.statIcon}>⏱️</Text>
               <Text style={styles.statNumber}>180</Text>
               <Text style={styles.statLabel}>Minutes Practiced</Text>
             </LinearGradient>
-            
+
             <LinearGradient
-              colors={['rgba(255, 193, 7, 0.9)', 'rgba(255, 235, 59, 0.9)']}
+              colors={["rgba(255, 193, 7, 0.9)", "rgba(255, 235, 59, 0.9)"]}
               style={styles.statCard}
             >
               <Text style={styles.statIcon}>🏆</Text>
@@ -458,37 +607,40 @@ export default function DashboardScreen() {
           <View style={styles.quickActionsContainer}>
             <Pressable style={styles.quickActionCard}>
               <LinearGradient
-                colors={['rgba(186, 104, 200, 0.9)', 'rgba(206, 147, 216, 0.9)']}
+                colors={[
+                  "rgba(186, 104, 200, 0.9)",
+                  "rgba(206, 147, 216, 0.9)",
+                ]}
                 style={styles.quickActionGradient}
               >
                 <Text style={styles.quickActionIcon}>🧘‍♂️</Text>
                 <Text style={styles.quickActionText}>5-Min Meditation</Text>
               </LinearGradient>
             </Pressable>
-            
+
             <Pressable style={styles.quickActionCard}>
               <LinearGradient
-                colors={['rgba(255, 152, 0, 0.9)', 'rgba(255, 193, 7, 0.9)']}
+                colors={["rgba(255, 152, 0, 0.9)", "rgba(255, 193, 7, 0.9)"]}
                 style={styles.quickActionGradient}
               >
                 <Text style={styles.quickActionIcon}>💪</Text>
                 <Text style={styles.quickActionText}>Quick Workout</Text>
               </LinearGradient>
             </Pressable>
-            
+
             <Pressable style={styles.quickActionCard}>
               <LinearGradient
-                colors={['rgba(76, 175, 80, 0.9)', 'rgba(129, 199, 132, 0.9)']}
+                colors={["rgba(76, 175, 80, 0.9)", "rgba(129, 199, 132, 0.9)"]}
                 style={styles.quickActionGradient}
               >
                 <Text style={styles.quickActionIcon}>🌱</Text>
                 <Text style={styles.quickActionText}>Breathing Exercise</Text>
               </LinearGradient>
             </Pressable>
-            
+
             <Pressable style={styles.quickActionCard}>
               <LinearGradient
-                colors={['rgba(33, 150, 243, 0.9)', 'rgba(100, 181, 246, 0.9)']}
+                colors={["rgba(33, 150, 243, 0.9)", "rgba(100, 181, 246, 0.9)"]}
                 style={styles.quickActionGradient}
               >
                 <Text style={styles.quickActionIcon}>📖</Text>
@@ -600,32 +752,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsivePadding(screenData.isSmall ? 16 : 20),
   },
   headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   greeting: {
     fontSize: fontSizes.xxl,
-    fontWeight: 'bold',
-    color: '#FFD54F',
+    fontWeight: "bold",
+    color: "#FFD54F",
     marginBottom: getResponsiveMargin(4),
   },
   subGreeting: {
     fontSize: fontSizes.md,
-    color: '#ffffffff',
+    color: "#ffffffff",
     opacity: 0.9,
   },
   profileButton: {
     width: getResponsiveWidth(50),
     height: getResponsiveHeight(50),
     borderRadius: getResponsiveBorderRadius(25),
-    overflow: 'hidden',
+    overflow: "hidden",
     borderWidth: 3,
-    borderColor: '#ffffff',
+    borderColor: "#ffffff",
   },
   profileImage: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   section: {
     paddingHorizontal: getResponsivePadding(screenData.isSmall ? 16 : 20),
@@ -633,35 +785,35 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: fontSizes.xl,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontWeight: "bold",
+    color: "#ffffff",
     marginBottom: getResponsiveMargin(16),
   },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: getResponsiveMargin(16),
   },
   navigationArrows: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: getResponsiveMargin(8),
   },
   arrowButton: {
     width: getResponsiveWidth(36),
     height: getResponsiveHeight(36),
     borderRadius: getResponsiveBorderRadius(18),
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: "rgba(255, 255, 255, 0.3)",
   },
   arrowText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: fontSizes.md,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontWeight: "bold",
+    textAlign: "center",
     lineHeight: fontSizes.md,
     marginTop: -2,
   },
@@ -674,10 +826,10 @@ const styles = StyleSheet.create({
     width: screenData.width - getResponsiveWidth(screenData.isSmall ? 32 : 40),
     height: getResponsiveHeight(screenData.isSmall ? 180 : 220),
     borderRadius: getResponsiveBorderRadius(25),
-    overflow: 'hidden',
-    position: 'relative',
+    overflow: "hidden",
+    position: "relative",
     marginRight: getResponsiveMargin(10),
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.3,
     shadowRadius: 15,
@@ -686,69 +838,69 @@ const styles = StyleSheet.create({
   sliderGradientOverlay: {
     flex: 1,
     borderRadius: getResponsiveBorderRadius(25),
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   sliderImage: {
-    width: '100%',
-    height: '100%',
-    position: 'absolute',
+    width: "100%",
+    height: "100%",
+    position: "absolute",
     opacity: 0.85,
   },
   sliderTextOverlay: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    height: '65%',
-    justifyContent: 'flex-end',
+    height: "65%",
+    justifyContent: "flex-end",
     borderRadius: getResponsiveBorderRadius(25),
   },
   sliderContent: {
     padding: getResponsivePadding(screenData.isSmall ? 20 : 25),
   },
   sliderTitle: {
-    color: '#fff',
+    color: "#fff",
     fontSize: screenData.isSmall ? fontSizes.xl : fontSizes.xxl + 2,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: getResponsiveMargin(8),
-    textShadowColor: 'rgba(0, 0, 0, 0.6)',
+    textShadowColor: "rgba(0, 0, 0, 0.6)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 4,
   },
   sliderSubtitle: {
-    color: '#fff',
+    color: "#fff",
     fontSize: fontSizes.md,
     opacity: 0.95,
     marginBottom: getResponsiveMargin(15),
-    textShadowColor: 'rgba(0, 0, 0, 0.4)',
+    textShadowColor: "rgba(0, 0, 0, 0.4)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },
   sliderButton: {
-    backgroundColor: '#F59E0B',
+    backgroundColor: "#F59E0B",
     paddingHorizontal: getResponsivePadding(20),
     paddingVertical: getResponsivePadding(10),
     borderRadius: getResponsiveBorderRadius(25),
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     borderWidth: 1.5,
-    borderColor: '#D97706',
-    shadowColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: "#D97706",
+    shadowColor: "rgba(255, 255, 255, 0.3)",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.8,
     shadowRadius: 4,
     elevation: 3,
   },
   sliderButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: fontSizes.sm,
-    fontWeight: '700',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    fontWeight: "700",
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
   sliderDots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     marginTop: getResponsiveMargin(15),
   },
   dot: {
@@ -756,7 +908,7 @@ const styles = StyleSheet.create({
     height: getResponsiveHeight(10),
     borderRadius: getResponsiveBorderRadius(5),
     marginHorizontal: getResponsiveMargin(5),
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 3,
@@ -775,7 +927,7 @@ const styles = StyleSheet.create({
     width: getResponsiveWidth(screenData.isSmall ? 75 : 85),
     height: getResponsiveHeight(screenData.isSmall ? 75 : 85),
     borderRadius: getResponsiveBorderRadius(20),
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
     shadowRadius: 8,
@@ -783,8 +935,8 @@ const styles = StyleSheet.create({
   },
   categoryPressable: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: getResponsivePadding(8),
   },
   categoryIconWrapper: {
@@ -795,9 +947,9 @@ const styles = StyleSheet.create({
   },
   categoryName: {
     fontSize: fontSizes.xs,
-    fontWeight: '600',
-    textAlign: 'center',
-    color: '#333',
+    fontWeight: "600",
+    textAlign: "center",
+    color: "#333",
     lineHeight: fontSizes.xs + 2,
   },
   expertsScroll: {
@@ -810,45 +962,45 @@ const styles = StyleSheet.create({
     marginRight: getResponsiveMargin(16),
     borderRadius: getResponsiveBorderRadius(24),
     borderWidth: 2,
-    borderColor: '#F59E0B',
-    shadowColor: '#000',
+    borderColor: "#F59E0B",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.2,
     shadowRadius: 12,
     elevation: 8,
   },
   expertPressable: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: getResponsivePadding(screenData.isSmall ? 16 : 20),
     flex: 1,
-    alignItems: 'flex-start',
+    alignItems: "flex-start",
   },
   expertImageContainer: {
     marginRight: getResponsiveMargin(16),
-    alignItems: 'center',
+    alignItems: "center",
   },
   expertImage: {
     width: getResponsiveWidth(screenData.isSmall ? 70 : 80),
     height: getResponsiveHeight(screenData.isSmall ? 70 : 80),
     borderRadius: getResponsiveBorderRadius(screenData.isSmall ? 35 : 40),
     borderWidth: 3,
-    borderColor: '#F59E0B',
+    borderColor: "#F59E0B",
     marginBottom: getResponsiveMargin(8),
   },
   expertSpecialtyBadge: {
     fontSize: fontSizes.xs,
-    color: '#666',
-    fontWeight: '600',
-    textAlign: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    color: "#666",
+    fontWeight: "600",
+    textAlign: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
     paddingHorizontal: getResponsivePadding(8),
     paddingVertical: getResponsivePadding(4),
     borderRadius: getResponsiveBorderRadius(10),
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   expertContent: {
     flex: 1,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
     height: getResponsiveHeight(screenData.isSmall ? 150 : 180),
     paddingVertical: getResponsivePadding(8),
   },
@@ -857,15 +1009,15 @@ const styles = StyleSheet.create({
   },
   expertName: {
     fontSize: fontSizes.lg,
-    fontWeight: 'bold',
-    color: '#2C2C2C',
+    fontWeight: "bold",
+    color: "#2C2C2C",
     marginBottom: getResponsiveMargin(4),
     lineHeight: fontSizes.lg + 4,
   },
   expertSpecialty: {
     fontSize: fontSizes.sm,
-    color: '#666',
-    fontWeight: '600',
+    color: "#666",
+    fontWeight: "600",
     marginBottom: getResponsiveMargin(8),
   },
   expertDescriptionContainer: {
@@ -874,26 +1026,26 @@ const styles = StyleSheet.create({
   },
   expertDescription: {
     fontSize: fontSizes.xs,
-    color: '#333',
+    color: "#333",
     lineHeight: fontSizes.xs + 5,
-    fontWeight: '400',
-    textAlign: 'left',
+    fontWeight: "400",
+    textAlign: "left",
   },
   expertMetaInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: getResponsiveMargin(14),
     paddingRight: getResponsivePadding(8),
   },
   expertRating: {
-    backgroundColor: '#F59E0B',
+    backgroundColor: "#F59E0B",
     paddingHorizontal: getResponsivePadding(12),
     paddingVertical: getResponsivePadding(6),
     borderRadius: getResponsiveBorderRadius(12),
     borderWidth: 1,
-    borderColor: '#D97706',
-    shadowColor: '#FFD700',
+    borderColor: "#D97706",
+    shadowColor: "#FFD700",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3,
@@ -901,40 +1053,40 @@ const styles = StyleSheet.create({
   },
   expertRatingText: {
     fontSize: fontSizes.xs,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
+    color: "#FFFFFF",
+    fontWeight: "bold",
   },
   expertPrice: {
     fontSize: fontSizes.md,
-    color: '#2C2C2C',
-    fontWeight: '700',
+    color: "#2C2C2C",
+    fontWeight: "700",
   },
   bookButton: {
     paddingHorizontal: getResponsivePadding(screenData.isSmall ? 20 : 24),
     paddingVertical: getResponsivePadding(screenData.isSmall ? 12 : 14),
     borderRadius: getResponsiveBorderRadius(20),
-    shadowColor: '#4DD0E1',
+    shadowColor: "#4DD0E1",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 4,
-    alignSelf: 'stretch',
+    alignSelf: "stretch",
   },
   bookButtonText: {
     fontSize: getResponsiveFontSize(14),
-    color: '#ffffff',
-    fontWeight: '700',
-    textAlign: 'center',
+    color: "#ffffff",
+    fontWeight: "700",
+    textAlign: "center",
   },
   sessionCard: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.95)',
+    flexDirection: "row",
+    backgroundColor: "rgba(255,255,255,0.95)",
     borderRadius: getResponsiveBorderRadius(20),
     padding: getResponsivePadding(20),
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 2,
-    borderColor: '#F59E0B',
-    shadowColor: '#000',
+    borderColor: "#F59E0B",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -951,32 +1103,32 @@ const styles = StyleSheet.create({
   },
   sessionTitle: {
     fontSize: getResponsiveFontSize(16),
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
     marginBottom: getResponsiveMargin(4),
   },
   sessionTime: {
     fontSize: getResponsiveFontSize(14),
-    color: '#F15A29',
+    color: "#F15A29",
   },
   joinButton: {
-    backgroundColor: '#4DD0E1',
+    backgroundColor: "#4DD0E1",
     paddingHorizontal: getResponsivePadding(24),
     paddingVertical: getResponsivePadding(12),
     borderRadius: getResponsiveBorderRadius(20),
   },
   joinButtonText: {
     fontSize: getResponsiveFontSize(14),
-    color: '#ffffff',
-    fontWeight: '600',
+    color: "#ffffff",
+    fontWeight: "600",
   },
   tipCard: {
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: "rgba(255,255,255,0.9)",
     borderRadius: getResponsiveBorderRadius(20),
     padding: getResponsivePadding(20),
-    flexDirection: 'row',
-    alignItems: 'center',
-    shadowColor: '#000',
+    flexDirection: "row",
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -986,9 +1138,9 @@ const styles = StyleSheet.create({
     width: getResponsiveWidth(40),
     height: getResponsiveHeight(40),
     borderRadius: getResponsiveBorderRadius(20),
-    backgroundColor: '#FFE5B4',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#FFE5B4",
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: getResponsiveMargin(16),
   },
   tipIcon: {
@@ -999,27 +1151,27 @@ const styles = StyleSheet.create({
   },
   tipTitle: {
     fontSize: getResponsiveFontSize(16),
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
     marginBottom: getResponsiveMargin(4),
   },
   tipDescription: {
     fontSize: getResponsiveFontSize(14),
-    color: '#666',
+    color: "#666",
     lineHeight: getResponsiveHeight(20),
   },
   // Health Stats Styles
   statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     gap: getResponsiveWidth(12),
   },
   statCard: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
     padding: getResponsivePadding(16),
     borderRadius: getResponsiveBorderRadius(16),
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -1031,78 +1183,78 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     fontSize: getResponsiveFontSize(24),
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: "bold",
+    color: "#FFFFFF",
     marginBottom: getResponsiveMargin(4),
   },
   statLabel: {
     fontSize: getResponsiveFontSize(12),
-    color: 'rgba(255, 255, 255, 0.9)',
-    textAlign: 'center',
-    fontWeight: '600',
+    color: "rgba(255, 255, 255, 0.9)",
+    textAlign: "center",
+    fontWeight: "600",
   },
   // Weekly Goals Styles
   seeAllButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 15,
   },
   seeAllText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   goalsCard: {
     padding: 20,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: "rgba(255, 255, 255, 0.3)",
   },
   goalItem: {
     marginBottom: 16,
   },
   goalInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 8,
   },
   goalTitle: {
     fontSize: getResponsiveFontSize(16),
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   goalProgress: {
     fontSize: getResponsiveFontSize(14),
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: "rgba(255, 255, 255, 0.8)",
   },
   progressBar: {
     height: getResponsiveHeight(6),
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
     borderRadius: getResponsiveBorderRadius(3),
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   progressFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: getResponsiveBorderRadius(3),
   },
   // Quick Actions Styles
   quickActionsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: getResponsiveWidth(12),
   },
   quickActionCard: {
     width: (width - getResponsiveWidth(64)) / 2,
     height: getResponsiveHeight(100),
     borderRadius: getResponsiveBorderRadius(16),
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   quickActionGradient: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: getResponsivePadding(16),
   },
   quickActionIcon: {
@@ -1111,24 +1263,24 @@ const styles = StyleSheet.create({
   },
   quickActionText: {
     fontSize: getResponsiveFontSize(14),
-    fontWeight: '600',
-    color: '#FFFFFF',
-    textAlign: 'center',
+    fontWeight: "600",
+    color: "#FFFFFF",
+    textAlign: "center",
   },
   // Articles Styles
   articleCard: {
     width: getResponsiveWidth(200),
     marginRight: getResponsiveMargin(16),
     borderRadius: getResponsiveBorderRadius(16),
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   articleCardGradient: {
     borderWidth: 2,
-    borderColor: '#F59E0B',
+    borderColor: "#F59E0B",
     borderRadius: getResponsiveBorderRadius(16),
   },
   articleImage: {
-    width: '100%',
+    width: "100%",
     height: getResponsiveHeight(120),
   },
   articleContent: {
@@ -1136,60 +1288,77 @@ const styles = StyleSheet.create({
   },
   articleTitle: {
     fontSize: getResponsiveFontSize(16),
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: "bold",
+    color: "#FFFFFF",
     marginBottom: getResponsiveMargin(8),
     lineHeight: getResponsiveHeight(22),
   },
   articleAuthor: {
     fontSize: getResponsiveFontSize(12),
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: "rgba(255, 255, 255, 0.8)",
     marginBottom: getResponsiveMargin(4),
   },
   articleReadTime: {
     fontSize: getResponsiveFontSize(12),
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: "rgba(255, 255, 255, 0.6)",
   },
   // Community Styles
   communityCard: {
     padding: getResponsivePadding(20),
     borderRadius: getResponsiveBorderRadius(16),
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: "rgba(255, 255, 255, 0.3)",
   },
   communityStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    justifyContent: "space-around",
     marginBottom: getResponsiveMargin(20),
   },
   communityStatItem: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   communityStatNumber: {
     fontSize: getResponsiveFontSize(20),
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: "bold",
+    color: "#FFFFFF",
     marginBottom: getResponsiveMargin(4),
   },
   communityStatLabel: {
     fontSize: getResponsiveFontSize(12),
-    color: 'rgba(255, 255, 255, 0.8)',
-    textAlign: 'center',
+    color: "rgba(255, 255, 255, 0.8)",
+    textAlign: "center",
   },
   joinCommunityButton: {
     borderRadius: getResponsiveBorderRadius(12),
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   joinCommunityGradient: {
     paddingVertical: getResponsivePadding(12),
-    alignItems: 'center',
+    alignItems: "center",
   },
   joinCommunityText: {
     fontSize: getResponsiveFontSize(16),
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: "bold",
+    color: "#FFFFFF",
   },
   bottomSpacer: {
     height: FOOTER_HEIGHT + getResponsiveHeight(60), // Footer height + extra padding for better spacing
+  },
+  debugSection: {
+    padding: 16,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    margin: 16,
+    borderRadius: 8,
+  },
+  debugButton: {
+    backgroundColor: "#FF6B6B",
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  debugButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "bold",
+    fontSize: 16,
   },
 });
