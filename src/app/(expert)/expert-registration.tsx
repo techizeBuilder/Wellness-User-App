@@ -115,11 +115,17 @@ export default function ExpertRegistrationScreen() {
 
     setIsLoading(true);
     try {
+      // Split fullName into firstName and lastName
+      const nameParts = fullName.trim().split(' ');
+      const firstName = nameParts[0] || fullName;
+      const lastName = nameParts.slice(1).join(' ') || firstName; // Use first name as last name if no last name provided
+      
       // Create FormData for file upload
       const formData = new FormData();
       
       // Add text fields with correct field names that backend expects
-      formData.append('fullName', fullName); // Send fullName instead of splitting
+      formData.append('firstName', firstName);
+      formData.append('lastName', lastName);
       formData.append('email', email);
       formData.append('phone', phoneNumber); // Backend expects 'phone', not 'phoneNumber'
       formData.append('password', password);
@@ -149,7 +155,8 @@ export default function ExpertRegistrationScreen() {
       }
 
       console.log('FormData contents:');
-      console.log('fullName:', fullName);
+      console.log('firstName:', firstName);
+      console.log('lastName:', lastName);
       console.log('email:', email);
       console.log('phone:', phoneNumber);
       console.log('specialization:', specialization);
@@ -158,7 +165,8 @@ export default function ExpertRegistrationScreen() {
 
       // Debug: Log all required fields to ensure they're not empty
       console.log('=== REQUIRED FIELDS CHECK ===');
-      console.log('fullName valid:', fullName && fullName.trim().length > 0);
+      console.log('firstName valid:', firstName && firstName.trim().length > 0);
+      console.log('lastName valid:', lastName && lastName.trim().length > 0);
       console.log('email valid:', email && email.trim().length > 0);
       console.log('phone valid:', phoneNumber && phoneNumber.trim().length > 0);
       console.log('password valid:', password && password.trim().length > 0);

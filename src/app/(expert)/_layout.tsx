@@ -1,10 +1,11 @@
-import { Redirect, Stack } from 'expo-router';
+import { Redirect, Stack, usePathname } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import authService from '@/services/authService';
 
 export default function ExpertLayout() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const pathname = usePathname();
 
   useEffect(() => {
     checkAuth();
@@ -23,10 +24,28 @@ export default function ExpertLayout() {
     }
   };
 
-  if (isLoading) {
+  // Check if current route is expert-registration (public route)
+  const isRegistrationRoute = pathname?.includes('expert-registration') ?? false;
+
+  // If we're still loading auth, show loading screen
+  // But if we're on registration route, allow it immediately
+  if (isLoading && !isRegistrationRoute) {
     return null; // Or return a loading screen
   }
 
+  // Allow access to registration routes without authentication
+  if (isRegistrationRoute) {
+    return (
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          animation: 'fade',
+        }}
+      />
+    );
+  }
+
+  // For all other expert routes, require authentication
   if (!isAuthenticated) {
     return <Redirect href="/(auth)/login" />;
   }
