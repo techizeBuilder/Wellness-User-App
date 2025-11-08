@@ -11,6 +11,7 @@ import {
     screenData
 } from '@/utils/dimensions';
 import '@/utils/errorSuppression'; // Must be first import
+import authService from '@/services/authService';
 
 export default function Index() {
   const [animatedValues] = useState(() => 
@@ -59,8 +60,30 @@ export default function Index() {
 
     createPulseAnimation().start();
 
+    const checkAuthAndRedirect = async () => {
+      try {
+        const isAuthenticated = await authService.isAuthenticated();
+        if (isAuthenticated) {
+          // User is authenticated, redirect to appropriate dashboard
+          const accountType = await authService.getAccountType();
+          if (accountType === 'Expert') {
+            router.replace('/(expert)/expert-dashboard');
+          } else {
+            router.replace('/(user)/dashboard');
+          }
+        } else {
+          // User is not authenticated, go to onboarding
+          router.replace('/(public)/onboarding');
+        }
+      } catch (error) {
+        console.error('Error checking authentication:', error);
+        // On error, default to onboarding
+        router.replace('/(public)/onboarding');
+      }
+    };
+
     const timer = setTimeout(() => {
-      router.replace('/(public)/onboarding');
+      checkAuthAndRedirect();
     }, 2500);
 
     return () => clearTimeout(timer);

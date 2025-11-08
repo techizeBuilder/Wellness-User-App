@@ -13,9 +13,10 @@ export default function ExpertLayout() {
 
   const checkAuth = async () => {
     try {
+      const isAuthenticatedUser = await authService.isAuthenticated();
       const accountType = await authService.getAccountType();
-      // Only allow Expert account type
-      setIsAuthenticated(accountType === 'Expert');
+      // Only allow Expert account type AND authenticated users
+      setIsAuthenticated(isAuthenticatedUser && accountType === 'Expert');
     } catch (error) {
       console.error('Auth check failed:', error);
       setIsAuthenticated(false);

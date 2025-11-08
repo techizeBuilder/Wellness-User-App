@@ -691,12 +691,20 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   earningsTabText: {
-    fontSize: getResponsiveFontSize(12),
+    fontSize: getResponsiveFontSize(14),
     color: "#FFFFFF",
-    fontWeight: "600",
+    fontWeight: "700",
+    textShadowColor: "rgba(0, 0, 0, 0.8)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   earningsTabTextActive: {
     color: "#059669",
+    fontWeight: "bold",
+    // No shadow & offset if active
+    textShadowColor: "transparent",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 0,
   },
   activeSubscribersText: {
     fontSize: getResponsiveFontSize(14),
@@ -737,15 +745,17 @@ const styles = StyleSheet.create({
   quickActionsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
+    justifyContent: "center",
     marginTop: getResponsiveHeight(12),
+    gap: getResponsiveWidth(12),
   },
   quickActionButton: {
     backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: getResponsiveBorderRadius(12),
-    padding: getResponsivePadding(16),
+    paddingVertical: getResponsivePadding(16),
+    paddingHorizontal: getResponsivePadding(4),
     alignItems: "center",
-    width: (width - 60) / 2.5,
+    width: (width - 60 - getResponsiveWidth(16)) / 3,
     marginBottom: getResponsiveHeight(12),
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
