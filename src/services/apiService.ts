@@ -315,6 +315,13 @@ class ApiService {
     });
   }
 
+  async verifyRegistrationOTP(data: { email: string; otp: string }) {
+    return this.request(ENDPOINTS.AUTH.VERIFY_REGISTRATION_OTP, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
   async resetPassword(data: {
     email: string;
     otp: string;
@@ -366,7 +373,7 @@ class ApiService {
 
   // User profile APIs
   async getUserProfile() {
-    return this.request(ENDPOINTS.AUTH.PROFILE);
+    return this.request(ENDPOINTS.AUTH.GET_USER);
   }
 
   async updateUserProfile(userData: any) {
@@ -379,6 +386,7 @@ class ApiService {
 
 // Create and export a singleton instance
 export const apiService = new ApiService();
+export default apiService;
 
 // Export types for TypeScript
 export interface LoginCredentials {

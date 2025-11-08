@@ -8,11 +8,13 @@ export const UPLOADS_URL = UPLOADS_BASE_URL;
 export const ENDPOINTS = {
   AUTH: {
     REGISTER: '/auth/register',
+    VERIFY_REGISTRATION_OTP: '/auth/verify-registration-otp',
     LOGIN: '/auth/login',
     FORGOT_PASSWORD: '/auth/forgot-password',
     SEND_OTP: '/auth/send-otp',
     VERIFY_OTP: '/auth/verify-otp',
     RESET_PASSWORD: '/auth/reset-password',
+    GET_USER: '/auth/me',
     PROFILE: '/auth/profile',
   },
   EXPERTS: {
@@ -31,11 +33,13 @@ export const buildUrl = (endpoint: string) => `${BASE_URL}${endpoint}`;
 export const API_URLS = {
   AUTH: {
     REGISTER: buildUrl(ENDPOINTS.AUTH.REGISTER),
+    VERIFY_REGISTRATION_OTP: buildUrl(ENDPOINTS.AUTH.VERIFY_REGISTRATION_OTP),
     LOGIN: buildUrl(ENDPOINTS.AUTH.LOGIN),
     FORGOT_PASSWORD: buildUrl(ENDPOINTS.AUTH.FORGOT_PASSWORD),
     SEND_OTP: buildUrl(ENDPOINTS.AUTH.SEND_OTP),
     VERIFY_OTP: buildUrl(ENDPOINTS.AUTH.VERIFY_OTP),
     RESET_PASSWORD: buildUrl(ENDPOINTS.AUTH.RESET_PASSWORD),
+    GET_USER: buildUrl(ENDPOINTS.AUTH.GET_USER),
     PROFILE: buildUrl(ENDPOINTS.AUTH.PROFILE),
   },
   EXPERTS: {

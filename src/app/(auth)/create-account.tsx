@@ -69,22 +69,14 @@ export default function CreateAccountScreen() {
       });
       
       if (response.success) {
-        // Store token and account type for automatic login
-        const responseData = response.data || response;
-        if (responseData.token) {
-          await apiService.setToken(responseData.token);
-          const accountType = responseData.accountType || 'User';
-          await authService.setAccountType(accountType);
-          
-          showSuccessToast('Success', 'Account created successfully!');
-          
-          // Redirect to user dashboard
-          router.replace('/(user)/dashboard');
-        } else {
-          // Fallback if token is not in response
-          showSuccessToast('Success', 'Account created successfully! Please log in.');
-          router.replace('/(auth)/login');
-        }
+        // OTP has been sent, redirect to OTP verification screen
+        showSuccessToast('OTP Sent', 'Please check your email for the verification code.');
+        
+        // Redirect to OTP verification screen with email
+        router.push({
+          pathname: '/(auth)/verify-registration-otp',
+          params: { email }
+        });
       } else {
         showErrorToast('Registration Failed', response.message || 'Unknown error occurred');
       }

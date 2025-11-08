@@ -1,11 +1,12 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import ExpertFooter from '@/components/ExpertFooter';
 import Footer, { FOOTER_HEIGHT } from '@/components/Footer';
 import authService from '@/services/authService';
+import apiService from '@/services/apiService';
 import { colors } from '@/utils/colors';
 import {
   fontSizes,
@@ -28,19 +29,56 @@ export default function ProfileScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [unreadNotifications, setUnreadNotifications] = useState(3);
   const [isExpert, setIsExpert] = useState(false);
+  const [userData, setUserData] = useState<{
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    profileImage?: string;
+    specialization?: string;
+  } | null>(null);
+  const [expertData, setExpertData] = useState<any>(null);
   const params = useLocalSearchParams();
 
   useEffect(() => {
-    const checkAccountType = async () => {
+    const checkAccountTypeAndFetchProfile = async () => {
       try {
         const accountType = await authService.getAccountType();
         setIsExpert(accountType === 'Expert');
+
+        // Fetch user or expert profile data
+        try {
+          if (accountType === 'Expert') {
+            const response = await apiService.getCurrentExpertProfile();
+            if (response.success && response.data?.expert) {
+              setExpertData(response.data.expert);
+              setUserData({
+                firstName: response.data.expert.firstName,
+                lastName: response.data.expert.lastName,
+                email: response.data.expert.email,
+                profileImage: response.data.expert.profileImage,
+                specialization: response.data.expert.specialization,
+              });
+            }
+          } else {
+            const response = await apiService.getUserProfile();
+            if (response.success && response.data?.user) {
+              setUserData({
+                firstName: response.data.user.firstName,
+                lastName: response.data.user.lastName,
+                email: response.data.user.email,
+                profileImage: response.data.user.profileImage,
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching profile:', error);
+        }
       } catch (error) {
         console.error('Error checking account type:', error);
       }
     };
 
-    checkAccountType();
+    checkAccountTypeAndFetchProfile();
   }, []);
 
   const handleBackPress = () => {
@@ -72,7 +110,7 @@ export default function ProfileScreen() {
     }
   };
 
-  const expertProfileSections = [
+  const expertProfileSections = useMemo(() => [
     {
       title: 'PROFESSIONAL',
       items: [
@@ -80,7 +118,7 @@ export default function ProfileScreen() {
           icon: '📧', 
           iconColor: '#2DD4BF',
           title: 'Contact Info', 
-          subtitle: 'dr.sophia@wellness.com', 
+          subtitle: userData?.email || 'dr.sophia@wellness.com', 
           action: () => router.push('/(user)/contact-info')
         },
         { 
@@ -142,9 +180,9 @@ export default function ProfileScreen() {
         },
       ]
     }
-  ];
+  ], [userData, notificationsEnabled, unreadNotifications]);
 
-  const userProfileSections = [
+  const userProfileSections = useMemo(() => [
     {
       title: 'ACCOUNT',
       items: [
@@ -152,7 +190,7 @@ export default function ProfileScreen() {
           icon: '📧', 
           iconColor: '#2DD4BF',
           title: 'Contact Info', 
-          subtitle: 'sophia.bennett@gmail.com', 
+          subtitle: userData?.email || 'sophia.bennett@gmail.com', 
           action: () => router.push('/(user)/contact-info')
         },
         { 
@@ -220,7 +258,7 @@ export default function ProfileScreen() {
         },
       ]
     }
-  ];
+  ], [userData, notificationsEnabled, unreadNotifications]);
 
   const profileSections = isExpert ? expertProfileSections : userProfileSections;
 
@@ -246,17 +284,38 @@ export default function ProfileScreen() {
         {/* Profile Info */}
         <View style={styles.profileSection}>
           <View style={styles.profileImageContainer}>
-            <Image
-              source={{ uri: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&crop=face' }}
-              style={styles.profileImage}
-              resizeMode="cover"
-            />
+            {userData?.profileImage ? (
+              <Image
+                source={{ uri: userData.profileImage }}
+                style={styles.profileImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={styles.profileImagePlaceholder}>
+                <Text style={styles.profileImagePlaceholderText}>
+                  {userData?.firstName?.[0]?.toUpperCase() || 'U'}
+                  {userData?.lastName?.[0]?.toUpperCase() || ''}
+                </Text>
+              </View>
+            )}
             <Pressable style={styles.editButton}>
               <Text style={styles.editIcon}>✏️</Text>
             </Pressable>
           </View>
-          <Text style={styles.profileName}>{isExpert ? 'Dr. Sophia Bennett' : 'Sophia Bennett'}</Text>
-          <Text style={styles.profileSubtitle}>{isExpert ? 'Wellness Expert & Certified Therapist' : 'Yoga & Meditation Enthusiast'}</Text>
+          <Text style={styles.profileName}>
+            {isExpert && userData?.firstName 
+              ? `Dr. ${userData.firstName} ${userData.lastName || ''}`.trim()
+              : userData?.firstName && userData?.lastName
+              ? `${userData.firstName} ${userData.lastName}`
+              : userData?.firstName || 'User'}
+          </Text>
+          <Text style={styles.profileSubtitle}>
+            {isExpert 
+              ? userData?.specialization 
+                ? `${userData.specialization} Expert`
+                : 'Wellness Expert & Certified Therapist'
+              : userData?.email || 'Yoga & Meditation Enthusiast'}
+          </Text>
           
           <View style={styles.statsContainer}>
             {isExpert ? (
@@ -534,6 +593,21 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveBorderRadius(screenData.isSmall ? 50 : 60),
     borderWidth: 4,
     borderColor: '#F59E0B',
+  },
+  profileImagePlaceholder: {
+    width: getResponsiveWidth(screenData.isSmall ? 100 : 120),
+    height: getResponsiveHeight(screenData.isSmall ? 100 : 120),
+    borderRadius: getResponsiveBorderRadius(screenData.isSmall ? 50 : 60),
+    borderWidth: 4,
+    borderColor: '#F59E0B',
+    backgroundColor: '#2DD4BF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  profileImagePlaceholderText: {
+    fontSize: getResponsiveFontSize(screenData.isSmall ? 32 : 40),
+    fontWeight: 'bold',
+    color: '#ffffff',
   },
   editButton: {
     position: 'absolute',

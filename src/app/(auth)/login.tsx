@@ -41,6 +41,18 @@ export default function LoginScreen() {
       // Use the regular auth service which now hits the unified login endpoint
       const response = await authService.login({ email, password });
       
+      // Check if OTP verification is required (always required for user login now)
+      if ((response as any).requiresVerification) {
+        showSuccessToast('OTP Sent', 'Please verify your login with the OTP sent to your email.');
+        
+        // Redirect to OTP verification screen for login
+        router.push({
+          pathname: '/(auth)/verify-login-otp',
+          params: { email }
+        });
+        return;
+      }
+      
       if (response.success) {
         const accountType = (response as any).data?.accountType || 'User';
         showSuccessToast('Success', `${accountType} login successful!`);
