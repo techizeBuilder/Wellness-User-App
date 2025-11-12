@@ -27,9 +27,14 @@
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "",
-        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": ""
+        // Google Configuration
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "108137419427-p32p2e20683cu9lep0c0jo8jc7p7l7ad.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "108137419427-248vha2bnnvnjqbh58q33cr6bumq7fd7.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "108137419427-i5g4gfc2ph1glpoune7n5opvc2s5gfmj.apps.googleusercontent.com",
+
+        // API Configuration
+        "EXPO_PUBLIC_API_BASE_URL": "https://apiwellness.shrawantravels.com/api",
+        "EXPO_PUBLIC_UPLOADS_BASE_URL": "https://apiwellness.shrawantravels.com/uploads"
       }
     },
     "apk": {
@@ -37,9 +42,14 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "",
-        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": ""
+        // Google Configuration
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "108137419427-p32p2e20683cu9lep0c0jo8jc7p7l7ad.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "108137419427-248vha2bnnvnjqbh58q33cr6bumq7fd7.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "108137419427-i5g4gfc2ph1glpoune7n5opvc2s5gfmj.apps.googleusercontent.com",
+
+        // API Configuration
+        "EXPO_PUBLIC_API_BASE_URL": "https://apiwellness.shrawantravels.com/api",
+        "EXPO_PUBLIC_UPLOADS_BASE_URL": "https://apiwellness.shrawantravels.com/uploads"
       }
     }
   },
