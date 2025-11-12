@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import React, { useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import { Pressable, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import { apiService } from '@/services/apiService';
 import { authService } from '@/services/authService';
@@ -18,17 +18,31 @@ import { handleRegistrationError, logErrorSafely } from '@/utils/errorHandler';
 import { showErrorToast, showSuccessToast } from '@/utils/toastConfig';
 
 export default function CreateAccountScreen() {
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
+  const params = useLocalSearchParams();
+  const isGoogleFlow = params.isGoogleFlow === 'true';
+  const googleUserId = params.googleUserId as string | undefined;
+  const googleFullName = params.fullName as string | undefined;
+  const googleEmail = params.email as string | undefined;
+
+  const [fullName, setFullName] = useState(googleFullName || '');
+  const [email, setEmail] = useState(googleEmail || '');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Pre-fill Google data on mount
+  useEffect(() => {
+    if (isGoogleFlow) {
+      if (googleFullName) setFullName(googleFullName);
+      if (googleEmail) setEmail(googleEmail);
+    }
+  }, [isGoogleFlow, googleFullName, googleEmail]);
+
   const handleCreateAccount = async () => {
-    // Basic validation
-    if (!fullName.trim() || !email.trim() || !phoneNumber.trim() || !password.trim()) {
-      showErrorToast('Validation Error', 'Please fill in all fields');
+    // Basic validation - password not required for Google flow
+    if (!fullName.trim() || !email.trim() || !phoneNumber.trim() || (!isGoogleFlow && !password.trim())) {
+      showErrorToast('Validation Error', 'Please fill in all required fields');
       return;
     }
 
@@ -46,8 +60,8 @@ export default function CreateAccountScreen() {
       return;
     }
 
-    // Enhanced password validation 
-    if (password.length < 6) {
+    // Enhanced password validation - only for non-Google flow
+    if (!isGoogleFlow && password.length < 6) {
       showErrorToast('Validation Error', 'Password must be at least 6 characters long');
       return;
     }
@@ -61,24 +75,48 @@ export default function CreateAccountScreen() {
 
     setIsLoading(true);
     try {
-      const response = await apiService.register({
-        fullName,
-        email,
-        phoneNumber,
-        password
-      });
-      
-      if (response.success) {
-        // OTP has been sent, redirect to OTP verification screen
-        showSuccessToast('OTP Sent', 'Please check your email for the verification code.');
-        
-        // Redirect to OTP verification screen with email
-        router.push({
-          pathname: '/(auth)/verify-registration-otp',
-          params: { email }
+      // Handle Google flow differently
+      if (isGoogleFlow && googleUserId) {
+        // Split full name into first and last
+        const nameParts = fullName.trim().split(' ');
+        const firstName = nameParts[0] || fullName;
+        const lastName = nameParts.slice(1).join(' ') || firstName;
+
+        // Update Google user profile
+        const response = await authService.updateGoogleUserProfile({
+          userId: googleUserId,
+          firstName: firstName.trim() || undefined,
+          lastName: lastName.trim() || undefined,
+          phone: phoneNumber.replace(/\D/g, ''),
         });
+
+        if (response.success) {
+          showSuccessToast('Success', 'Profile updated successfully!');
+          router.replace('/(user)/dashboard');
+        } else {
+          showErrorToast('Registration Failed', response.message || 'Unknown error occurred');
+        }
       } else {
-        showErrorToast('Registration Failed', response.message || 'Unknown error occurred');
+        // Regular registration flow
+        const response = await apiService.register({
+          fullName,
+          email,
+          phoneNumber,
+          password
+        });
+        
+        if (response.success) {
+          // OTP has been sent, redirect to OTP verification screen
+          showSuccessToast('OTP Sent', 'Please check your email for the verification code.');
+          
+          // Redirect to OTP verification screen with email
+          router.push({
+            pathname: '/(auth)/verify-registration-otp',
+            params: { email }
+          });
+        } else {
+          showErrorToast('Registration Failed', response.message || 'Unknown error occurred');
+        }
       }
     } catch (error) {
       // Use enhanced error handling to avoid console spam for validation errors
@@ -126,13 +164,18 @@ export default function CreateAccountScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Email</Text>
               <TextInput
-                style={[styles.input, email ? styles.inputFilled : null]}
+                style={[
+                  styles.input, 
+                  email ? styles.inputFilled : null,
+                  isGoogleFlow && styles.inputDisabled
+                ]}
                 placeholder="you@example.com"
                 placeholderTextColor="#999"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                editable={!isGoogleFlow}
               />
             </View>
 
@@ -148,30 +191,32 @@ export default function CreateAccountScreen() {
               />
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Password</Text>
-              <View style={styles.passwordContainer}>
-                <TextInput
-                  style={[styles.passwordInput, password ? styles.inputFilled : null]}
-                  placeholder="••••••••"
-                  placeholderTextColor="#999"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!isPasswordVisible}
-                />
-                <Pressable 
-                  style={styles.eyeIcon}
-                  onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-                >
-                  <Text style={styles.eyeIconText}>
-                    {isPasswordVisible ? '🙈' : '👁️'}
-                  </Text>
-                </Pressable>
+            {!isGoogleFlow && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Password</Text>
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={[styles.passwordInput, password ? styles.inputFilled : null]}
+                    placeholder="••••••••"
+                    placeholderTextColor="#999"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!isPasswordVisible}
+                  />
+                  <Pressable 
+                    style={styles.eyeIcon}
+                    onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+                  >
+                    <Text style={styles.eyeIconText}>
+                      {isPasswordVisible ? '🙈' : '👁️'}
+                    </Text>
+                  </Pressable>
+                </View>
+                <Text style={styles.passwordRequirement}>
+                  Must be at least 6 characters.
+                </Text>
               </View>
-              <Text style={styles.passwordRequirement}>
-                Must be at least 6 characters.
-              </Text>
-            </View>
+            )}
 
             <Pressable 
               style={[styles.createButton, isLoading && styles.createButtonDisabled]} 
@@ -265,6 +310,10 @@ const styles = StyleSheet.create({
   inputFilled: {
     borderColor: '#2da898ff',
     borderWidth: 2,
+  },
+  inputDisabled: {
+    backgroundColor: '#F3F4F6',
+    opacity: 0.7,
   },
   passwordContainer: {
     position: 'relative',

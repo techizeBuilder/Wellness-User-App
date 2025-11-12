@@ -11,6 +11,33 @@ export interface LoginRequest {
 export interface LoginResponse {
   success: boolean;
   message: string;
+  requiresAccountSelection?: boolean;
+  data: {
+    user: {
+      id: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      isEmailVerified: boolean;
+      userType?: 'user' | 'expert'; // Include userType for incomplete onboarding
+    };
+    token?: string;
+    accountType?: string; // Add accountType to handle User vs Expert
+  };
+}
+
+export interface GoogleLoginRequest {
+  idToken: string;
+}
+
+export interface CompleteOnboardingRequest {
+  googleUserId: string;
+  accountType: 'Expert' | 'User';
+}
+
+export interface CompleteOnboardingResponse {
+  success: boolean;
+  message: string;
   data: {
     user: {
       id: string;
@@ -20,7 +47,7 @@ export interface LoginResponse {
       isEmailVerified: boolean;
     };
     token: string;
-    accountType?: string; // Add accountType to handle User vs Expert
+    accountType: string;
   };
 }
 
@@ -262,6 +289,7 @@ class AuthService {
     }
   }
 
+
   async removeToken(): Promise<void> {
     try {
       await AsyncStorage.removeItem('authToken');
@@ -282,6 +310,85 @@ class AuthService {
   async isAuthenticated(): Promise<boolean> {
     const token = await this.getToken();
     return !!token;
+  }
+
+  // Google Login API
+  async loginWithGoogle(idToken: string): Promise<LoginResponse> {
+    const response = await this.makeRequest<LoginResponse>(
+      API_URLS.AUTH.GOOGLE_MOBILE_LOGIN,
+      {
+        method: 'POST',
+        body: JSON.stringify({ idToken }),
+      }
+    );
+
+    // Only store token if account selection is not required
+    if (response.success && !response.requiresAccountSelection && response.data.token) {
+      await this.storeToken(response.data.token);
+      const accountType = response.data.accountType || 'User';
+      await this.storeAccountType(accountType);
+    }
+
+    return response;
+  }
+
+  // Complete Google Onboarding
+  async completeGoogleOnboarding(request: CompleteOnboardingRequest): Promise<CompleteOnboardingResponse> {
+    const response = await this.makeRequest<CompleteOnboardingResponse>(
+      API_URLS.AUTH.GOOGLE_COMPLETE_ONBOARDING,
+      {
+        method: 'POST',
+        body: JSON.stringify(request),
+      }
+    );
+
+    // Store token and account type after onboarding
+    if (response.success && response.data.token) {
+      await this.storeToken(response.data.token);
+      await this.storeAccountType(response.data.accountType);
+    }
+
+    return response;
+  }
+
+  // Update Google User Profile (for onboarding)
+  async updateGoogleUserProfile(request: {
+    userId: string;
+    firstName?: string;
+    lastName?: string;
+    phone: string;
+  }): Promise<LoginResponse> {
+    const response = await this.makeRequest<LoginResponse>(
+      API_URLS.AUTH.GOOGLE_UPDATE_USER_PROFILE,
+      {
+        method: 'POST',
+        body: JSON.stringify(request),
+      }
+    );
+
+    return response;
+  }
+
+  // Update Google Expert Profile (for onboarding)
+  async updateGoogleExpertProfile(request: {
+    userId: string;
+    firstName?: string;
+    lastName?: string;
+    phone: string;
+    specialization: string;
+    experience?: number;
+    bio?: string;
+    hourlyRate?: number;
+  }): Promise<LoginResponse> {
+    const response = await this.makeRequest<LoginResponse>(
+      API_URLS.AUTH.GOOGLE_UPDATE_EXPERT_PROFILE,
+      {
+        method: 'POST',
+        body: JSON.stringify(request),
+      }
+    );
+
+    return response;
   }
 }
 

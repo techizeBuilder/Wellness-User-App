@@ -1,7 +1,9 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useRef, useState } from 'react';
-import { Animated, Dimensions, Pressable, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Animated, Pressable, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import authService, { ApiError } from '@/services/authService';
+import { showErrorToast } from '@/utils/toastConfig';
 import Svg, { Circle, Path } from 'react-native-svg';
 import {
   fontSizes,
@@ -12,8 +14,6 @@ import {
   getResponsiveWidth,
   screenData
 } from '@/utils/dimensions';
-
-const { width, height } = Dimensions.get('window');
 
 // Custom SVG Icon Components
 const UserIcon = ({ size = 40, isSelected = false }) => (
@@ -102,7 +102,14 @@ const ExpertIcon = ({ size = 40, isSelected = false }) => (
 );
 
 export default function UserTypeSelection() {
+  const params = useLocalSearchParams();
+  const isGoogleFlow = params.isGoogleFlow === 'true';
+  const googleUserId = params.googleUserId as string | undefined;
+  const googleFullName = params.fullName as string | undefined;
+  const googleEmail = params.email as string | undefined;
+
   const [selectedType, setSelectedType] = useState<'user' | 'expert' | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Animation refs for card scaling
   const userCardScale = useRef(new Animated.Value(1)).current;
@@ -131,11 +138,52 @@ export default function UserTypeSelection() {
     animateCardPress(type);
   };
 
-  const handleContinue = () => {
-    if (selectedType === 'user') {
-      router.push('/(auth)/create-account');
-    } else if (selectedType === 'expert') {
-      router.push('/(expert)/expert-registration');
+  const handleContinue = async () => {
+    if (!selectedType) return;
+
+    setIsLoading(true);
+    try {
+      // If Google flow, complete onboarding first to set account type
+      if (isGoogleFlow && googleUserId) {
+        const accountType = selectedType === 'expert' ? 'Expert' : 'User';
+        const response = await authService.completeGoogleOnboarding({
+          googleUserId,
+          accountType,
+        });
+
+        if (!response.success) {
+          throw new Error(response.message || 'Failed to complete onboarding');
+        }
+      }
+
+      const routeParams: any = {};
+      if (isGoogleFlow && googleUserId) {
+        routeParams.isGoogleFlow = 'true';
+        routeParams.googleUserId = googleUserId;
+        if (googleFullName) routeParams.fullName = googleFullName;
+        if (googleEmail) routeParams.email = googleEmail;
+      }
+
+      if (selectedType === 'user') {
+        router.push({
+          pathname: '/(auth)/create-account',
+          params: routeParams
+        });
+      } else if (selectedType === 'expert') {
+        router.push({
+          pathname: '/(expert)/expert-registration',
+          params: routeParams
+        });
+      }
+    } catch (error: any) {
+      console.error('Onboarding completion error:', error);
+      const apiError = error as ApiError;
+      showErrorToast(
+        'Error',
+        apiError.message || 'Failed to complete setup. Please try again.'
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -166,7 +214,7 @@ export default function UserTypeSelection() {
                 <View style={[styles.iconContainer, selectedType === 'user' && styles.selectedIconContainer]}>
                   <UserIcon size={50} isSelected={selectedType === 'user'} />
                 </View>
-                <Text style={styles.optionTitle}>I'm a User</Text>
+                <Text style={styles.optionTitle}>I&apos;m a User</Text>
                 <Text style={styles.optionDescription}>
                   Join classes and find wellness experts.
                 </Text>
@@ -183,7 +231,7 @@ export default function UserTypeSelection() {
                 <View style={[styles.iconContainer, selectedType === 'expert' && styles.selectedIconContainer]}>
                   <ExpertIcon size={50} isSelected={selectedType === 'expert'} />
                 </View>
-                <Text style={styles.optionTitle}>I'm an Expert</Text>
+                <Text style={styles.optionTitle}>I&apos;m an Expert</Text>
                 <Text style={styles.optionDescription}>
                   Offer your services as certified provider.
                 </Text>
@@ -202,10 +250,15 @@ export default function UserTypeSelection() {
                   style={styles.gradientButtonContent}
                   onPress={handleContinue}
                   activeOpacity={0.8}
+                  disabled={isLoading}
                 >
-                  <Text style={styles.buttonText}>
-                    Continue as {selectedType === 'user' ? 'User' : 'Expert'}
-                  </Text>
+                  {isLoading ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.buttonText}>
+                      Continue as {selectedType === 'user' ? 'User' : 'Expert'}
+                    </Text>
+                  )}
                 </TouchableOpacity>
               </LinearGradient>
             ) : (

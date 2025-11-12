@@ -1,8 +1,8 @@
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import React, { useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import { apiService } from '@/services/apiService';
 import { authService } from '@/services/authService';
@@ -18,8 +18,14 @@ import { handleRegistrationError, logErrorSafely } from '@/utils/errorHandler';
 import { showErrorToast, showSuccessToast } from '@/utils/toastConfig';
 
 export default function ExpertRegistrationScreen() {
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
+  const params = useLocalSearchParams();
+  const isGoogleFlow = params.isGoogleFlow === 'true';
+  const googleUserId = params.googleUserId as string | undefined;
+  const googleFullName = params.fullName as string | undefined;
+  const googleEmail = params.email as string | undefined;
+
+  const [fullName, setFullName] = useState(googleFullName || '');
+  const [email, setEmail] = useState(googleEmail || '');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [specialization, setSpecialization] = useState('');
@@ -32,6 +38,14 @@ export default function ExpertRegistrationScreen() {
   const [profileImage, setProfileImage] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
   const [showSpecializationDropdown, setShowSpecializationDropdown] = useState(false);
+
+  // Pre-fill Google data on mount
+  useEffect(() => {
+    if (isGoogleFlow) {
+      if (googleFullName) setFullName(googleFullName);
+      if (googleEmail) setEmail(googleEmail);
+    }
+  }, [isGoogleFlow, googleFullName, googleEmail]);
 
   const specializationOptions = [
     'Yoga',
@@ -78,8 +92,8 @@ export default function ExpertRegistrationScreen() {
   };
 
   const handleCreateAccount = async () => {
-    // Validation
-    if (!fullName.trim() || !email.trim() || !phoneNumber.trim() || !password.trim()) {
+    // Validation - password not required for Google flow
+    if (!fullName.trim() || !email.trim() || !phoneNumber.trim() || (!isGoogleFlow && !password.trim())) {
       showErrorToast('Error', 'Please fill in all basic information fields');
       return;
     }
@@ -96,8 +110,8 @@ export default function ExpertRegistrationScreen() {
       return;
     }
 
-    // Password validation
-    if (password.length < 6) {
+    // Password validation - only for non-Google flow
+    if (!isGoogleFlow && password.length < 6) {
       showErrorToast('Error', 'Password must be at least 6 characters long');
       return;
     }
@@ -120,83 +134,106 @@ export default function ExpertRegistrationScreen() {
       const nameParts = fullName.trim().split(' ');
       const firstName = nameParts[0] || fullName;
       const lastName = nameParts.slice(1).join(' ') || firstName; // Use first name as last name if no last name provided
-      
-      // Create FormData for file upload
-      const formData = new FormData();
-      
-      // Add text fields with correct field names that backend expects
-      formData.append('firstName', firstName);
-      formData.append('lastName', lastName);
-      formData.append('email', email);
-      formData.append('phone', phoneNumber); // Backend expects 'phone', not 'phoneNumber'
-      formData.append('password', password);
-      formData.append('specialization', specialization);
-      
-      // Add optional fields only if they have values
-      if (experience && experience.trim()) {
-        formData.append('experience', experience);
-      }
-      if (bio && bio.trim()) {
-        formData.append('bio', bio);
-      }
-      if (consultationFee && consultationFee.trim()) {
-        formData.append('hourlyRate', consultationFee); // Backend expects 'hourlyRate'
-      }
-      if (qualifications && qualifications.trim()) {
-        formData.append('qualifications', qualifications);
-      }
 
-      // Add profile image if selected (backend expects 'profileImage' field)
-      if (profileImage) {
-        formData.append('profileImage', {
-          uri: profileImage.uri,
-          type: profileImage.mimeType || 'image/jpeg',
-          name: profileImage.fileName || 'profile.jpg',
-        } as any);
-      }
+      // Handle Google flow differently
+      if (isGoogleFlow && googleUserId) {
+        // Update Google expert profile
+        const response = await authService.updateGoogleExpertProfile({
+          userId: googleUserId,
+          firstName: firstName.trim() || undefined,
+          lastName: lastName.trim() || undefined,
+          phone: phoneNumber.replace(/\D/g, ''),
+          specialization: specialization.trim(),
+          experience: experience ? parseInt(experience, 10) : undefined,
+          bio: bio.trim() || undefined,
+          hourlyRate: consultationFee ? parseFloat(consultationFee) : undefined,
+        });
 
-      console.log('FormData contents:');
-      console.log('firstName:', firstName);
-      console.log('lastName:', lastName);
-      console.log('email:', email);
-      console.log('phone:', phoneNumber);
-      console.log('specialization:', specialization);
-      console.log('experience:', experience || 'not provided');
-      console.log('hasProfileImage:', !!profileImage);
-
-      // Debug: Log all required fields to ensure they're not empty
-      console.log('=== REQUIRED FIELDS CHECK ===');
-      console.log('firstName valid:', firstName && firstName.trim().length > 0);
-      console.log('lastName valid:', lastName && lastName.trim().length > 0);
-      console.log('email valid:', email && email.trim().length > 0);
-      console.log('phone valid:', phoneNumber && phoneNumber.trim().length > 0);
-      console.log('password valid:', password && password.trim().length > 0);
-      console.log('specialization valid:', specialization && specialization.trim().length > 0);
-
-      // Note: Documents handling might need separate endpoint - backend uses single('profileImage')
-      // For now, we'll skip documents to get basic registration working
-      if (documents.length > 0) {
-        console.log(`Note: ${documents.length} documents selected but will be uploaded separately`);
-      }
-
-      const response = await apiService.registerExpert(formData);
-      
-      if (response.success) {
-        // Store token and account type for automatic login
-        const responseData = response.data || response;
-        if (responseData.token) {
-          await apiService.setToken(responseData.token);
-          const accountType = responseData.accountType || 'Expert';
-          await authService.setAccountType(accountType);
-          
-          showSuccessToast('Success', 'Expert registration successful!');
-          
-          // Redirect to expert dashboard
+        if (response.success) {
+          showSuccessToast('Success', 'Expert profile updated successfully!');
           router.replace('/(expert)/expert-dashboard');
         } else {
-          // Fallback if token is not in response
-          showSuccessToast('Success', 'Expert registration successful! Please log in.');
-          router.replace('/(auth)/login');
+          showErrorToast('Registration Failed', response.message || 'Unknown error occurred');
+        }
+      } else {
+        // Regular registration flow
+        // Create FormData for file upload
+        const formData = new FormData();
+        
+        // Add text fields with correct field names that backend expects
+        formData.append('firstName', firstName);
+        formData.append('lastName', lastName);
+        formData.append('email', email);
+        formData.append('phone', phoneNumber); // Backend expects 'phone', not 'phoneNumber'
+        formData.append('password', password);
+        formData.append('specialization', specialization);
+        
+        // Add optional fields only if they have values
+        if (experience && experience.trim()) {
+          formData.append('experience', experience);
+        }
+        if (bio && bio.trim()) {
+          formData.append('bio', bio);
+        }
+        if (consultationFee && consultationFee.trim()) {
+          formData.append('hourlyRate', consultationFee); // Backend expects 'hourlyRate'
+        }
+        if (qualifications && qualifications.trim()) {
+          formData.append('qualifications', qualifications);
+        }
+
+        // Add profile image if selected (backend expects 'profileImage' field)
+        if (profileImage) {
+          formData.append('profileImage', {
+            uri: profileImage.uri,
+            type: profileImage.mimeType || 'image/jpeg',
+            name: profileImage.fileName || 'profile.jpg',
+          } as any);
+        }
+
+        console.log('FormData contents:');
+        console.log('firstName:', firstName);
+        console.log('lastName:', lastName);
+        console.log('email:', email);
+        console.log('phone:', phoneNumber);
+        console.log('specialization:', specialization);
+        console.log('experience:', experience || 'not provided');
+        console.log('hasProfileImage:', !!profileImage);
+
+        // Debug: Log all required fields to ensure they're not empty
+        console.log('=== REQUIRED FIELDS CHECK ===');
+        console.log('firstName valid:', firstName && firstName.trim().length > 0);
+        console.log('lastName valid:', lastName && lastName.trim().length > 0);
+        console.log('email valid:', email && email.trim().length > 0);
+        console.log('phone valid:', phoneNumber && phoneNumber.trim().length > 0);
+        console.log('password valid:', password && password.trim().length > 0);
+        console.log('specialization valid:', specialization && specialization.trim().length > 0);
+
+        // Note: Documents handling might need separate endpoint - backend uses single('profileImage')
+        // For now, we'll skip documents to get basic registration working
+        if (documents.length > 0) {
+          console.log(`Note: ${documents.length} documents selected but will be uploaded separately`);
+        }
+
+        const response = await apiService.registerExpert(formData);
+        
+        if (response.success) {
+          // Store token and account type for automatic login
+          const responseData = response.data || response;
+          if (responseData.token) {
+            await apiService.setToken(responseData.token);
+            const accountType = responseData.accountType || 'Expert';
+            await authService.setAccountType(accountType);
+            
+            showSuccessToast('Success', 'Expert registration successful!');
+            
+            // Redirect to expert dashboard
+            router.replace('/(expert)/expert-dashboard');
+          } else {
+            // Fallback if token is not in response
+            showSuccessToast('Success', 'Expert registration successful! Please log in.');
+            router.replace('/(auth)/login');
+          }
         }
       }
     } catch (error) {
@@ -248,13 +285,18 @@ export default function ExpertRegistrationScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Email</Text>
               <TextInput
-                style={[styles.input, email ? styles.inputFilled : null]}
+                style={[
+                  styles.input, 
+                  email ? styles.inputFilled : null,
+                  isGoogleFlow && styles.inputDisabled
+                ]}
                 placeholder="you@example.com"
                 placeholderTextColor="#999"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                editable={!isGoogleFlow}
               />
             </View>
 
@@ -348,27 +390,29 @@ export default function ExpertRegistrationScreen() {
               </View>
             </Modal>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Password</Text>
-              <View style={styles.passwordContainer}>
-                <TextInput
-                  style={[styles.passwordInput, password ? styles.inputFilled : null]}
-                  placeholder="••••••••"
-                  placeholderTextColor="#999"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!isPasswordVisible}
-                />
-                <Pressable 
-                  style={styles.eyeIcon}
-                  onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-                >
-                  <Text style={styles.eyeIconText}>
-                    {isPasswordVisible ? '🙈' : '👁️'}
-                  </Text>
-                </Pressable>
+            {!isGoogleFlow && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Password</Text>
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={[styles.passwordInput, password ? styles.inputFilled : null]}
+                    placeholder="••••••••"
+                    placeholderTextColor="#999"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!isPasswordVisible}
+                  />
+                  <Pressable 
+                    style={styles.eyeIcon}
+                    onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+                  >
+                    <Text style={styles.eyeIconText}>
+                      {isPasswordVisible ? '🙈' : '👁️'}
+                    </Text>
+                  </Pressable>
+                </View>
               </View>
-            </View>
+            )}
 
             <View style={styles.uploadSection}>
               <Text style={styles.uploadLabel}>Upload Certification</Text>
@@ -489,6 +533,10 @@ const styles = StyleSheet.create({
   inputFilled: {
     borderColor: '#2da898ff',
     borderWidth: 2,
+  },
+  inputDisabled: {
+    backgroundColor: '#F3F4F6',
+    opacity: 0.7,
   },
   passwordContainer: {
     position: 'relative',
