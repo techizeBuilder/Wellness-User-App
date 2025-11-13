@@ -1,7 +1,17 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
-import { Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  View
+} from 'react-native';
 import { colors } from '@/utils/colors';
 import {
   fontSizes,
@@ -12,26 +22,153 @@ import {
   getResponsivePadding,
   getResponsiveWidth
 } from '@/utils/dimensions';
+import { apiService, handleApiError } from '@/services/apiService';
+import authService from '@/services/authService';
 
 export default function ContactInfoScreen() {
   const [isEditing, setIsEditing] = useState(false);
-  const [fullName, setFullName] = useState('Sophia Bennett');
-  const [email, setEmail] = useState('sophia.dev@personal.com');
-  const [phone, setPhone] = useState('+1 (555) 123-4567');
-  const [address, setAddress] = useState('123 Wellness Street, San Francisco, CA 94102');
-  const [dateOfBirth, setDateOfBirth] = useState('March 15, 1990');
-  const [emergencyContact, setEmergencyContact] = useState('John Bennett - +1 (555) 987-6543');
+  const [accountType, setAccountType] = useState<'User' | 'Expert' | null>(null);
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [initialProfile, setInitialProfile] = useState<{
+    fullName: string;
+    email: string;
+    phone: string;
+  } | null>(null);
 
-  const handleSave = () => {
-    setIsEditing(false);
-    // Here you would typically save to backend
-    console.log('Contact info saved');
-  };
+  const fetchProfile = useCallback(async () => {
+    try {
+      setProfileLoading(true);
+      const storedAccountType = await authService.getAccountType();
+      const normalizedAccountType =
+        storedAccountType === 'Expert' ? 'Expert' : 'User';
+      setAccountType(normalizedAccountType);
 
-  const handleCancel = () => {
+      let profilePayload: any = null;
+
+      if (normalizedAccountType === 'Expert') {
+        const response = await apiService.getCurrentExpertProfile();
+        profilePayload =
+          response?.data?.expert ??
+          response?.expert ??
+          response?.data ??
+          null;
+      } else {
+        const response = await apiService.getUserProfile();
+        profilePayload =
+          response?.data?.user ??
+          response?.user ??
+          response?.data ??
+          null;
+      }
+
+      if (!profilePayload) {
+        throw new Error('Unable to load profile details.');
+      }
+
+      const firstName = profilePayload.firstName ?? '';
+      const lastName = profilePayload.lastName ?? '';
+      const composedName =
+        [firstName, lastName].filter(Boolean).join(' ').trim() ||
+        profilePayload.name ||
+        'User';
+
+      const userEmail = profilePayload.email ?? '';
+      const userPhone = profilePayload.phone ?? '';
+
+      setFullName(composedName);
+      setEmail(userEmail);
+      setPhone(userPhone);
+      setInitialProfile({
+        fullName: composedName,
+        email: userEmail,
+        phone: userPhone,
+      });
+    } catch (error) {
+      const message = handleApiError(error);
+      Alert.alert('Error', message);
+    } finally {
+      setProfileLoading(false);
+      setIsEditing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
+
+  const handleCancel = useCallback(() => {
     setIsEditing(false);
-    // Reset to original values if needed
-  };
+    if (initialProfile) {
+      setFullName(initialProfile.fullName);
+      setEmail(initialProfile.email);
+      setPhone(initialProfile.phone);
+    }
+  }, [initialProfile]);
+
+  const handleSave = useCallback(async () => {
+    if (!fullName.trim()) {
+      Alert.alert('Validation', 'Please enter your full name.');
+      return;
+    }
+
+    if (!phone.trim()) {
+      Alert.alert('Validation', 'Please enter your phone number.');
+      return;
+    }
+
+    const trimmedName = fullName.trim();
+    const nameParts = trimmedName.split(/\s+/);
+    const firstName = nameParts.shift() || '';
+    const lastName = nameParts.join(' ') || firstName;
+    const trimmedPhone = phone.trim();
+
+    setSaving(true);
+    try {
+      if (accountType === 'Expert') {
+        await apiService.updateExpertProfile({
+          firstName,
+          lastName,
+          phone: trimmedPhone,
+        });
+      } else {
+        await apiService.updateUserProfile({
+          firstName,
+          lastName,
+          phone: trimmedPhone,
+        });
+      }
+
+      setFullName(trimmedName);
+      setPhone(trimmedPhone);
+      setInitialProfile({
+        fullName: trimmedName,
+        email,
+        phone: trimmedPhone,
+      });
+      setIsEditing(false);
+      Alert.alert('Success', 'Contact info updated successfully.');
+    } catch (error) {
+      const message = handleApiError(error);
+      Alert.alert('Error', message);
+    } finally {
+      setSaving(false);
+    }
+  }, [accountType, fullName, phone, email]);
+
+  const handleEditToggle = useCallback(() => {
+    if (profileLoading || saving) {
+      return;
+    }
+    if (isEditing) {
+      handleCancel();
+    } else {
+      setIsEditing(true);
+    }
+  }, [handleCancel, isEditing, profileLoading, saving]);
 
   return (
     <View style={styles.container}>
@@ -49,9 +186,13 @@ export default function ContactInfoScreen() {
             <Text style={styles.backArrow}>←</Text>
           </Pressable>
           <Text style={styles.headerTitle}>Contact Info</Text>
-          <Pressable 
-            style={styles.editButton}
-            onPress={() => setIsEditing(!isEditing)}
+          <Pressable
+            style={[
+              styles.editButton,
+              (profileLoading || saving) && styles.editButtonDisabled,
+            ]}
+            onPress={handleEditToggle}
+            disabled={profileLoading || saving}
           >
             <Text style={styles.editButtonText}>
               {isEditing ? 'Cancel' : 'Edit'}
@@ -59,176 +200,128 @@ export default function ContactInfoScreen() {
           </Pressable>
         </View>
 
-        <ScrollView 
-          style={styles.scrollView} 
-          contentContainerStyle={styles.scrollViewContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Profile Section */}
-          <View style={styles.profileCard}>
-            <View style={styles.profileImageContainer}>
-              <View style={styles.profileImagePlaceholder}>
-                <Text style={styles.profileImageText}>👤</Text>
-              </View>
-              {isEditing && (
-                <Pressable style={styles.changePhotoButton}>
-                  <Text style={styles.changePhotoText}>📸</Text>
-                </Pressable>
-              )}
-            </View>
-            <Text style={styles.profileName}>{fullName}</Text>
-            <Text style={styles.profileSubtitle}>Yoga & Meditation Enthusiast</Text>
+        {profileLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.white} />
+            <Text style={styles.loadingText}>Loading contact info…</Text>
           </View>
-
-          {/* Personal Information Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Personal Information</Text>
-            
-            {/* Full Name Card */}
-            <View style={styles.infoCard}>
-              <View style={styles.infoHeader}>
-                <Text style={styles.infoIcon}>👤</Text>
-                <Text style={styles.infoLabel}>Full Name</Text>
+        ) : (
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollViewContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Profile Section */}
+            <View style={styles.profileCard}>
+              <View style={styles.profileImageContainer}>
+                <View style={styles.profileImagePlaceholder}>
+                  <Text style={styles.profileImageText}>👤</Text>
+                </View>
+                {isEditing && (
+                  <Pressable style={styles.changePhotoButton}>
+                    <Text style={styles.changePhotoText}>📸</Text>
+                  </Pressable>
+                )}
               </View>
-              {isEditing ? (
-                <TextInput
-                  style={styles.editInput}
-                  value={fullName}
-                  onChangeText={setFullName}
-                  placeholder="Enter your full name"
-                  placeholderTextColor="#999"
-                />
-              ) : (
-                <Text style={styles.infoValue}>{fullName}</Text>
-              )}
-            </View>
-
-            {/* Email Card */}
-            <View style={styles.infoCard}>
-              <View style={styles.infoHeader}>
-                <Text style={styles.infoIcon}>📧</Text>
-                <Text style={styles.infoLabel}>Email Address</Text>
-              </View>
-              {isEditing ? (
-                <TextInput
-                  style={styles.editInput}
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="Enter your email"
-                  placeholderTextColor="#999"
-                  keyboardType="email-address"
-                />
-              ) : (
-                <Text style={styles.infoValue}>{email}</Text>
-              )}
-            </View>
-
-            {/* Phone Card */}
-            <View style={styles.infoCard}>
-              <View style={styles.infoHeader}>
-                <Text style={styles.infoIcon}>📱</Text>
-                <Text style={styles.infoLabel}>Phone Number</Text>
-              </View>
-              {isEditing ? (
-                <TextInput
-                  style={styles.editInput}
-                  value={phone}
-                  onChangeText={setPhone}
-                  placeholder="Enter your phone number"
-                  placeholderTextColor="#999"
-                  keyboardType="phone-pad"
-                />
-              ) : (
-                <Text style={styles.infoValue}>{phone}</Text>
-              )}
-            </View>
-
-            {/* Date of Birth Card */}
-            <View style={styles.infoCard}>
-              <View style={styles.infoHeader}>
-                <Text style={styles.infoIcon}>🎂</Text>
-                <Text style={styles.infoLabel}>Date of Birth</Text>
-              </View>
-              {isEditing ? (
-                <TextInput
-                  style={styles.editInput}
-                  value={dateOfBirth}
-                  onChangeText={setDateOfBirth}
-                  placeholder="Enter your date of birth"
-                  placeholderTextColor="#999"
-                />
-              ) : (
-                <Text style={styles.infoValue}>{dateOfBirth}</Text>
-              )}
-            </View>
-          </View>
-
-          {/* Address Information Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Address Information</Text>
-            
-            <View style={styles.infoCard}>
-              <View style={styles.infoHeader}>
-                <Text style={styles.infoIcon}>🏠</Text>
-                <Text style={styles.infoLabel}>Home Address</Text>
-              </View>
-              {isEditing ? (
-                <TextInput
-                  style={[styles.editInput, styles.multilineInput]}
-                  value={address}
-                  onChangeText={setAddress}
-                  placeholder="Enter your address"
-                  placeholderTextColor="#999"
-                  multiline
-                  numberOfLines={3}
-                />
-              ) : (
-                <Text style={styles.infoValue}>{address}</Text>
-              )}
-            </View>
-          </View>
-
-          {/* Emergency Contact Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Emergency Contact</Text>
-            
-            <View style={styles.infoCard}>
-              <View style={styles.infoHeader}>
-                <Text style={styles.infoIcon}>🚨</Text>
-                <Text style={styles.infoLabel}>Emergency Contact</Text>
-              </View>
-              {isEditing ? (
-                <TextInput
-                  style={styles.editInput}
-                  value={emergencyContact}
-                  onChangeText={setEmergencyContact}
-                  placeholder="Name - Phone number"
-                  placeholderTextColor="#999"
-                />
-              ) : (
-                <Text style={styles.infoValue}>{emergencyContact}</Text>
-              )}
-            </View>
-          </View>
-
-          {/* Privacy Section */}
-          <View style={styles.privacyCard}>
-            <Text style={styles.privacyIcon}>🔒</Text>
-            <View style={styles.privacyContent}>
-              <Text style={styles.privacyTitle}>Privacy Protected</Text>
-              <Text style={styles.privacyText}>
-                Your personal information is encrypted and secure. We never share your data with third parties.
+              <Text style={styles.profileName}>{fullName || 'Your Name'}</Text>
+              <Text style={styles.profileSubtitle}>
+                {email || 'Email not available'}
               </Text>
             </View>
-          </View>
 
-          {/* Save Button */}
-          {isEditing && (
-            <Pressable style={styles.saveButton} onPress={handleSave}>
-              <Text style={styles.saveButtonText}>Save Changes</Text>
-            </Pressable>
-          )}
-        </ScrollView>
+            {/* Contact Details Section */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Contact Details</Text>
+
+              {/* Full Name Card */}
+              <View style={styles.infoCard}>
+                <View style={styles.infoHeader}>
+                  <Text style={styles.infoIcon}>👤</Text>
+                  <Text style={styles.infoLabel}>Full Name</Text>
+                </View>
+                {isEditing ? (
+                  <TextInput
+                    style={styles.editInput}
+                    value={fullName}
+                    onChangeText={setFullName}
+                    placeholder="Enter your full name"
+                    placeholderTextColor="#999"
+                    autoCapitalize="words"
+                  />
+                ) : (
+                  <Text style={styles.infoValue}>
+                    {fullName || 'Not provided'}
+                  </Text>
+                )}
+              </View>
+
+              {/* Email Card */}
+              <View style={styles.infoCard}>
+                <View style={styles.infoHeader}>
+                  <Text style={styles.infoIcon}>📧</Text>
+                  <Text style={styles.infoLabel}>Email Address</Text>
+                </View>
+                <Text style={[styles.infoValue, styles.infoValueMuted]}>
+                  {email || 'Not provided'}
+                </Text>
+                {isEditing && (
+                  <Text style={styles.helperText}>
+                    Email cannot be changed from this screen.
+                  </Text>
+                )}
+              </View>
+
+              {/* Phone Card */}
+              <View style={styles.infoCard}>
+                <View style={styles.infoHeader}>
+                  <Text style={styles.infoIcon}>📱</Text>
+                  <Text style={styles.infoLabel}>Phone Number</Text>
+                </View>
+                {isEditing ? (
+                  <TextInput
+                    style={styles.editInput}
+                    value={phone}
+                    onChangeText={setPhone}
+                    placeholder="+91 98765 43210"
+                    placeholderTextColor="#999"
+                    keyboardType="phone-pad"
+                  />
+                ) : (
+                  <Text style={styles.infoValue}>
+                    {phone || 'Not provided'}
+                  </Text>
+                )}
+              </View>
+            </View>
+
+            {/* Privacy Section */}
+            <View style={styles.privacyCard}>
+              <Text style={styles.privacyIcon}>🔒</Text>
+              <View style={styles.privacyContent}>
+                <Text style={styles.privacyTitle}>Privacy Protected</Text>
+                <Text style={styles.privacyText}>
+                  Your personal information is encrypted and secure. We never share your data with third parties.
+                </Text>
+              </View>
+            </View>
+
+            {/* Save Button */}
+            {isEditing && (
+              <Pressable
+                style={[
+                  styles.saveButton,
+                  saving && styles.saveButtonDisabled,
+                ]}
+                onPress={handleSave}
+                disabled={saving}
+              >
+                <Text style={styles.saveButtonText}>
+                  {saving ? 'Saving…' : 'Save Changes'}
+                </Text>
+              </Pressable>
+            )}
+          </ScrollView>
+        )}
       </LinearGradient>
     </View>
   );
@@ -270,6 +363,9 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveBorderRadius(20),
     backgroundColor: 'rgba(255, 215, 0, 0.3)',
   },
+  editButtonDisabled: {
+    opacity: 0.6,
+  },
   editButtonText: {
     fontSize: fontSizes.sm,
     color: colors.white,
@@ -281,6 +377,20 @@ const styles = StyleSheet.create({
   scrollViewContent: {
     paddingHorizontal: getResponsivePadding(20),
     paddingBottom: getResponsivePadding(30),
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: getResponsivePadding(32),
+    paddingBottom: getResponsivePadding(60),
+  },
+  loadingText: {
+    marginTop: getResponsiveMargin(16),
+    fontSize: fontSizes.md,
+    color: colors.white,
+    textAlign: 'center',
+    opacity: 0.85,
   },
   profileCard: {
     backgroundColor: colors.white,
@@ -376,6 +486,9 @@ const styles = StyleSheet.create({
     lineHeight: getResponsiveHeight(22),
     marginLeft: getResponsiveMargin(36),
   },
+  infoValueMuted: {
+    color: '#6B7280',
+  },
   editInput: {
     backgroundColor: '#F8F9FA',
     borderRadius: getResponsiveBorderRadius(10),
@@ -392,6 +505,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+  },
+  helperText: {
+    marginTop: getResponsiveMargin(8),
+    marginLeft: getResponsiveMargin(36),
+    fontSize: fontSizes.sm,
+    color: '#6B7280',
+    fontStyle: 'italic',
   },
   multilineInput: {
     minHeight: getResponsiveHeight(60),
@@ -438,6 +558,9 @@ const styles = StyleSheet.create({
     elevation: 8,
     alignSelf: 'center',
     minWidth: getResponsiveWidth(200),
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
   },
   saveButtonText: {
     fontSize: fontSizes.lg,

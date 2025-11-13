@@ -367,8 +367,30 @@ class ApiService {
     return this.request(ENDPOINTS.EXPERTS.PROFILE);
   }
 
-  async getAllExperts() {
-    return this.request(ENDPOINTS.EXPERTS.LIST);
+  async updateExpertProfile(expertData: any) {
+    return this.request(ENDPOINTS.EXPERTS.UPDATE_PROFILE, {
+      method: "PUT",
+      body: JSON.stringify(expertData),
+    });
+  }
+
+  async getAllExperts(params?: Record<string, string | number | boolean | undefined>) {
+    let endpoint = ENDPOINTS.EXPERTS.LIST;
+
+    if (params && Object.keys(params).length > 0) {
+      const query = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          query.append(key, String(value));
+        }
+      });
+
+      if (Array.from(query.keys()).length > 0) {
+        endpoint = `${endpoint}?${query.toString()}`;
+      }
+    }
+
+    return this.request(endpoint);
   }
 
   // User profile APIs

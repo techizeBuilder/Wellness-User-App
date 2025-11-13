@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Image, Modal, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Image, Modal, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import {
   getResponsiveBorderRadius,
   getResponsiveFontSize,
@@ -10,14 +10,49 @@ import {
   getResponsivePadding,
   getResponsiveWidth
 } from '@/utils/dimensions';
+import { apiService, handleApiError } from '@/services/apiService';
 
 export default function ExpertDetailScreen() {
   const { id } = useLocalSearchParams();
+  const expertId = Array.isArray(id) ? id[0] : id;
+  const [expertData, setExpertData] = useState<any | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [showMoreInfo, setShowMoreInfo] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [bookSessionAnim] = useState(new Animated.Value(1));
+  const fetchExpertDetails = useCallback(async () => {
+    if (!expertId) {
+      setExpertData(null);
+      setError('Expert not found');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await apiService.getExpertProfile(expertId);
+      const expertResponse =
+        response?.data?.expert ??
+        response?.data?.data?.expert ??
+        response?.expert ??
+        response?.data ??
+        null;
+      setExpertData(expertResponse ?? null);
+    } catch (err) {
+      setExpertData(null);
+      setError(handleApiError(err));
+    } finally {
+      setLoading(false);
+    }
+  }, [expertId]);
+
+  useEffect(() => {
+    fetchExpertDetails();
+  }, [fetchExpertDetails]);
   
   // Auto-scroll state and ref
   const suggestedExpertsScrollRef = useRef(null);
@@ -101,29 +136,133 @@ export default function ExpertDetailScreen() {
     }
   };
 
-  // Mock expert data - in a real app this would come from an API
-  const expert = {
-    id: 1, 
-    name: 'Dr. Anya Sharma',
-    title: 'Certified Yoga Master & Wellness Expert',
-    specialty: 'Yoga & Meditation',
-    experience: '5 years experience',
-    rating: 4.9,
-    reviews: 156,
-    price: '$75',
-    sessionPrice: '₹800/session',
-    image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&h=300&fit=crop&crop=face',
-    verified: true,
-    about: 'Dr. Anya Sharma is a certified Yoga master with over 5 years of experience dedicated to helping individuals find inner peace and physical well-being through ancient practices. She specializes in Hatha Yoga, Vinyasa Flow, and meditation techniques that transform both body and mind.',
-    specialties: ['Hatha Yoga', 'Vinyasa Flow', 'Meditation', 'Pranayama', 'Stress Management'],
-    languages: ['English', 'Hindi', 'Sanskrit'],
-    education: 'RYT 500-Hour Certified, Masters in Yoga Philosophy from Rishikesh Yoga Institute',
-    certifications: ['RYT 500-Hour Certified', 'Meditation Teacher Training', 'Ayurveda Wellness Coach'],
-    sessionTypes: ['1-on-1 Private Sessions', 'Group Classes', 'Online Consultations', 'Workshop Facilitation'],
-    achievements: ['Featured in Yoga Journal', '1000+ students taught', 'Wellness retreat leader', 'TEDx Speaker on Mindfulness'],
-    consultationAreas: ['Stress & Anxiety Management', 'Physical Flexibility', 'Mental Clarity', 'Spiritual Growth', 'Pain Relief'],
-    availabilityNote: 'Available Mon-Sat, 9 AM - 6 PM IST'
-  };
+  const expert = useMemo(() => {
+    const fallbackText = 'Not available';
+    const fullName = expertData
+      ? [expertData.firstName, expertData.lastName].filter(Boolean).join(' ').trim()
+      : '';
+    const specialization = expertData?.specialization?.trim();
+    const hourlyRate =
+      typeof expertData?.hourlyRate === 'number' && !Number.isNaN(expertData.hourlyRate)
+        ? expertData.hourlyRate
+        : null;
+    const ratingValue =
+      typeof expertData?.rating?.average === 'number' && !Number.isNaN(expertData.rating.average)
+        ? expertData.rating.average
+        : null;
+    const reviewsValue =
+      typeof expertData?.rating?.count === 'number' && !Number.isNaN(expertData.rating.count)
+        ? expertData.rating.count
+        : null;
+
+    let languages: string[] =
+      Array.isArray(expertData?.languages) && expertData.languages.length > 0
+        ? expertData.languages.filter(Boolean)
+        : [];
+    if (languages.length === 0) {
+      languages = [fallbackText];
+    }
+
+    let sessionTypes: string[] =
+      Array.isArray(expertData?.consultationMethods) && expertData.consultationMethods.length > 0
+        ? expertData.consultationMethods.filter(Boolean)
+        : [];
+    if (sessionTypes.length === 0) {
+      sessionTypes = [fallbackText];
+    }
+
+    let specialties: string[] = specialization ? [specialization] : [];
+    if (specialties.length === 0) {
+      specialties = [fallbackText];
+    }
+
+    let qualifications: string[] = [];
+    if (Array.isArray(expertData?.qualifications) && expertData.qualifications.length > 0) {
+      qualifications = expertData.qualifications
+        .map((qualification: any) => {
+          if (!qualification) return null;
+          const parts = [
+            qualification.degree,
+            qualification.institution,
+            qualification.year ? String(qualification.year) : null
+          ].filter(Boolean);
+          return parts.join(' • ') || null;
+        })
+        .filter(Boolean) as string[];
+    }
+    if (qualifications.length === 0) {
+      qualifications = [fallbackText];
+    }
+
+    let certifications: string[] = [];
+    if (Array.isArray(expertData?.certifications) && expertData.certifications.length > 0) {
+      certifications = expertData.certifications
+        .map((certification: any) => {
+          if (!certification) return null;
+          return certification.name || certification.issuingOrganization || null;
+        })
+        .filter(Boolean) as string[];
+    }
+    if (certifications.length === 0) {
+      certifications = [fallbackText];
+    }
+
+    const profileImage =
+      expertData?.profileImage ||
+      (fullName
+        ? `https://ui-avatars.com/api/?name=${encodeURIComponent(
+            fullName
+          )}&background=37b9a8&color=fff&size=300`
+        : `https://ui-avatars.com/api/?name=Expert&background=37b9a8&color=fff&size=300`);
+
+    const experienceText =
+      typeof expertData?.experience === 'number' && expertData.experience > 0
+        ? `${expertData.experience} year${expertData.experience === 1 ? '' : 's'} experience`
+        : fallbackText;
+
+    return {
+      id: expertData?._id ?? expertId ?? '',
+      name: fullName || expertData?.name || fallbackText,
+      title: specialization ? `${specialization} Expert` : fallbackText,
+      specialty: specialization || fallbackText,
+      experience: experienceText,
+      rating: ratingValue ?? 0,
+      ratingAvailable: ratingValue !== null,
+      reviews: reviewsValue ?? 0,
+      reviewsAvailable: reviewsValue !== null,
+      price: hourlyRate !== null ? `₹${hourlyRate}` : fallbackText,
+      sessionPrice: hourlyRate !== null ? `₹${hourlyRate}/session` : fallbackText,
+      image: profileImage,
+      verified: (expertData?.verificationStatus || '').toLowerCase() === 'approved',
+      about: expertData?.bio?.trim() || fallbackText,
+      specialties,
+      languages,
+      education: qualifications[0] || fallbackText,
+      certifications,
+      sessionTypes,
+      consultationAreas:
+        Array.isArray(expertData?.consultationAreas) && expertData.consultationAreas.length > 0
+          ? expertData.consultationAreas
+          : [fallbackText],
+      availabilityNote:
+        expertData?.availability && Object.keys(expertData.availability || {}).length > 0
+          ? 'Availability schedule provided'
+          : fallbackText
+    };
+  }, [expertData, expertId]);
+
+  const ratingDisplay = expert.ratingAvailable ? expert.rating.toFixed(1) : 'Not available';
+  const reviewsDisplay = expert.reviewsAvailable ? expert.reviews.toString() : 'Not available';
+  const nameSegmentsRaw =
+    expert.name && expert.name !== 'Not available'
+      ? expert.name.trim().split(' ')
+      : [expert.name || 'Expert'];
+  let primaryNameText = nameSegmentsRaw[0] || 'Expert';
+  let secondaryNameText = nameSegmentsRaw.slice(1).join(' ');
+  if (expert.name === 'Not available') {
+    primaryNameText = expert.name;
+    secondaryNameText = '';
+  }
 
   const timeSlots = [
     '09:00 AM', '10:30 AM', '12:00 PM', '02:00 PM', '03:30 PM', '05:00 PM'
@@ -148,72 +287,10 @@ export default function ExpertDetailScreen() {
     { date: '12', day: 'Sat', available: true },
   ];
 
-  const reviews = [
-    {
-      id: 1,
-      name: 'Sarah Johnson',
-      rating: 5.0,
-      comment: 'Amazing yoga sessions! Dr. Anya helped me improve my flexibility and find inner peace.',
-      image: 'https://images.unsplash.com/photo-1494790108755-2616b612b2e5?w=50&h=50&fit=crop&crop=face',
-      date: '2 weeks ago'
-    },
-    {
-      id: 2,
-      name: 'Mike Chen',
-      rating: 4.8,
-      comment: 'Very knowledgeable and patient instructor. The meditation techniques are life-changing.',
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=50&h=50&fit=crop&crop=face',
-      date: '1 month ago'
-    },
-    {
-      id: 3,
-      name: 'Emma Davis',
-      rating: 5.0,
-      comment: 'Dr. Anya is absolutely wonderful! Her approach to yoga is both traditional and modern. I have learned so much.',
-      image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=50&h=50&fit=crop&crop=face',
-      date: '3 weeks ago'
-    },
-    {
-      id: 4,
-      name: 'James Wilson',
-      rating: 4.9,
-      comment: 'Excellent sessions that helped me reduce stress and improve posture. Highly recommended!',
-      image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=50&h=50&fit=crop&crop=face',
-      date: '1 month ago'
-    },
-    {
-      id: 5,
-      name: 'Lisa Thompson',
-      rating: 4.7,
-      comment: 'Great instructor with deep knowledge of yoga philosophy. The sessions are well structured.',
-      image: 'https://images.unsplash.com/photo-1494790108755-2616b612b2e5?w=50&h=50&fit=crop&crop=face',
-      date: '2 months ago'
-    },
-    {
-      id: 6,
-      name: 'David Martinez',
-      rating: 5.0,
-      comment: 'Life-changing experience! Dr. Anya helped me find balance in both body and mind.',
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=50&h=50&fit=crop&crop=face',
-      date: '1 week ago'
-    },
-    {
-      id: 7,
-      name: 'Rachel Green',
-      rating: 4.8,
-      comment: 'Professional and caring approach. The meditation techniques have really helped with my anxiety.',
-      image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=50&h=50&fit=crop&crop=face',
-      date: '3 weeks ago'
-    },
-    {
-      id: 8,
-      name: 'Tom Anderson',
-      rating: 4.9,
-      comment: 'Amazing flexibility improvements and stress relief. Dr. Anya is the best yoga instructor I have worked with.',
-      image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=50&h=50&fit=crop&crop=face',
-      date: '2 weeks ago'
-    }
-  ];
+  const reviews =
+    Array.isArray((expertData as any)?.reviews) && (expertData as any)?.reviews.length > 0
+      ? (expertData as any).reviews
+      : [];
 
   const suggestedExperts = [
     {
@@ -321,6 +398,22 @@ export default function ExpertDetailScreen() {
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {loading && (
+          <View style={styles.loadingBanner}>
+            <ActivityIndicator size="small" color="#ffffff" />
+            <Text style={styles.loadingBannerText}>Loading expert details…</Text>
+          </View>
+        )}
+
+        {error && (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorBannerText}>{error}</Text>
+            <Pressable style={styles.errorBannerButton} onPress={fetchExpertDetails}>
+              <Text style={styles.errorBannerButtonText}>Retry</Text>
+            </Pressable>
+          </View>
+        )}
+
         {/* Header with Image */}
         <View style={styles.headerContainer}>
           <Image source={{ uri: expert.image }} style={styles.headerImage} />
@@ -334,12 +427,14 @@ export default function ExpertDetailScreen() {
             </Pressable>
             <View style={styles.headerInfo}>
               <View style={styles.expertNameContainer}>
-                <Text style={styles.expertNameWhite}>Dr. Anya </Text>
-                <Text style={styles.expertNameYellow}>Sharma</Text>
+                <Text style={styles.expertNameWhite}>{primaryNameText} </Text>
+                {secondaryNameText.length > 0 && (
+                  <Text style={styles.expertNameYellow}>{secondaryNameText}</Text>
+                )}
               </View>
               <Text style={styles.expertTitle}>{expert.title}</Text>
               <Text style={styles.headerDescription}>
-                Certified yoga instructor specializing in Hatha and Vinyasa Flow with 5+ years of experience helping students find inner peace.
+                {expert.about}
               </Text>
               <View style={styles.expertMeta}>
                 <Text style={styles.expertSpecialty}>{expert.specialty}</Text>
@@ -371,19 +466,21 @@ export default function ExpertDetailScreen() {
         <View style={styles.statsCard}>
           <View style={styles.statItem}>
             <Text style={styles.statIcon}>⭐</Text>
-            <Text style={styles.statNumber}>4.9</Text>
-            <Text style={styles.statLabel}>156 reviews</Text>
+            <Text style={styles.statNumber}>{ratingDisplay}</Text>
+            <Text style={styles.statLabel}>
+              {expert.reviewsAvailable ? `${reviewsDisplay} reviews` : 'Reviews not available'}
+            </Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={styles.statIcon}>🎯</Text>
-            <Text style={styles.statNumber}>5 years</Text>
+            <Text style={styles.statNumber}>{expert.experience}</Text>
             <Text style={styles.statLabel}>Experience</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={styles.statIcon}>💰</Text>
-            <Text style={styles.statNumber}>₹800</Text>
+            <Text style={styles.statNumber}>{expert.price}</Text>
             <Text style={styles.statLabel}>Per session</Text>
           </View>
         </View>
@@ -599,7 +696,7 @@ export default function ExpertDetailScreen() {
         {/* Reviews Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Reviews ({expert.reviews})</Text>
+          <Text style={styles.sectionTitle}>Reviews ({reviewsDisplay})</Text>
             <Pressable style={styles.seeAllButton} onPress={() => router.push('/all-reviews')}>
               <Text style={styles.seeAllText}>See All</Text>
             </Pressable>
@@ -608,7 +705,7 @@ export default function ExpertDetailScreen() {
           {/* Overall Rating Summary */}
           <View style={styles.ratingsSummary}>
             <View style={styles.averageRating}>
-              <Text style={styles.averageScore}>{expert.rating}</Text>
+            <Text style={styles.averageScore}>{ratingDisplay}</Text>
               <View style={styles.starsContainer}>
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Text key={star} style={styles.star}>
@@ -616,7 +713,9 @@ export default function ExpertDetailScreen() {
                   </Text>
                 ))}
               </View>
-              <Text style={styles.reviewCount}>{expert.reviews} reviews</Text>
+            <Text style={styles.reviewCount}>
+              {expert.reviewsAvailable ? `${reviewsDisplay} reviews` : 'Reviews not available'}
+            </Text>
             </View>
             <View style={styles.ratingBars}>
               {[5, 4, 3, 2, 1].map((rating) => (
@@ -637,38 +736,55 @@ export default function ExpertDetailScreen() {
           </View>
 
           {/* Individual Reviews - Show only first 2 */}
-          {reviews.slice(0, 2).map((review) => (
-            <View key={review.id} style={styles.reviewCard}>
-              <View style={styles.reviewHeader}>
-                <Image source={{ uri: review.image }} style={styles.reviewerImage} />
-                <View style={styles.reviewInfo}>
-                  <Text style={styles.reviewerName}>{review.name}</Text>
-                  <View style={styles.reviewMeta}>
-                    <View style={styles.reviewStars}>
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Text key={star} style={styles.reviewStar}>
-                          {star <= review.rating ? '★' : '☆'}
-                        </Text>
-                      ))}
+        {reviews.length === 0 ? (
+          <Text style={styles.noReviewsText}>Reviews not available</Text>
+        ) : (
+          reviews.slice(0, 2).map((review: any, index: number) => {
+            const reviewerName = review?.name || 'Anonymous';
+            const reviewerComment = review?.comment || 'No review text provided.';
+            const reviewerRating =
+              typeof review?.rating === 'number' && !Number.isNaN(review.rating) ? review.rating : 0;
+            const reviewerDate = review?.date || 'Date not available';
+            const reviewerImage =
+              review?.image ||
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                reviewerName
+              )}&background=37b9a8&color=fff&size=128`;
+
+            return (
+              <View key={review?.id ?? index} style={styles.reviewCard}>
+                <View style={styles.reviewHeader}>
+                  <Image source={{ uri: reviewerImage }} style={styles.reviewerImage} />
+                  <View style={styles.reviewInfo}>
+                    <Text style={styles.reviewerName}>{reviewerName}</Text>
+                    <View style={styles.reviewMeta}>
+                      <View style={styles.reviewStars}>
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Text key={star} style={styles.reviewStar}>
+                            {star <= Math.round(reviewerRating) ? '★' : '☆'}
+                          </Text>
+                        ))}
+                      </View>
+                      <Text style={styles.reviewDate}>{reviewerDate}</Text>
                     </View>
-                    <Text style={styles.reviewDate}>{review.date}</Text>
                   </View>
                 </View>
+                <Text style={styles.reviewComment}>{reviewerComment}</Text>
+                
+                {/* Helpful Actions */}
+                <View style={styles.reviewActions}>
+                  <Pressable style={styles.helpfulButton}>
+                    <Text style={styles.helpfulIcon}>👍</Text>
+                    <Text style={styles.helpfulText}>Helpful</Text>
+                  </Pressable>
+                  <Pressable style={styles.replyButton}>
+                    <Text style={styles.replyText}>Reply</Text>
+                  </Pressable>
+                </View>
               </View>
-              <Text style={styles.reviewComment}>{review.comment}</Text>
-              
-              {/* Helpful Actions */}
-              <View style={styles.reviewActions}>
-                <Pressable style={styles.helpfulButton}>
-                  <Text style={styles.helpfulIcon}>👍</Text>
-                  <Text style={styles.helpfulText}>Helpful</Text>
-                </Pressable>
-                <Pressable style={styles.replyButton}>
-                  <Text style={styles.replyText}>Reply</Text>
-                </Pressable>
-              </View>
-            </View>
-          ))}
+            );
+          })
+        )}
         </View>
 
         {/* Suggested Experts */}
@@ -1102,6 +1218,56 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
   },
+  loadingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: getResponsiveMargin(20),
+    marginBottom: getResponsiveMargin(16),
+    paddingVertical: getResponsivePadding(10),
+    paddingHorizontal: getResponsivePadding(16),
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: getResponsiveBorderRadius(12),
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+  },
+  loadingBannerText: {
+    marginLeft: getResponsiveMargin(10),
+    color: '#ffffff',
+    fontSize: getResponsiveFontSize(12),
+    fontWeight: '600',
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: getResponsiveMargin(20),
+    marginBottom: getResponsiveMargin(16),
+    paddingVertical: getResponsivePadding(10),
+    paddingHorizontal: getResponsivePadding(16),
+    backgroundColor: 'rgba(220, 38, 38, 0.2)',
+    borderRadius: getResponsiveBorderRadius(12),
+    borderWidth: 1,
+    borderColor: 'rgba(248, 113, 113, 0.6)',
+  },
+  errorBannerText: {
+    flex: 1,
+    color: '#fee2e2',
+    fontSize: getResponsiveFontSize(12),
+    fontWeight: '600',
+    marginRight: getResponsiveMargin(12),
+  },
+  errorBannerButton: {
+    paddingHorizontal: getResponsivePadding(12),
+    paddingVertical: getResponsivePadding(6),
+    backgroundColor: '#ffffff',
+    borderRadius: getResponsiveBorderRadius(20),
+  },
+  errorBannerButtonText: {
+    color: '#dc2626',
+    fontSize: getResponsiveFontSize(12),
+    fontWeight: '700',
+  },
   statsCard: {
     flexDirection: 'row',
     backgroundColor: '#ffffff',
@@ -1486,6 +1652,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: getResponsiveMargin(16),
+  },
+  noReviewsText: {
+    fontSize: getResponsiveFontSize(13),
+    color: '#fefefe',
+    opacity: 0.85,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: getResponsiveMargin(8),
   },
   helpfulButton: {
     flexDirection: 'row',
