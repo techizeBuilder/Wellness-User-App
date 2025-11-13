@@ -64,7 +64,35 @@ export default function Index() {
       try {
         const isAuthenticated = await authService.isAuthenticated();
         if (isAuthenticated) {
-          // User is authenticated, redirect to appropriate dashboard
+          // Verify onboarding completion by fetching user profile
+          const onboardingStatus = await authService.verifyOnboardingComplete();
+          
+          if (!onboardingStatus.isComplete && onboardingStatus.requiresOnboarding && onboardingStatus.userData) {
+            // Onboarding incomplete - redirect to appropriate onboarding screen
+            const userData = onboardingStatus.userData;
+            const fullName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || '';
+            const routeParams = {
+              isGoogleFlow: 'true',
+              googleUserId: userData.id,
+              fullName,
+              email: userData.email || ''
+            };
+
+            if (userData.userType === 'expert') {
+              router.replace({
+                pathname: '/(expert)/expert-registration',
+                params: routeParams
+              });
+            } else {
+              router.replace({
+                pathname: '/(auth)/create-account',
+                params: routeParams
+              });
+            }
+            return;
+          }
+
+          // Onboarding complete - redirect to appropriate dashboard
           const accountType = await authService.getAccountType();
           if (accountType === 'Expert') {
             router.replace('/(expert)/expert-dashboard');

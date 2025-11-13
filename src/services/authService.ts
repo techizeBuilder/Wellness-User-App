@@ -312,6 +312,152 @@ class AuthService {
     return !!token;
   }
 
+  // Verify onboarding completion by fetching user profile
+  async verifyOnboardingComplete(): Promise<{
+    isComplete: boolean;
+    requiresOnboarding?: boolean;
+    userData?: {
+      id: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      userType?: 'user' | 'expert';
+      phone?: string;
+      authProvider?: string;
+    };
+  }> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        return { isComplete: false };
+      }
+
+      // Fetch user profile to check onboarding status
+      const response = await this.makeRequest<{
+        success: boolean;
+        data: {
+          user: {
+            id: string;
+            email: string;
+            firstName: string;
+            lastName: string;
+            phone?: string;
+            userType?: 'user' | 'expert';
+            authProvider?: string;
+            isEmailVerified?: boolean;
+          };
+        };
+      }>(API_URLS.AUTH.GET_USER, {
+        method: 'GET',
+      });
+
+      if (!response.success || !response.data?.user) {
+        return { isComplete: false };
+      }
+
+      const user = response.data.user;
+      const isGoogleUser = user.authProvider === 'google';
+
+      // Check if onboarding is complete
+      // For Google users: phone is required
+      if (isGoogleUser) {
+        const hasValidPhone = user.phone && 
+          user.phone.trim() !== '' && 
+          user.phone !== '0000000000' && 
+          /^[+]?[\d\s\-\(\)]{10,}$/.test(user.phone);
+
+        if (!hasValidPhone) {
+          return {
+            isComplete: false,
+            requiresOnboarding: true,
+            userData: {
+              id: user.id,
+              email: user.email,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              userType: user.userType,
+              phone: user.phone,
+              authProvider: user.authProvider,
+            },
+          };
+        }
+      }
+
+      // For experts, check if Expert record exists with specialization
+      // This is especially important for Google OAuth experts
+      if (user.userType === 'expert') {
+        try {
+          // Try to fetch expert profile to check if specialization exists
+          const expertResponse = await this.makeRequest<{
+            success: boolean;
+            data: {
+              expert: {
+                specialization?: string;
+              };
+            };
+          }>(API_URLS.EXPERTS.PROFILE, {
+            method: 'GET',
+          });
+
+          const hasSpecialization = expertResponse.success && 
+            expertResponse.data?.expert?.specialization &&
+            expertResponse.data.expert.specialization.trim() !== '';
+
+          if (!hasSpecialization) {
+            return {
+              isComplete: false,
+              requiresOnboarding: true,
+              userData: {
+                id: user.id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                userType: user.userType,
+                phone: user.phone,
+                authProvider: user.authProvider,
+              },
+            };
+          }
+        } catch (error) {
+          // If expert profile doesn't exist or fetch fails, onboarding is incomplete
+          // This is expected for Google OAuth experts who haven't completed onboarding
+          console.error('Error fetching expert profile for onboarding check:', error);
+          return {
+            isComplete: false,
+            requiresOnboarding: true,
+            userData: {
+              id: user.id,
+              email: user.email,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              userType: user.userType,
+              phone: user.phone,
+              authProvider: user.authProvider,
+            },
+          };
+        }
+      }
+
+      // Onboarding is complete
+      return {
+        isComplete: true,
+        userData: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          userType: user.userType,
+          phone: user.phone,
+          authProvider: user.authProvider,
+        },
+      };
+    } catch (error) {
+      console.error('Error verifying onboarding:', error);
+      // If token is invalid, return incomplete
+      return { isComplete: false };
+    }
+  }
+
   // Google Login API
   async loginWithGoogle(idToken: string): Promise<LoginResponse> {
     const response = await this.makeRequest<LoginResponse>(

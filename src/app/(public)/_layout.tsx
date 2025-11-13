@@ -1,4 +1,4 @@
-import { Redirect, Stack } from 'expo-router';
+import { Redirect, Stack, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import authService from '@/services/authService';
 
@@ -6,6 +6,7 @@ export default function PublicLayout() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [accountType, setAccountType] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     checkAuth();
@@ -17,6 +18,34 @@ export default function PublicLayout() {
       setIsAuthenticated(authenticated);
       
       if (authenticated) {
+        // Verify onboarding completion
+        const onboardingStatus = await authService.verifyOnboardingComplete();
+        
+        if (!onboardingStatus.isComplete && onboardingStatus.requiresOnboarding && onboardingStatus.userData) {
+          // Onboarding incomplete - redirect to appropriate onboarding screen
+          const userData = onboardingStatus.userData;
+          const fullName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || '';
+          const routeParams = {
+            isGoogleFlow: 'true',
+            googleUserId: userData.id,
+            fullName,
+            email: userData.email || ''
+          };
+
+          if (userData.userType === 'expert') {
+            router.replace({
+              pathname: '/(expert)/expert-registration',
+              params: routeParams
+            });
+          } else {
+            router.replace({
+              pathname: '/(auth)/create-account',
+              params: routeParams
+            });
+          }
+          return;
+        }
+
         // Get account type to determine redirect
         const type = await authService.getAccountType();
         setAccountType(type);
@@ -33,7 +62,7 @@ export default function PublicLayout() {
     return null; // Or return a loading screen
   }
 
-  // If user is authenticated, redirect to appropriate dashboard
+  // If user is authenticated and onboarding complete, redirect to appropriate dashboard
   if (isAuthenticated) {
     if (accountType === 'Expert') {
       return <Redirect href="/(expert)/expert-dashboard" />;
