@@ -126,7 +126,7 @@ export default function ProfileScreen() {
           iconColor: '#2DD4BF',
           title: 'Professional Details', 
           subtitle: 'Qualifications & certifications', 
-          action: () => router.push('/(expert)/expert-registration')
+          action: () => router.push('/(expert)/professional-details')
         },
         { 
           icon: '💰', 
