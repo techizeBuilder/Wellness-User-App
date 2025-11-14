@@ -132,6 +132,15 @@ class AuthService {
         },
         ...options,
       };
+
+      // Add auth token if available (for authenticated requests)
+      const token = await this.getToken();
+      if (token) {
+        config.headers = {
+          ...config.headers,
+          Authorization: `Bearer ${token}`,
+        };
+      }
       
       const response = await fetch(url, config);
       console.log(`📡 Response status: ${response.status} ${response.statusText}`);

@@ -135,6 +135,13 @@ export default function ProfileScreen() {
           subtitle: 'Payment settings', 
           action: () => router.push('/(expert)/expert-earnings')
         },
+        { 
+          icon: '🏦', 
+          iconColor: '#2DD4BF',
+          title: 'Bank Account', 
+          subtitle: 'Manage bank account details', 
+          action: () => router.push('/(expert)/bank-account')
+        },
       ]
     },
     {

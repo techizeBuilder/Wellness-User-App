@@ -374,6 +374,24 @@ class ApiService {
     });
   }
 
+  async getBankAccount() {
+    return this.request(ENDPOINTS.EXPERTS.BANK_ACCOUNT);
+  }
+
+  async createOrUpdateBankAccount(bankAccountData: {
+    accountHolderName: string;
+    accountNumber: string;
+    bankName: string;
+    ifscCode: string;
+    branchName?: string;
+    accountType: 'savings' | 'current';
+  }) {
+    return this.request(ENDPOINTS.EXPERTS.BANK_ACCOUNT, {
+      method: "POST",
+      body: JSON.stringify(bankAccountData),
+    });
+  }
+
   async getAllExperts(params?: Record<string, string | number | boolean | undefined>) {
     let endpoint = ENDPOINTS.EXPERTS.LIST;
 

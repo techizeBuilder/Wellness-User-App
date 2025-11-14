@@ -48,7 +48,9 @@ export type ExpertRoute =
   | '/(expert)/expert-registration'
   | '/(expert)/expert-registration-new'
   | '/(expert)/patient-detail'
-  | '/(expert)/all-reviews';
+  | '/(expert)/all-reviews'
+  | '/(expert)/professional-details'
+  | '/(expert)/bank-account';
 
 export type SharedRoute =
   | '/person-detail'

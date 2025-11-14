@@ -25,12 +25,16 @@ import {
 
 export default function ProfessionalDetailsScreen() {
   const [about, setAbout] = useState("");
+  const [education, setEducation] = useState("");
   const [perSessionCost, setPerSessionCost] = useState("");
+  const [sessionTypes, setSessionTypes] = useState<string[]>([]);
+  const [newSessionType, setNewSessionType] = useState("");
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [isTextAreaFocused, setIsTextAreaFocused] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const textAreaRef = useRef<TextInput>(null);
+  const educationTextAreaRef = useRef<TextInput>(null);
 
   useEffect(() => {
     loadExpertProfile();
@@ -43,7 +47,9 @@ export default function ProfessionalDetailsScreen() {
       if (response.success && response.data?.expert) {
         const expert = response.data.expert;
         setAbout(expert.bio || "");
+        setEducation(expert.education || "");
         setPerSessionCost(expert.hourlyRate?.toString() || "");
+        setSessionTypes(expert.consultationMethods || []);
       }
     } catch (error) {
       console.error("Error loading expert profile:", error);
@@ -84,7 +90,9 @@ export default function ProfessionalDetailsScreen() {
       setLoading(true);
       const response = await apiService.updateExpertProfile({
         bio: about.trim(),
+        education: education.trim(),
         hourlyRate: cost,
+        consultationMethods: sessionTypes,
       });
 
       if (response.success) {
@@ -125,6 +133,18 @@ export default function ProfessionalDetailsScreen() {
     }
 
     setPerSessionCost(numericValue);
+  };
+
+  const handleAddSessionType = () => {
+    const trimmed = newSessionType.trim();
+    if (trimmed && !sessionTypes.includes(trimmed)) {
+      setSessionTypes([...sessionTypes, trimmed]);
+      setNewSessionType("");
+    }
+  };
+
+  const handleRemoveSessionType = (type: string) => {
+    setSessionTypes(sessionTypes.filter((t) => t !== type));
   };
 
   if (initialLoading) {
@@ -222,6 +242,80 @@ export default function ProfessionalDetailsScreen() {
                 }}
               />
               <Text style={styles.characterCount}>{about.length}/1000</Text>
+            </View>
+
+            {/* Education Section */}
+            <View style={styles.card}>
+              <Text style={styles.label}>Education</Text>
+              <Text style={styles.labelHint}>
+                Describe your educational background and qualifications
+              </Text>
+              <TextInput
+                ref={educationTextAreaRef}
+                style={styles.textArea}
+                value={education}
+                onChangeText={setEducation}
+                placeholder="Enter your educational background, degrees, certifications, and training..."
+                placeholderTextColor="#9CA3AF"
+                multiline
+                numberOfLines={6}
+                textAlignVertical="top"
+                maxLength={1000}
+                onFocus={() => {
+                  setTimeout(() => {
+                    scrollViewRef.current?.scrollToEnd({ animated: true });
+                  }, 300);
+                }}
+              />
+              <Text style={styles.characterCount}>{education.length}/1000</Text>
+            </View>
+
+            {/* Session Types Section */}
+            <View style={styles.card}>
+              <Text style={styles.label}>Session Types</Text>
+              <Text style={styles.labelHint}>
+                Add the types of sessions you offer (e.g., video, chat, audio, in-person)
+              </Text>
+              
+              {/* Session Types List */}
+              {sessionTypes.length > 0 && (
+                <View style={styles.sessionTypesContainer}>
+                  {sessionTypes.map((type, index) => (
+                    <View key={index} style={styles.sessionTypeChip}>
+                      <Text style={styles.sessionTypeText}>{type}</Text>
+                      <Pressable
+                        onPress={() => handleRemoveSessionType(type)}
+                        style={styles.removeButton}
+                      >
+                        <Text style={styles.removeButtonText}>×</Text>
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {/* Add Session Type Input */}
+              <View style={styles.addSessionTypeContainer}>
+                <TextInput
+                  style={styles.addSessionTypeInput}
+                  value={newSessionType}
+                  onChangeText={setNewSessionType}
+                  placeholder="Enter session type (e.g., video, chat)"
+                  placeholderTextColor="#9CA3AF"
+                  onSubmitEditing={handleAddSessionType}
+                  returnKeyType="done"
+                />
+                <Pressable
+                  style={[
+                    styles.addButton,
+                    !newSessionType.trim() && styles.addButtonDisabled,
+                  ]}
+                  onPress={handleAddSessionType}
+                  disabled={!newSessionType.trim()}
+                >
+                  <Text style={styles.addButtonText}>Add</Text>
+                </Pressable>
+              </View>
             </View>
 
             {/* Per Session Cost Section */}
@@ -404,6 +498,74 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: "#FFFFFF",
     fontSize: getResponsiveFontSize(16),
+    fontWeight: "600",
+  },
+  sessionTypesContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginBottom: getResponsiveHeight(12),
+    gap: getResponsiveWidth(8),
+  },
+  sessionTypeChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#E0F2FE",
+    borderRadius: getResponsiveBorderRadius(20),
+    paddingHorizontal: getResponsivePadding(12),
+    paddingVertical: getResponsiveHeight(6),
+    marginRight: getResponsiveWidth(8),
+    marginBottom: getResponsiveHeight(8),
+  },
+  sessionTypeText: {
+    fontSize: getResponsiveFontSize(14),
+    color: "#0369A1",
+    fontWeight: "500",
+    marginRight: getResponsiveWidth(6),
+  },
+  removeButton: {
+    width: getResponsiveWidth(20),
+    height: getResponsiveHeight(20),
+    borderRadius: getResponsiveBorderRadius(10),
+    backgroundColor: "#0369A1",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  removeButtonText: {
+    color: "#FFFFFF",
+    fontSize: getResponsiveFontSize(16),
+    fontWeight: "bold",
+    lineHeight: getResponsiveFontSize(16),
+  },
+  addSessionTypeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: getResponsiveWidth(8),
+  },
+  addSessionTypeInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    borderRadius: getResponsiveBorderRadius(12),
+    padding: getResponsivePadding(12),
+    fontSize: getResponsiveFontSize(14),
+    color: "#1F2937",
+    backgroundColor: "#FFFFFF",
+  },
+  addButton: {
+    backgroundColor: "#059669",
+    borderRadius: getResponsiveBorderRadius(12),
+    paddingHorizontal: getResponsivePadding(20),
+    paddingVertical: getResponsivePadding(12),
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addButtonDisabled: {
+    backgroundColor: "#9CA3AF",
+    opacity: 0.6,
+  },
+  addButtonText: {
+    color: "#FFFFFF",
+    fontSize: getResponsiveFontSize(14),
     fontWeight: "600",
   },
 });

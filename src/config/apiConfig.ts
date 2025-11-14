@@ -28,6 +28,7 @@ export const ENDPOINTS = {
     DETAIL: '/experts',
     PROFILE: '/experts/me',
     UPDATE_PROFILE: '/experts/profile',
+    BANK_ACCOUNT: '/experts/bank-account',
   }
 };
 
@@ -57,5 +58,6 @@ export const API_URLS = {
     DETAIL: (id: string) => buildUrl(`${ENDPOINTS.EXPERTS.DETAIL}/${id}`),
     PROFILE: buildUrl(ENDPOINTS.EXPERTS.PROFILE),
     UPDATE_PROFILE: buildUrl(ENDPOINTS.EXPERTS.UPDATE_PROFILE),
+    BANK_ACCOUNT: buildUrl(ENDPOINTS.EXPERTS.BANK_ACCOUNT),
   }
 };
