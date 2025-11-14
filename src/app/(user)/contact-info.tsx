@@ -436,13 +436,13 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: fontSizes.xl,
     fontWeight: 'bold',
-    color: '#333333',
+    color: '#F59E0B',
     marginBottom: getResponsiveMargin(4),
     textAlign: 'center',
   },
   profileSubtitle: {
     fontSize: fontSizes.md,
-    color: '#666666',
+    color: '#F59E0B',
     textAlign: 'center',
   },
   section: {
@@ -482,12 +482,12 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     fontSize: fontSizes.md,
-    color: '#333333',
+    color: '#F59E0B',
     lineHeight: getResponsiveHeight(22),
     marginLeft: getResponsiveMargin(36),
   },
   infoValueMuted: {
-    color: '#6B7280',
+    color: '#F59E0B',
   },
   editInput: {
     backgroundColor: '#F8F9FA',
@@ -510,7 +510,7 @@ const styles = StyleSheet.create({
     marginTop: getResponsiveMargin(8),
     marginLeft: getResponsiveMargin(36),
     fontSize: fontSizes.sm,
-    color: '#6B7280',
+    color: '#F59E0B',
     fontStyle: 'italic',
   },
   multilineInput: {
@@ -539,7 +539,7 @@ const styles = StyleSheet.create({
   },
   privacyText: {
     fontSize: fontSizes.sm,
-    color: '#666666',
+    color: '#F59E0B',
     lineHeight: getResponsiveHeight(18),
   },
   saveButton: {
