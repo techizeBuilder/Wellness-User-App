@@ -238,9 +238,19 @@ export default function ExpertDashboardScreen() {
 
           {/* Today's Appointments */}
           <View style={styles.appointmentsContainer}>
-            <Text style={styles.sectionTitle}>
-              👩‍⚕ Today&apos;s Appointments
-            </Text>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>
+                👩‍⚕ Today&apos;s Appointments
+              </Text>
+              <Pressable
+                style={styles.manageAvailabilityButton}
+                onPress={() => router.push("/(expert)/manage-availability")}
+              >
+                <Text style={styles.manageAvailabilityButtonText}>
+                  Manage availability
+                </Text>
+              </Pressable>
+            </View>
             <View style={styles.appointmentsTable}>
               <View style={styles.tableHeader}>
                 <Text style={styles.tableHeaderText}>Time</Text>
@@ -813,6 +823,19 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: getResponsiveHeight(12),
+  },
+  manageAvailabilityButton: {
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    paddingHorizontal: getResponsiveWidth(12),
+    paddingVertical: getResponsiveHeight(6),
+    borderRadius: getResponsiveBorderRadius(16),
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.3)",
+  },
+  manageAvailabilityButtonText: {
+    color: "#FFFFFF",
+    fontSize: getResponsiveFontSize(12),
+    fontWeight: "600",
   },
   seeAllText: {
     fontSize: getResponsiveFontSize(14),

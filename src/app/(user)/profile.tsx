@@ -168,6 +168,13 @@ export default function ProfileScreen() {
           subtitle: 'Manage your schedule', 
           action: () => router.push('/(expert)/expert-appointments')
         },
+        { 
+          icon: '⏰', 
+          iconColor: '#2DD4BF',
+          title: 'Manage Availability', 
+          subtitle: 'Set your weekly availability', 
+          action: () => router.push('/(expert)/manage-availability')
+        },
       ]
     },
     {

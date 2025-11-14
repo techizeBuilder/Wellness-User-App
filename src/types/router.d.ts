@@ -50,7 +50,8 @@ export type ExpertRoute =
   | '/(expert)/patient-detail'
   | '/(expert)/all-reviews'
   | '/(expert)/professional-details'
-  | '/(expert)/bank-account';
+  | '/(expert)/bank-account'
+  | '/(expert)/manage-availability';
 
 export type SharedRoute =
   | '/person-detail'

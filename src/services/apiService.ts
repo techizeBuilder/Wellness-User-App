@@ -374,6 +374,17 @@ class ApiService {
     });
   }
 
+  async getExpertAvailability() {
+    return this.request(ENDPOINTS.EXPERTS.AVAILABILITY);
+  }
+
+  async updateExpertAvailability(availability: any) {
+    return this.request(ENDPOINTS.EXPERTS.AVAILABILITY, {
+      method: "POST",
+      body: JSON.stringify({ availability }),
+    });
+  }
+
   async getBankAccount() {
     return this.request(ENDPOINTS.EXPERTS.BANK_ACCOUNT);
   }

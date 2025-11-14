@@ -29,6 +29,7 @@ export const ENDPOINTS = {
     PROFILE: '/experts/me',
     UPDATE_PROFILE: '/experts/profile',
     BANK_ACCOUNT: '/experts/bank-account',
+    AVAILABILITY: '/experts/availability',
   }
 };
 
@@ -59,5 +60,6 @@ export const API_URLS = {
     PROFILE: buildUrl(ENDPOINTS.EXPERTS.PROFILE),
     UPDATE_PROFILE: buildUrl(ENDPOINTS.EXPERTS.UPDATE_PROFILE),
     BANK_ACCOUNT: buildUrl(ENDPOINTS.EXPERTS.BANK_ACCOUNT),
+    AVAILABILITY: buildUrl(ENDPOINTS.EXPERTS.AVAILABILITY),
   }
 };
