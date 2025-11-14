@@ -247,7 +247,7 @@ export default function ExpertDashboardScreen() {
                 onPress={() => router.push("/(expert)/manage-availability")}
               >
                 <Text style={styles.manageAvailabilityButtonText}>
-                  Manage availability
+                  Manage Sessions
                 </Text>
               </Pressable>
             </View>

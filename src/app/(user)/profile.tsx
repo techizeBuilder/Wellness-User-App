@@ -171,8 +171,8 @@ export default function ProfileScreen() {
         { 
           icon: '⏰', 
           iconColor: '#2DD4BF',
-          title: 'Manage Availability', 
-          subtitle: 'Set your weekly availability', 
+          title: 'Manage Sessions', 
+          subtitle: 'Set your weekly session times', 
           action: () => router.push('/(expert)/manage-availability')
         },
       ]

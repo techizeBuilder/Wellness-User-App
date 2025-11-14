@@ -23,12 +23,13 @@ import {
   getResponsiveWidth,
 } from "@/utils/dimensions";
 
+const AVAILABLE_SESSION_TYPES = ["video", "chat", "audio"];
+
 export default function ProfessionalDetailsScreen() {
   const [about, setAbout] = useState("");
   const [education, setEducation] = useState("");
   const [perSessionCost, setPerSessionCost] = useState("");
   const [sessionTypes, setSessionTypes] = useState<string[]>([]);
-  const [newSessionType, setNewSessionType] = useState("");
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [isTextAreaFocused, setIsTextAreaFocused] = useState(false);
@@ -49,7 +50,11 @@ export default function ProfessionalDetailsScreen() {
         setAbout(expert.bio || "");
         setEducation(expert.education || "");
         setPerSessionCost(expert.hourlyRate?.toString() || "");
-        setSessionTypes(expert.consultationMethods || []);
+        // Filter to only include valid session types
+        const validTypes = (expert.consultationMethods || []).filter((type: string) =>
+          AVAILABLE_SESSION_TYPES.includes(type.toLowerCase())
+        );
+        setSessionTypes(validTypes);
       }
     } catch (error) {
       console.error("Error loading expert profile:", error);
@@ -135,16 +140,12 @@ export default function ProfessionalDetailsScreen() {
     setPerSessionCost(numericValue);
   };
 
-  const handleAddSessionType = () => {
-    const trimmed = newSessionType.trim();
-    if (trimmed && !sessionTypes.includes(trimmed)) {
-      setSessionTypes([...sessionTypes, trimmed]);
-      setNewSessionType("");
+  const handleToggleSessionType = (type: string) => {
+    if (sessionTypes.includes(type)) {
+      setSessionTypes(sessionTypes.filter((t) => t !== type));
+    } else {
+      setSessionTypes([...sessionTypes, type]);
     }
-  };
-
-  const handleRemoveSessionType = (type: string) => {
-    setSessionTypes(sessionTypes.filter((t) => t !== type));
   };
 
   if (initialLoading) {
@@ -274,47 +275,45 @@ export default function ProfessionalDetailsScreen() {
             <View style={styles.card}>
               <Text style={styles.label}>Session Types</Text>
               <Text style={styles.labelHint}>
-                Add the types of sessions you offer (e.g., video, chat, audio, in-person)
+                Select the types of sessions you offer (you can select multiple)
               </Text>
               
-              {/* Session Types List */}
-              {sessionTypes.length > 0 && (
-                <View style={styles.sessionTypesContainer}>
-                  {sessionTypes.map((type, index) => (
-                    <View key={index} style={styles.sessionTypeChip}>
-                      <Text style={styles.sessionTypeText}>{type}</Text>
-                      <Pressable
-                        onPress={() => handleRemoveSessionType(type)}
-                        style={styles.removeButton}
-                      >
-                        <Text style={styles.removeButtonText}>×</Text>
-                      </Pressable>
-                    </View>
-                  ))}
-                </View>
-              )}
-
-              {/* Add Session Type Input */}
-              <View style={styles.addSessionTypeContainer}>
-                <TextInput
-                  style={styles.addSessionTypeInput}
-                  value={newSessionType}
-                  onChangeText={setNewSessionType}
-                  placeholder="Enter session type (e.g., video, chat)"
-                  placeholderTextColor="#9CA3AF"
-                  onSubmitEditing={handleAddSessionType}
-                  returnKeyType="done"
-                />
-                <Pressable
-                  style={[
-                    styles.addButton,
-                    !newSessionType.trim() && styles.addButtonDisabled,
-                  ]}
-                  onPress={handleAddSessionType}
-                  disabled={!newSessionType.trim()}
-                >
-                  <Text style={styles.addButtonText}>Add</Text>
-                </Pressable>
+              {/* Session Types Selection */}
+              <View style={styles.sessionTypesContainer}>
+                {AVAILABLE_SESSION_TYPES.map((type) => {
+                  const isSelected = sessionTypes.includes(type);
+                  return (
+                    <Pressable
+                      key={type}
+                      style={[
+                        styles.sessionTypeOption,
+                        isSelected && styles.sessionTypeOptionSelected,
+                      ]}
+                      onPress={() => handleToggleSessionType(type)}
+                    >
+                      <View style={styles.checkboxContainer}>
+                        <View
+                          style={[
+                            styles.checkbox,
+                            isSelected && styles.checkboxSelected,
+                          ]}
+                        >
+                          {isSelected && (
+                            <Text style={styles.checkmark}>✓</Text>
+                          )}
+                        </View>
+                        <Text
+                          style={[
+                            styles.sessionTypeOptionText,
+                            isSelected && styles.sessionTypeOptionTextSelected,
+                          ]}
+                        >
+                          {type.charAt(0).toUpperCase() + type.slice(1)}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  );
+                })}
               </View>
             </View>
 
@@ -501,71 +500,51 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   sessionTypesContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginBottom: getResponsiveHeight(12),
-    gap: getResponsiveWidth(8),
+    marginTop: getResponsiveHeight(12),
+    gap: getResponsiveHeight(12),
   },
-  sessionTypeChip: {
+  sessionTypeOption: {
+    borderWidth: 2,
+    borderColor: "#D1D5DB",
+    borderRadius: getResponsiveBorderRadius(12),
+    padding: getResponsivePadding(16),
+    backgroundColor: "#FFFFFF",
+  },
+  sessionTypeOptionSelected: {
+    borderColor: "#059669",
+    backgroundColor: "#F0FDF4",
+  },
+  checkboxContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#E0F2FE",
-    borderRadius: getResponsiveBorderRadius(20),
-    paddingHorizontal: getResponsivePadding(12),
-    paddingVertical: getResponsiveHeight(6),
-    marginRight: getResponsiveWidth(8),
-    marginBottom: getResponsiveHeight(8),
   },
-  sessionTypeText: {
-    fontSize: getResponsiveFontSize(14),
-    color: "#0369A1",
-    fontWeight: "500",
-    marginRight: getResponsiveWidth(6),
-  },
-  removeButton: {
-    width: getResponsiveWidth(20),
-    height: getResponsiveHeight(20),
-    borderRadius: getResponsiveBorderRadius(10),
-    backgroundColor: "#0369A1",
+  checkbox: {
+    width: getResponsiveWidth(24),
+    height: getResponsiveHeight(24),
+    borderRadius: getResponsiveBorderRadius(6),
+    borderWidth: 2,
+    borderColor: "#D1D5DB",
+    backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
+    marginRight: getResponsiveWidth(12),
   },
-  removeButtonText: {
+  checkboxSelected: {
+    borderColor: "#059669",
+    backgroundColor: "#059669",
+  },
+  checkmark: {
     color: "#FFFFFF",
     fontSize: getResponsiveFontSize(16),
     fontWeight: "bold",
-    lineHeight: getResponsiveFontSize(16),
   },
-  addSessionTypeContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: getResponsiveWidth(8),
-  },
-  addSessionTypeInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    borderRadius: getResponsiveBorderRadius(12),
-    padding: getResponsivePadding(12),
-    fontSize: getResponsiveFontSize(14),
+  sessionTypeOptionText: {
+    fontSize: getResponsiveFontSize(16),
     color: "#1F2937",
-    backgroundColor: "#FFFFFF",
+    fontWeight: "500",
   },
-  addButton: {
-    backgroundColor: "#059669",
-    borderRadius: getResponsiveBorderRadius(12),
-    paddingHorizontal: getResponsivePadding(20),
-    paddingVertical: getResponsivePadding(12),
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  addButtonDisabled: {
-    backgroundColor: "#9CA3AF",
-    opacity: 0.6,
-  },
-  addButtonText: {
-    color: "#FFFFFF",
-    fontSize: getResponsiveFontSize(14),
+  sessionTypeOptionTextSelected: {
+    color: "#059669",
     fontWeight: "600",
   },
 });
