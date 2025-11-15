@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import React, { useState } from 'react';
-import { Alert, Animated, Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Animated, Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import {
     getResponsiveBorderRadius,
     getResponsiveFontSize,
@@ -10,85 +10,138 @@ import {
     getResponsivePadding,
     getResponsiveWidth
 } from '@/utils/dimensions';
+import { apiService, handleApiError } from '@/services/apiService';
+
+type Expert = {
+  _id: string;
+  firstName?: string;
+  lastName?: string;
+  specialization?: string;
+  hourlyRate?: number;
+  profileImage?: string;
+  consultationMethods?: string[];
+  sessionType?: string[];
+  rating?: {
+    average?: number;
+  };
+};
 
 export default function BookingScreen() {
+  const params = useLocalSearchParams();
+  const expertId = params.expertId as string;
+
+  const [expert, setExpert] = useState<Expert | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [booking, setBooking] = useState(false);
+  
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
-  const [selectedDuration, setSelectedDuration] = useState('60');
-  const [selectedPackage, setSelectedPackage] = useState('single');
+  const [selectedDuration, setSelectedDuration] = useState(60);
+  const [selectedConsultationMethod, setSelectedConsultationMethod] = useState('');
+  const [selectedSessionType, setSelectedSessionType] = useState('');
+  const [notes, setNotes] = useState('');
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
   const [bookingAnim] = useState(new Animated.Value(1));
 
-  // Sample expert data - in real app this would come from params/props
-  const expert = {
-    name: 'Dr. Anya Sharma',
-    title: 'Certified Yoga Master & Wellness Expert',
-    specialty: 'Yoga & Meditation',
-    rating: 4.9,
-    price: 800,
-    image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&h=300&fit=crop&crop=face',
+  const sessionDurations = [30, 60, 90, 120];
+
+  // Generate dates for the next 14 days
+  const generateDates = () => {
+    const dates = [];
+    const today = new Date();
+    for (let i = 0; i < 14; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+      const dayNumber = date.getDate();
+      const month = date.getMonth() + 1;
+      const year = date.getFullYear();
+      const dateString = `${year}-${String(month).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`;
+      
+      dates.push({
+        date: dateString,
+        day: dayNumber,
+        dayName,
+        fullDate: date
+      });
+    }
+    return dates;
   };
 
-  const timeSlots = [
-    '09:00 AM', '10:30 AM', '12:00 PM', '02:00 PM', '03:30 PM', '05:00 PM'
-  ];
+  const dates = generateDates();
 
-  const dates = [
-    { date: '27', day: 'Today', dayName: 'Mon', available: true },
-    { date: '28', day: 'Tomorrow', dayName: 'Tue', available: true },
-    { date: '29', day: 'Sun', dayName: 'Wed', available: false },
-    { date: '30', day: 'Mon', dayName: 'Thu', available: true },
-    { date: '01', day: 'Tue', dayName: 'Fri', available: true },
-    { date: '02', day: 'Wed', dayName: 'Sat', available: true },
-  ];
+  useEffect(() => {
+    if (expertId) {
+      fetchExpertData();
+    }
+  }, [expertId]);
 
-  const sessionDurations = [
-    { value: '30', label: '30 min', price: 600 },
-    { value: '60', label: '60 min', price: 800 },
-    { value: '90', label: '90 min', price: 1100 },
-  ];
+  useEffect(() => {
+    if (expert && selectedDate) {
+      fetchAvailableSlots();
+    }
+  }, [selectedDate, expert]);
 
-  const packages = [
-    { 
-      value: 'single', 
-      label: 'Single Session', 
-      description: 'One-time session',
-      discount: 0,
-      popular: false
-    },
-    { 
-      value: 'weekly', 
-      label: 'Weekly Package', 
-      description: '4 sessions per month',
-      discount: 15,
-      popular: true
-    },
-    { 
-      value: 'monthly', 
-      label: 'Monthly Package', 
-      description: '8 sessions per month',
-      discount: 25,
-      popular: false
-    },
-  ];
+  const fetchExpertData = async () => {
+    try {
+      setLoading(true);
+      const response = await apiService.getExpertProfile(expertId);
+      const expertData = response?.data?.expert || response?.expert || response;
+      setExpert(expertData);
+      
+      // Set default consultation method and session type
+      if (expertData.consultationMethods && expertData.consultationMethods.length > 0) {
+        setSelectedConsultationMethod(expertData.consultationMethods[0]);
+      }
+      if (expertData.sessionType && expertData.sessionType.length > 0) {
+        setSelectedSessionType(expertData.sessionType[0]);
+      }
+    } catch (error) {
+      Alert.alert('Error', handleApiError(error));
+      router.back();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAvailableSlots = async () => {
+    if (!expertId || !selectedDate) return;
+    
+    try {
+      setLoadingSlots(true);
+      const response = await apiService.getAvailableSlots(expertId, selectedDate);
+      const slots = response?.data?.availableSlots || [];
+      setAvailableSlots(slots);
+      setSelectedTime(''); // Reset selected time when date changes
+    } catch (error) {
+      console.error('Error fetching slots:', error);
+      setAvailableSlots([]);
+    } finally {
+      setLoadingSlots(false);
+    }
+  };
+
+  const formatTime = (time: string) => {
+    // Convert 24-hour format (HH:MM) to 12-hour format
+    const [hours, minutes] = time.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    return `${displayHours}:${String(minutes).padStart(2, '0')} ${period}`;
+  };
 
   const calculatePrice = () => {
-    const baseDuration = sessionDurations.find(d => d.value === selectedDuration);
-    if (!baseDuration) return 0;
-    
-    const selectedPkg = packages.find(p => p.value === selectedPackage);
-    if (!selectedPkg) return baseDuration.price;
-    
-    const discountedPrice = baseDuration.price * (1 - selectedPkg.discount / 100);
-    return Math.round(discountedPrice);
+    if (!expert || !expert.hourlyRate) return 0;
+    return Math.round((expert.hourlyRate * selectedDuration) / 60);
   };
 
   const handleBackPress = () => {
     router.back();
   };
 
-  const handleBooking = () => {
-    if (!selectedDate || !selectedTime) {
-      Alert.alert('Missing Information', 'Please select both date and time for your session.');
+  const handleBooking = async () => {
+    if (!selectedDate || !selectedTime || !selectedConsultationMethod || !selectedSessionType) {
+      Alert.alert('Missing Information', 'Please fill in all required fields.');
       return;
     }
 
@@ -106,16 +159,74 @@ export default function BookingScreen() {
       }),
     ]).start();
 
-    // Show confirmation
-    Alert.alert(
-      'Booking Confirmed!',
-      `Your ${selectedDuration}-minute session with ${expert.name} is scheduled for ${selectedDate} at ${selectedTime}.\n\nTotal Cost: ₹${calculatePrice()}`,
-      [
-        { text: 'View Details', onPress: () => console.log('View Details') },
-        { text: 'OK', onPress: () => router.back() }
-      ]
-    );
+    try {
+      setBooking(true);
+      const response = await apiService.createBooking({
+        expertId,
+        sessionDate: selectedDate,
+        startTime: selectedTime,
+        duration: selectedDuration,
+        consultationMethod: selectedConsultationMethod,
+        sessionType: selectedSessionType,
+        notes: notes || undefined
+      });
+
+      Alert.alert(
+        'Booking Successful!',
+        `Your ${selectedDuration}-minute session has been booked successfully. Waiting for expert confirmation.`,
+        [
+          { 
+            text: 'View Bookings', 
+            onPress: () => {
+              router.push('/sessions');
+            }
+          },
+          { 
+            text: 'OK', 
+            onPress: () => router.back()
+          }
+        ]
+      );
+    } catch (error) {
+      Alert.alert('Booking Failed', handleApiError(error));
+    } finally {
+      setBooking(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <LinearGradient
+        colors={['#f8fafc', '#f1f5f9', '#e2e8f0']}
+        style={styles.container}
+      >
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#10b981" />
+          <Text style={styles.loadingText}>Loading expert details...</Text>
+        </View>
+      </LinearGradient>
+    );
+  }
+
+  if (!expert) {
+    return (
+      <LinearGradient
+        colors={['#f8fafc', '#f1f5f9', '#e2e8f0']}
+        style={styles.container}
+      >
+        <View style={styles.loadingContainer}>
+          <Text style={styles.errorText}>Expert not found</Text>
+          <Pressable style={styles.backButton} onPress={handleBackPress}>
+            <Text style={styles.backButtonText}>Go Back</Text>
+          </Pressable>
+        </View>
+      </LinearGradient>
+    );
+  }
+
+  const expertName = [expert.firstName, expert.lastName].filter(Boolean).join(' ') || 'Expert';
+  const expertImage = expert.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(expertName)}&background=37b9a8&color=fff&size=128`;
+  const rating = expert.rating?.average || 0;
 
   return (
     <LinearGradient
@@ -136,57 +247,85 @@ export default function BookingScreen() {
 
         {/* Expert Summary Card */}
         <View style={styles.expertCard}>
-          <Image source={{ uri: expert.image }} style={styles.expertImage} />
+          <Image source={{ uri: expertImage }} style={styles.expertImage} />
           <View style={styles.expertInfo}>
-            <Text style={styles.expertName}>{expert.name}</Text>
-            <Text style={styles.expertSpecialty}>{expert.specialty}</Text>
+            <Text style={styles.expertName}>{expertName}</Text>
+            <Text style={styles.expertSpecialty}>{expert.specialization || 'Specialist'}</Text>
             <View style={styles.ratingContainer}>
-              <Text style={styles.rating}>⭐ {expert.rating}</Text>
-              <Text style={styles.basePrice}>₹{expert.price}/session</Text>
+              <Text style={styles.rating}>⭐ {rating > 0 ? rating.toFixed(1) : 'New'}</Text>
+              <Text style={styles.basePrice}>
+                {expert.hourlyRate ? `₹${expert.hourlyRate}/hr` : 'Contact for price'}
+              </Text>
             </View>
           </View>
         </View>
 
-        {/* Session Package Selection */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Choose Package</Text>
-          <View style={styles.packagesContainer}>
-            {packages.map((pkg) => (
-              <Pressable
-                key={pkg.value}
-                style={[
-                  styles.packageCard,
-                  selectedPackage === pkg.value && styles.packageCardSelected,
-                  pkg.popular && styles.packageCardPopular
-                ]}
-                onPress={() => setSelectedPackage(pkg.value)}
-              >
-                {pkg.popular && (
-                  <View style={styles.popularBadge}>
-                    <Text style={styles.popularText}>POPULAR</Text>
-                  </View>
-                )}
-                <Text style={[
-                  styles.packageLabel,
-                  selectedPackage === pkg.value && styles.packageLabelSelected
-                ]}>
-                  {pkg.label}
-                </Text>
-                <Text style={[
-                  styles.packageDescription,
-                  selectedPackage === pkg.value && styles.packageDescriptionSelected
-                ]}>
-                  {pkg.description}
-                </Text>
-                {pkg.discount > 0 && (
-                  <View style={styles.discountContainer}>
-                    <Text style={styles.discountText}>{pkg.discount}% OFF</Text>
-                  </View>
-                )}
-              </Pressable>
-            ))}
+        {/* Consultation Method Selection - Session Format */}
+        {expert.consultationMethods && expert.consultationMethods.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Session Format</Text>
+            <View style={styles.optionsContainer}>
+              {expert.consultationMethods.map((method) => {
+                const methodLabels: Record<string, string> = {
+                  'video': 'Video Call',
+                  'audio': 'Audio Call',
+                  'chat': 'Chat',
+                  'in-person': 'In-Person'
+                };
+                const displayLabel = methodLabels[method] || method.charAt(0).toUpperCase() + method.slice(1);
+                return (
+                  <Pressable
+                    key={method}
+                    style={[
+                      styles.optionCard,
+                      selectedConsultationMethod === method && styles.optionCardSelected
+                    ]}
+                    onPress={() => setSelectedConsultationMethod(method)}
+                  >
+                    <Text style={[
+                      styles.optionLabel,
+                      selectedConsultationMethod === method && styles.optionLabelSelected
+                    ]}>
+                      {displayLabel}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
-        </View>
+        )}
+
+        {/* Session Type Selection */}
+        {expert.sessionType && expert.sessionType.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Session Type</Text>
+            <View style={styles.optionsContainer}>
+              {expert.sessionType.map((type) => {
+                const typeLabels: Record<string, string> = {
+                  'one-on-one': 'One-on-One',
+                  'one-to-many': 'Group Session'
+                };
+                return (
+                  <Pressable
+                    key={type}
+                    style={[
+                      styles.optionCard,
+                      selectedSessionType === type && styles.optionCardSelected
+                    ]}
+                    onPress={() => setSelectedSessionType(type)}
+                  >
+                    <Text style={[
+                      styles.optionLabel,
+                      selectedSessionType === type && styles.optionLabelSelected
+                    ]}>
+                      {typeLabels[type] || type}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        )}
 
         {/* Session Duration */}
         <View style={styles.section}>
@@ -194,25 +333,27 @@ export default function BookingScreen() {
           <View style={styles.durationContainer}>
             {sessionDurations.map((duration) => (
               <Pressable
-                key={duration.value}
+                key={duration}
                 style={[
                   styles.durationCard,
-                  selectedDuration === duration.value && styles.durationCardSelected
+                  selectedDuration === duration && styles.durationCardSelected
                 ]}
-                onPress={() => setSelectedDuration(duration.value)}
+                onPress={() => setSelectedDuration(duration)}
               >
                 <Text style={[
                   styles.durationLabel,
-                  selectedDuration === duration.value && styles.durationLabelSelected
+                  selectedDuration === duration && styles.durationLabelSelected
                 ]}>
-                  {duration.label}
+                  {duration} min
                 </Text>
-                <Text style={[
-                  styles.durationPrice,
-                  selectedDuration === duration.value && styles.durationPriceSelected
-                ]}>
-                  ₹{duration.price}
-                </Text>
+                {expert.hourlyRate && (
+                  <Text style={[
+                    styles.durationPrice,
+                    selectedDuration === duration && styles.durationPriceSelected
+                  ]}>
+                    ₹{Math.round((expert.hourlyRate * duration) / 60)}
+                  </Text>
+                )}
               </Pressable>
             ))}
           </View>
@@ -227,25 +368,21 @@ export default function BookingScreen() {
                 key={index}
                 style={[
                   styles.dateCard,
-                  !dateItem.available && styles.dateCardDisabled,
                   selectedDate === dateItem.date && styles.dateCardSelected
                 ]}
-                disabled={!dateItem.available}
                 onPress={() => setSelectedDate(dateItem.date)}
               >
                 <Text style={[
                   styles.dateNumber,
-                  !dateItem.available && styles.dateTextDisabled,
-                  selectedDate === dateItem.date && styles.dateTextSelected
-                ]}>
-                  {dateItem.date}
-                </Text>
-                <Text style={[
-                  styles.dateDay,
-                  !dateItem.available && styles.dateTextDisabled,
                   selectedDate === dateItem.date && styles.dateTextSelected
                 ]}>
                   {dateItem.day}
+                </Text>
+                <Text style={[
+                  styles.dateDay,
+                  selectedDate === dateItem.date && styles.dateTextSelected
+                ]}>
+                  {dateItem.dayName}
                 </Text>
               </Pressable>
             ))}
@@ -253,27 +390,52 @@ export default function BookingScreen() {
         </View>
 
         {/* Time Selection */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Select Time</Text>
-          <View style={styles.timeSlotsContainer}>
-            {timeSlots.map((time) => (
-              <Pressable
-                key={time}
-                style={[
-                  styles.timeSlot,
-                  selectedTime === time && styles.timeSlotSelected
-                ]}
-                onPress={() => setSelectedTime(time)}
-              >
-                <Text style={[
-                  styles.timeSlotText,
-                  selectedTime === time && styles.timeSlotTextSelected
-                ]}>
-                  {time}
-                </Text>
-              </Pressable>
-            ))}
+        {selectedDate && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Select Time</Text>
+            {loadingSlots ? (
+              <View style={styles.loadingSlotsContainer}>
+                <ActivityIndicator size="small" color="#10b981" />
+                <Text style={styles.loadingSlotsText}>Loading available slots...</Text>
+              </View>
+            ) : availableSlots.length > 0 ? (
+              <View style={styles.timeSlotsContainer}>
+                {availableSlots.map((time) => (
+                  <Pressable
+                    key={time}
+                    style={[
+                      styles.timeSlot,
+                      selectedTime === time && styles.timeSlotSelected
+                    ]}
+                    onPress={() => setSelectedTime(time)}
+                  >
+                    <Text style={[
+                      styles.timeSlotText,
+                      selectedTime === time && styles.timeSlotTextSelected
+                    ]}>
+                      {formatTime(time)}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.noSlotsText}>No available slots for this date</Text>
+            )}
           </View>
+        )}
+
+        {/* Notes */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Additional Notes (Optional)</Text>
+          <TextInput
+            style={styles.notesInput}
+            placeholder="Any special requirements or notes..."
+            placeholderTextColor="#9ca3af"
+            value={notes}
+            onChangeText={setNotes}
+            multiline
+            numberOfLines={4}
+          />
         </View>
 
         {/* Price Summary */}
@@ -282,16 +444,8 @@ export default function BookingScreen() {
           <View style={styles.priceCard}>
             <View style={styles.priceRow}>
               <Text style={styles.priceLabel}>Session ({selectedDuration} min)</Text>
-              <Text style={styles.priceValue}>₹{expert.price}</Text>
+              <Text style={styles.priceValue}>₹{calculatePrice()}</Text>
             </View>
-            {selectedPackage !== 'single' && (
-              <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>Package Discount</Text>
-                <Text style={styles.discountValue}>
-                  -{packages.find(p => p.value === selectedPackage)?.discount}%
-                </Text>
-              </View>
-            )}
             <View style={styles.priceDivider} />
             <View style={styles.priceRow}>
               <Text style={styles.totalLabel}>Total Amount</Text>
@@ -306,10 +460,18 @@ export default function BookingScreen() {
       {/* Fixed Book Button */}
       <View style={styles.bookingFooter}>
         <Animated.View style={[styles.bookButtonContainer, { transform: [{ scale: bookingAnim }] }]}>
-          <Pressable style={styles.bookButton} onPress={handleBooking}>
-            <Text style={styles.bookButtonText}>
-              Confirm Booking - ₹{calculatePrice()}
-            </Text>
+          <Pressable 
+            style={[styles.bookButton, booking && styles.bookButtonDisabled]} 
+            onPress={handleBooking}
+            disabled={booking || !selectedDate || !selectedTime || !selectedConsultationMethod || !selectedSessionType}
+          >
+            {booking ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <Text style={styles.bookButtonText}>
+                Confirm Booking - ₹{calculatePrice()}
+              </Text>
+            )}
           </Pressable>
         </Animated.View>
       </View>
@@ -323,6 +485,22 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#6b7280',
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#dc2626',
+    marginBottom: 20,
   },
   header: {
     flexDirection: 'row',
@@ -351,6 +529,11 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(18),
     color: '#374151',
     fontWeight: 'bold',
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: '#10b981',
+    fontWeight: '600',
   },
   headerTitle: {
     flex: 1,
@@ -423,83 +606,42 @@ const styles = StyleSheet.create({
     color: '#1f2937',
     marginBottom: getResponsiveMargin(16),
   },
-  packagesContainer: {
+  optionsContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: getResponsiveMargin(12),
   },
-  packageCard: {
-    flex: 1,
+  optionCard: {
     backgroundColor: '#ffffff',
-    padding: getResponsivePadding(16),
-    borderRadius: getResponsiveBorderRadius(12),
+    paddingHorizontal: getResponsivePadding(16),
+    paddingVertical: getResponsivePadding(12),
+    borderRadius: getResponsiveBorderRadius(8),
     borderWidth: 2,
     borderColor: '#e5e7eb',
-    position: 'relative',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: getResponsiveHeight(2),
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: getResponsiveBorderRadius(4),
-    elevation: 2,
+    minWidth: getResponsiveWidth(100),
+    alignItems: 'center',
   },
-  packageCardSelected: {
+  optionCardSelected: {
     borderColor: '#10b981',
     backgroundColor: '#f0fdf4',
   },
-  packageCardPopular: {
-    borderColor: '#f59e0b',
-  },
-  popularBadge: {
-    position: 'absolute',
-    top: getResponsivePadding(-8),
-    left: getResponsivePadding(12),
-    backgroundColor: '#f59e0b',
-    paddingHorizontal: getResponsivePadding(8),
-    paddingVertical: getResponsivePadding(4),
-    borderRadius: getResponsiveBorderRadius(8),
-  },
-  popularText: {
-    fontSize: getResponsiveFontSize(10),
-    fontWeight: 'bold',
-    color: '#ffffff',
-  },
-  packageLabel: {
+  optionLabel: {
     fontSize: getResponsiveFontSize(14),
-    fontWeight: 'bold',
     color: '#1f2937',
-    marginBottom: getResponsiveMargin(4),
+    fontWeight: '500',
   },
-  packageLabelSelected: {
+  optionLabelSelected: {
     color: '#10b981',
-  },
-  packageDescription: {
-    fontSize: getResponsiveFontSize(12),
-    color: '#6b7280',
-    marginBottom: getResponsiveMargin(8),
-  },
-  packageDescriptionSelected: {
-    color: '#059669',
-  },
-  discountContainer: {
-    backgroundColor: '#fef3c7',
-    paddingHorizontal: getResponsivePadding(6),
-    paddingVertical: getResponsivePadding(2),
-    borderRadius: getResponsiveBorderRadius(4),
-    alignSelf: 'flex-start',
-  },
-  discountText: {
-    fontSize: getResponsiveFontSize(10),
     fontWeight: 'bold',
-    color: '#92400e',
   },
   durationContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: getResponsiveMargin(12),
   },
   durationCard: {
     flex: 1,
+    minWidth: getResponsiveWidth(80),
     backgroundColor: '#ffffff',
     padding: getResponsivePadding(16),
     borderRadius: getResponsiveBorderRadius(12),
@@ -561,10 +703,6 @@ const styles = StyleSheet.create({
     borderColor: '#10b981',
     backgroundColor: '#f0fdf4',
   },
-  dateCardDisabled: {
-    backgroundColor: '#f9fafb',
-    opacity: 0.5,
-  },
   dateNumber: {
     fontSize: getResponsiveFontSize(18),
     fontWeight: 'bold',
@@ -574,11 +712,18 @@ const styles = StyleSheet.create({
   dateTextSelected: {
     color: '#10b981',
   },
-  dateTextDisabled: {
-    color: '#9ca3af',
-  },
   dateDay: {
     fontSize: getResponsiveFontSize(12),
+    color: '#6b7280',
+  },
+  loadingSlotsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 20,
+  },
+  loadingSlotsText: {
+    fontSize: 14,
     color: '#6b7280',
   },
   timeSlotsContainer: {
@@ -617,9 +762,26 @@ const styles = StyleSheet.create({
     color: '#10b981',
     fontWeight: 'bold',
   },
+  noSlotsText: {
+    fontSize: 14,
+    color: '#9ca3af',
+    fontStyle: 'italic',
+    padding: 20,
+  },
+  notesInput: {
+    backgroundColor: '#ffffff',
+    borderRadius: getResponsiveBorderRadius(12),
+    padding: getResponsivePadding(16),
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+    fontSize: getResponsiveFontSize(14),
+    color: '#1f2937',
+    minHeight: getResponsiveHeight(100),
+    textAlignVertical: 'top',
+  },
   priceSection: {
     marginHorizontal: getResponsiveMargin(20),
-    marginBottom: getResponsiveMargin(100), // Space for fixed button
+    marginBottom: getResponsiveMargin(100),
   },
   priceCard: {
     backgroundColor: '#ffffff',
@@ -647,11 +809,6 @@ const styles = StyleSheet.create({
   priceValue: {
     fontSize: getResponsiveFontSize(14),
     color: '#1f2937',
-    fontWeight: '500',
-  },
-  discountValue: {
-    fontSize: getResponsiveFontSize(14),
-    color: '#dc2626',
     fontWeight: '500',
   },
   priceDivider: {
@@ -707,6 +864,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: getResponsiveBorderRadius(12),
     elevation: 8,
+  },
+  bookButtonDisabled: {
+    opacity: 0.6,
   },
   bookButtonText: {
     fontSize: getResponsiveFontSize(16),

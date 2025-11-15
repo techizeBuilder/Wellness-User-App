@@ -1,9 +1,13 @@
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+    ActivityIndicator,
+    Alert,
     Dimensions,
     Image,
+    Modal,
     Pressable,
+    RefreshControl,
     ScrollView,
     StatusBar,
     StyleSheet,
@@ -20,134 +24,191 @@ import {
     getResponsivePadding,
     getResponsiveWidth,
 } from '@/utils/dimensions';
+import { apiService, handleApiError } from '@/services/apiService';
 
 const { width } = Dimensions.get('window');
+
+type Appointment = {
+  _id: string;
+  user: {
+    _id: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+  };
+  sessionDate: string;
+  startTime: string;
+  endTime: string;
+  duration: number;
+  consultationMethod: string;
+  sessionType: string;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'rejected';
+  price: number;
+  notes?: string;
+  meetingLink?: string;
+};
 
 export default function ExpertAppointmentsScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('All');
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [appointmentToCancel, setAppointmentToCancel] = useState<Appointment | null>(null);
+  const [cancellationReason, setCancellationReason] = useState('');
 
-  const statusFilters = ['All', 'Confirmed', 'Pending', 'Completed'];
+  const statusFilters = ['All', 'Confirmed', 'Pending', 'Completed', 'Cancelled'];
 
-  const appointments = [
-    {
-      id: 1,
-      patientName: "John Smith",
-      time: "10:00 AM - 10:45 AM",
-      type: "Video Call",
-      status: "confirmed",
-      notes: "Follow-up session for anxiety management",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
-    },
-    {
-      id: 2,
-      patientName: "Emily Davis",
-      time: "2:30 PM - 3:30 PM",
-      type: "In-Person",
-      status: "confirmed",
-      notes: "Initial consultation",
-      image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face"
-    },
-    {
-      id: 3,
-      patientName: "Michael Brown",
-      time: "4:15 PM - 4:45 PM",
-      type: "Video Call",
-      status: "pending",
-      notes: "Stress management session",
-      image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"
-    },
-    {
-      id: 4,
-      patientName: "Sarah Johnson",
-      time: "9:00 AM - 9:45 AM",
-      type: "Phone Call",
-      status: "completed",
-      notes: "Meditation guidance session",
-      image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face"
-    },
-    {
-      id: 5,
-      patientName: "David Wilson",
-      time: "11:30 AM - 12:15 PM",
-      type: "In-Person",
-      status: "confirmed",
-      notes: "Yoga therapy session",
-      image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face"
-    },
-    {
-      id: 6,
-      patientName: "Lisa Chen",
-      time: "1:00 PM - 1:45 PM",
-      type: "Video Call",
-      status: "pending",
-      notes: "Nutrition consultation",
-      image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face"
-    },
-    {
-      id: 7,
-      patientName: "James Martinez",
-      time: "3:45 PM - 4:30 PM",
-      type: "Phone Call",
-      status: "confirmed",
-      notes: "Progress review and planning",
-      image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=face"
-    },
-    {
-      id: 8,
-      patientName: "Anna Thompson",
-      time: "5:00 PM - 5:45 PM",
-      type: "Video Call",
-      status: "pending",
-      notes: "Mindfulness training session",
-      image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face"
-    },
-    {
-      id: 9,
-      patientName: "Robert Lee",
-      time: "6:15 PM - 7:00 PM",
-      type: "In-Person",
-      status: "confirmed",
-      notes: "Physical wellness assessment",
-      image: "https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=150&h=150&fit=crop&crop=face"
-    },
-    {
-      id: 10,
-      patientName: "Maria Garcia",
-      time: "7:30 PM - 8:15 PM",
-      type: "Video Call",
-      status: "completed",
-      notes: "Evening relaxation techniques",
-      image: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=150&h=150&fit=crop&crop=face"
+  useEffect(() => {
+    fetchAppointments();
+  }, [selectedStatus]);
+
+  const fetchAppointments = async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+
+      let status: string | undefined;
+      if (selectedStatus !== 'All') {
+        status = selectedStatus.toLowerCase();
+      }
+
+      const response = await apiService.getExpertBookings({ status });
+      const bookings = response?.data?.appointments || [];
+
+      // Sort by date (earliest first for upcoming, newest first for past)
+      bookings.sort((a: Appointment, b: Appointment) => {
+        const dateA = new Date(a.sessionDate).getTime();
+        const dateB = new Date(b.sessionDate).getTime();
+        if (dateA !== dateB) return dateA - dateB;
+        return a.startTime.localeCompare(b.startTime);
+      });
+
+      setAppointments(bookings);
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+      // Don't show alert on initial load, just log
+      if (!isRefresh) {
+        // Could show a toast or error message here
+      }
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-  ];
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const compareDate = new Date(date);
+    compareDate.setHours(0, 0, 0, 0);
+
+    if (compareDate.getTime() === today.getTime()) {
+      return 'Today';
+    }
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  const formatTime = (timeString: string) => {
+    const [hours, minutes] = timeString.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    return `${displayHours}:${String(minutes).padStart(2, '0')} ${period}`;
+  };
+
+  const formatTimeRange = (startTime: string, endTime: string) => {
+    return `${formatTime(startTime)} - ${formatTime(endTime)}`;
+  };
+
+  const formatConsultationMethod = (method: string) => {
+    const labels: Record<string, string> = {
+      'video': 'Video Call',
+      'audio': 'Audio Call',
+      'chat': 'Chat',
+      'in-person': 'In-Person'
+    };
+    return labels[method] || method;
+  };
+
+  const handleStatusUpdate = async (appointmentId: string, newStatus: string, reason?: string) => {
+    try {
+      setUpdatingId(appointmentId);
+      await apiService.updateBookingStatus(appointmentId, newStatus.toLowerCase(), reason);
+      await fetchAppointments();
+      if (showCancelModal) {
+        setShowCancelModal(false);
+        setAppointmentToCancel(null);
+        setCancellationReason('');
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      Alert.alert('Error', handleApiError(error));
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const handleCancelPress = (appointment: Appointment) => {
+    setAppointmentToCancel(appointment);
+    setCancellationReason('');
+    setShowCancelModal(true);
+  };
+
+  const handleConfirmCancel = () => {
+    if (!appointmentToCancel) return;
+    
+    if (!cancellationReason.trim()) {
+      Alert.alert('Required', 'Please provide a reason for cancellation');
+      return;
+    }
+
+    Alert.alert(
+      'Cancel Appointment',
+      'Are you sure you want to cancel this appointment? This action cannot be undone.',
+      [
+        {
+          text: 'No',
+          style: 'cancel'
+        },
+        {
+          text: 'Yes, Cancel',
+          style: 'destructive',
+          onPress: () => handleStatusUpdate(appointmentToCancel._id, 'cancelled', cancellationReason.trim())
+        }
+      ]
+    );
+  };
+
+  const handleAppointmentPress = (appointment: Appointment) => {
+    // Could navigate to appointment detail screen
+    console.log('Appointment pressed:', appointment._id);
+  };
 
   const filteredAppointments = appointments.filter(appointment => {
-    const matchesSearch = appointment.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         appointment.notes.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = selectedStatus === 'All' || appointment.status === selectedStatus.toLowerCase();
+    const user = appointment.user || {};
+    const userName = `${user.firstName || ''} ${user.lastName || ''}`.trim().toLowerCase();
+    const matchesSearch = !searchQuery || 
+      userName.includes(searchQuery.toLowerCase()) ||
+      (appointment.notes || '').toLowerCase().includes(searchQuery.toLowerCase());
     
-    return matchesSearch && matchesStatus;
+    return matchesSearch;
   });
 
-  const handleAppointmentPress = (appointment: any) => {
-    router.push({
-      pathname: '/appointment-detail',
-      params: {
-        appointmentId: appointment.id,
-        patientName: appointment.patientName,
-        time: appointment.time,
-        type: appointment.type,
-        status: appointment.status,
-        notes: appointment.notes
-      }
-    });
-  };
-
-  const handleAddAppointment = () => {
-    console.log("Add appointment functionality");
-  };
+  // Filter appointments for today
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayAppointments = filteredAppointments.filter(apt => {
+    const aptDate = new Date(apt.sessionDate);
+    aptDate.setHours(0, 0, 0, 0);
+    return aptDate.getTime() === today.getTime();
+  });
 
   return (
     <View style={styles.container}>
@@ -193,50 +254,212 @@ export default function ExpertAppointmentsScreen() {
         </ScrollView>
       </View>
 
-      {/* Today's Appointments */}
-      <ScrollView style={styles.appointmentsContainer} showsVerticalScrollIndicator={false}>
-        <Text style={styles.sectionTitle}>Today's Appointments ({filteredAppointments.length})</Text>
-        
-        {filteredAppointments.map((appointment, index) => (
-          <View
-            key={appointment.id}
-            style={styles.appointmentCard}
-          >
-            <Pressable
-              style={styles.appointmentCardPressable}
-              onPress={() => handleAppointmentPress(appointment)}
-            >
-              <Image source={{ uri: appointment.image }} style={styles.patientImage} />
-              <View style={styles.appointmentInfo}>
-                <View style={styles.appointmentHeader}>
-                  <Text style={styles.patientName}>{appointment.patientName}</Text>
-                  <View style={[
-                    styles.statusBadge,
-                    { backgroundColor: appointment.status === 'confirmed' ? '#059669' : '#F59E0B' }
-                  ]}>
-                    <Text style={styles.statusText}>
-                      {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                    </Text>
-                  </View>
-                </View>
-                
-                <Text style={styles.appointmentTime}>{appointment.time}</Text>
-                <Text style={styles.appointmentType}>{appointment.type}</Text>
-                <Text style={styles.appointmentNotes}>{appointment.notes}</Text>
-                
-                <View style={styles.appointmentFooter}>
-                  <View style={styles.appointmentActions}>
-                    <View style={styles.joinButton}>
-                      <Text style={styles.joinButtonText}>Join Session</Text>
+      {/* Appointments List */}
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#FFFFFF" />
+          <Text style={styles.loadingText}>Loading appointments...</Text>
+        </View>
+      ) : (
+        <ScrollView 
+          style={styles.appointmentsContainer} 
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => fetchAppointments(true)}
+              tintColor="#FFFFFF"
+              colors={['#FFFFFF']}
+            />
+          }
+        >
+          <Text style={styles.sectionTitle}>
+            {selectedStatus === 'All' 
+              ? `All Appointments (${filteredAppointments.length})` 
+              : `${selectedStatus} Appointments (${filteredAppointments.length})`}
+          </Text>
+          
+          {filteredAppointments.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>No appointments found</Text>
+            </View>
+          ) : (
+            filteredAppointments.map((appointment) => {
+              const user = appointment.user || {};
+              const userName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User';
+              const userImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=37b9a8&color=fff&size=128`;
+              const isUpdating = updatingId === appointment._id;
+
+              return (
+                <View
+                  key={appointment._id}
+                  style={styles.appointmentCard}
+                >
+                  <Pressable
+                    style={styles.appointmentCardPressable}
+                    onPress={() => handleAppointmentPress(appointment)}
+                  >
+                    <Image source={{ uri: userImage }} style={styles.patientImage} />
+                    <View style={styles.appointmentInfo}>
+                      <View style={styles.appointmentHeader}>
+                        <Text style={styles.patientName}>{userName}</Text>
+                        <View style={[
+                          styles.statusBadge,
+                          { 
+                            backgroundColor: appointment.status === 'confirmed' ? '#059669' : 
+                                           appointment.status === 'pending' ? '#F59E0B' :
+                                           appointment.status === 'completed' ? '#2196F3' :
+                                           '#F44336'
+                          }
+                        ]}>
+                          <Text style={styles.statusText}>
+                            {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                          </Text>
+                        </View>
+                      </View>
+                      
+                      <Text style={styles.appointmentTime}>
+                        {formatDate(appointment.sessionDate)} • {formatTimeRange(appointment.startTime, appointment.endTime)}
+                      </Text>
+                      <Text style={styles.appointmentType}>
+                        {formatConsultationMethod(appointment.consultationMethod)} • {appointment.sessionType === 'one-on-one' ? 'One-on-One' : 'Group'}
+                      </Text>
+                      {appointment.notes && (
+                        <Text style={styles.appointmentNotes}>{appointment.notes}</Text>
+                      )}
+                      
+                      <View style={styles.appointmentFooter}>
+                        <View style={styles.appointmentActions}>
+                          {appointment.status === 'pending' && (
+                            <View style={styles.actionButtons}>
+                              <Pressable
+                                style={[styles.confirmButton, isUpdating && styles.buttonDisabled]}
+                                onPress={() => handleStatusUpdate(appointment._id, 'confirmed')}
+                                disabled={isUpdating}
+                              >
+                                {isUpdating ? (
+                                  <ActivityIndicator size="small" color="#FFFFFF" />
+                                ) : (
+                                  <Text style={styles.confirmButtonText}>Confirm</Text>
+                                )}
+                              </Pressable>
+                              <Pressable
+                                style={[styles.rejectButton, isUpdating && styles.buttonDisabled]}
+                                onPress={() => handleStatusUpdate(appointment._id, 'rejected')}
+                                disabled={isUpdating}
+                              >
+                                {isUpdating ? (
+                                  <ActivityIndicator size="small" color="#FFFFFF" />
+                                ) : (
+                                  <Text style={styles.rejectButtonText}>Reject</Text>
+                                )}
+                              </Pressable>
+                            </View>
+                          )}
+                          {appointment.status === 'confirmed' && (
+                            <View style={styles.confirmedActions}>
+                              {appointment.meetingLink ? (
+                                <Pressable style={styles.joinButton}>
+                                  <Text style={styles.joinButtonText}>Join Session</Text>
+                                </Pressable>
+                              ) : (
+                                <Text style={styles.waitingText}>Waiting for meeting link</Text>
+                              )}
+                              <Pressable
+                                style={[styles.cancelButton, isUpdating && styles.buttonDisabled]}
+                                onPress={() => handleCancelPress(appointment)}
+                                disabled={isUpdating}
+                              >
+                                {isUpdating ? (
+                                  <ActivityIndicator size="small" color="#FFFFFF" />
+                                ) : (
+                                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                                )}
+                              </Pressable>
+                            </View>
+                          )}
+                        </View>
+                      </View>
                     </View>
-                  </View>
+                  </Pressable>
                 </View>
-              </View>
-            </Pressable>
+              );
+            })
+          )}
+          <View style={styles.bottomSpacer} />
+        </ScrollView>
+      )}
+
+      {/* Cancel Appointment Modal */}
+      <Modal
+        visible={showCancelModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => {
+          setShowCancelModal(false);
+          setAppointmentToCancel(null);
+          setCancellationReason('');
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Cancel Appointment</Text>
+            {appointmentToCancel && (
+              <>
+                <View style={styles.modalInfo}>
+                  <Text style={styles.modalInfoText}>
+                    <Text style={styles.modalInfoLabel}>Patient: </Text>
+                    {`${appointmentToCancel.user?.firstName || ''} ${appointmentToCancel.user?.lastName || ''}`.trim() || 'User'}
+                  </Text>
+                  <Text style={styles.modalInfoText}>
+                    <Text style={styles.modalInfoLabel}>Date: </Text>
+                    {formatDate(appointmentToCancel.sessionDate)} • {formatTimeRange(appointmentToCancel.startTime, appointmentToCancel.endTime)}
+                  </Text>
+                  <Text style={styles.modalInfoText}>
+                    <Text style={styles.modalInfoLabel}>Type: </Text>
+                    {formatConsultationMethod(appointmentToCancel.consultationMethod)}
+                  </Text>
+                </View>
+                <Text style={styles.modalLabel}>Cancellation Reason *</Text>
+                <TextInput
+                  style={styles.modalTextInput}
+                  placeholder="Please provide a reason for cancelling this appointment..."
+                  placeholderTextColor="#9CA3AF"
+                  value={cancellationReason}
+                  onChangeText={setCancellationReason}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+                <View style={styles.modalButtons}>
+                  <Pressable
+                    style={[styles.modalButton, styles.modalButtonCancel]}
+                    onPress={() => {
+                      setShowCancelModal(false);
+                      setAppointmentToCancel(null);
+                      setCancellationReason('');
+                    }}
+                  >
+                    <Text style={styles.modalButtonCancelText}>Keep Appointment</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.modalButton, styles.modalButtonConfirm, !cancellationReason.trim() && styles.modalButtonDisabled]}
+                    onPress={handleConfirmCancel}
+                    disabled={!cancellationReason.trim() || updatingId === appointmentToCancel._id}
+                  >
+                    {updatingId === appointmentToCancel._id ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Text style={styles.modalButtonConfirmText}>Cancel Appointment</Text>
+                    )}
+                  </Pressable>
+                </View>
+              </>
+            )}
           </View>
-        ))}
-        <View style={styles.bottomSpacer} />
-      </ScrollView>
+        </View>
+      </Modal>
+
       <ExpertFooter activeRoute="appointments" />
     </View>
   );
@@ -247,7 +470,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#2da898ff',
   },
-  // Compact Header Styles
   compactHeader: {
     alignItems: 'flex-start',
     paddingTop: getResponsiveHeight(50),
@@ -266,7 +488,6 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'left',
   },
-  // Search Bar Styles
   searchContainer: {
     paddingHorizontal: getResponsiveWidth(20),
     marginBottom: getResponsiveHeight(20),
@@ -278,7 +499,6 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(16),
     color: '#1F2937',
   },
-  // Filter Styles
   filtersContainer: {
     paddingLeft: getResponsiveWidth(20),
     marginBottom: getResponsiveHeight(24),
@@ -304,7 +524,17 @@ const styles = StyleSheet.create({
   filterChipTextActive: {
     color: '#ffffff',
   },
-  // Appointments Container (matching experts.tsx layout)
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    color: '#FFFFFF',
+    fontSize: 16,
+  },
   appointmentsContainer: {
     flex: 1,
     paddingHorizontal: getResponsiveWidth(20),
@@ -316,7 +546,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginBottom: getResponsiveHeight(20),
   },
-  // Appointment Cards (matching experts.tsx card design)
   appointmentCard: {
     backgroundColor: '#ffffff',
     borderRadius: getResponsiveBorderRadius(16),
@@ -393,6 +622,35 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'flex-end',
   },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: getResponsiveWidth(8),
+  },
+  confirmButton: {
+    backgroundColor: '#059669',
+    paddingHorizontal: getResponsiveWidth(12),
+    paddingVertical: getResponsiveHeight(6),
+    borderRadius: getResponsiveBorderRadius(12),
+  },
+  confirmButtonText: {
+    fontSize: getResponsiveFontSize(11),
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  rejectButton: {
+    backgroundColor: '#F44336',
+    paddingHorizontal: getResponsiveWidth(12),
+    paddingVertical: getResponsiveHeight(6),
+    borderRadius: getResponsiveBorderRadius(12),
+  },
+  rejectButtonText: {
+    fontSize: getResponsiveFontSize(11),
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
   joinButton: {
     backgroundColor: '#2da898ff',
     paddingHorizontal: getResponsiveWidth(12),
@@ -409,7 +667,122 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '600',
   },
+  waitingText: {
+    fontSize: getResponsiveFontSize(11),
+    color: '#6B7280',
+    fontStyle: 'italic',
+  },
+  emptyState: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
   bottomSpacer: {
-    height: EXPERT_FOOTER_HEIGHT + getResponsiveHeight(60), // Footer height + extra padding for better spacing
+    height: EXPERT_FOOTER_HEIGHT + getResponsiveHeight(60),
+  },
+  confirmedActions: {
+    flexDirection: 'row',
+    gap: getResponsiveWidth(8),
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#F44336',
+    paddingHorizontal: getResponsiveWidth(12),
+    paddingVertical: getResponsiveHeight(6),
+    borderRadius: getResponsiveBorderRadius(12),
+  },
+  cancelButtonText: {
+    fontSize: getResponsiveFontSize(11),
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: getResponsiveWidth(20),
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: getResponsiveBorderRadius(20),
+    padding: getResponsivePadding(24),
+    width: '100%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: getResponsiveFontSize(20),
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: getResponsiveHeight(16),
+    textAlign: 'center',
+  },
+  modalInfo: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: getResponsiveBorderRadius(12),
+    padding: getResponsivePadding(12),
+    marginBottom: getResponsiveHeight(16),
+  },
+  modalInfoText: {
+    fontSize: getResponsiveFontSize(14),
+    color: '#374151',
+    marginBottom: getResponsiveHeight(4),
+  },
+  modalInfoLabel: {
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  modalLabel: {
+    fontSize: getResponsiveFontSize(14),
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: getResponsiveHeight(8),
+  },
+  modalTextInput: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: getResponsiveBorderRadius(12),
+    padding: getResponsivePadding(12),
+    fontSize: getResponsiveFontSize(14),
+    color: '#1F2937',
+    minHeight: getResponsiveHeight(100),
+    marginBottom: getResponsiveHeight(20),
+    backgroundColor: '#FFFFFF',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: getResponsiveWidth(12),
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: getResponsiveHeight(12),
+    borderRadius: getResponsiveBorderRadius(12),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalButtonCancel: {
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+  },
+  modalButtonCancelText: {
+    fontSize: getResponsiveFontSize(14),
+    fontWeight: '600',
+    color: '#374151',
+  },
+  modalButtonConfirm: {
+    backgroundColor: '#F44336',
+  },
+  modalButtonConfirmText: {
+    fontSize: getResponsiveFontSize(14),
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  modalButtonDisabled: {
+    opacity: 0.5,
   },
 });

@@ -24,12 +24,14 @@ import {
 } from "@/utils/dimensions";
 
 const AVAILABLE_SESSION_TYPES = ["video", "chat", "audio"];
+const AVAILABLE_SESSION_FORMATS = ["one-on-one", "one-to-many"];
 
 export default function ProfessionalDetailsScreen() {
   const [about, setAbout] = useState("");
   const [education, setEducation] = useState("");
   const [perSessionCost, setPerSessionCost] = useState("");
   const [sessionTypes, setSessionTypes] = useState<string[]>([]);
+  const [sessionFormats, setSessionFormats] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [isTextAreaFocused, setIsTextAreaFocused] = useState(false);
@@ -55,6 +57,11 @@ export default function ProfessionalDetailsScreen() {
           AVAILABLE_SESSION_TYPES.includes(type.toLowerCase())
         );
         setSessionTypes(validTypes);
+        // Load session formats
+        const validFormats = (expert.sessionType || []).filter((type: string) =>
+          AVAILABLE_SESSION_FORMATS.includes(type.toLowerCase())
+        );
+        setSessionFormats(validFormats);
       }
     } catch (error) {
       console.error("Error loading expert profile:", error);
@@ -98,6 +105,7 @@ export default function ProfessionalDetailsScreen() {
         education: education.trim(),
         hourlyRate: cost,
         consultationMethods: sessionTypes,
+        sessionType: sessionFormats,
       });
 
       if (response.success) {
@@ -145,6 +153,14 @@ export default function ProfessionalDetailsScreen() {
       setSessionTypes(sessionTypes.filter((t) => t !== type));
     } else {
       setSessionTypes([...sessionTypes, type]);
+    }
+  };
+
+  const handleToggleSessionFormat = (format: string) => {
+    if (sessionFormats.includes(format)) {
+      setSessionFormats(sessionFormats.filter((f) => f !== format));
+    } else {
+      setSessionFormats([...sessionFormats, format]);
     }
   };
 
@@ -309,6 +325,53 @@ export default function ProfessionalDetailsScreen() {
                           ]}
                         >
                           {type.charAt(0).toUpperCase() + type.slice(1)}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* Session Format Section */}
+            <View style={styles.card}>
+              <Text style={styles.label}>Session Format</Text>
+              <Text style={styles.labelHint}>
+                Select whether you offer one-on-one sessions, group sessions, or both
+              </Text>
+              
+              {/* Session Format Selection */}
+              <View style={styles.sessionTypesContainer}>
+                {AVAILABLE_SESSION_FORMATS.map((format) => {
+                  const isSelected = sessionFormats.includes(format);
+                  const displayName = format === "one-on-one" ? "One-on-One" : "One-to-Many";
+                  return (
+                    <Pressable
+                      key={format}
+                      style={[
+                        styles.sessionTypeOption,
+                        isSelected && styles.sessionTypeOptionSelected,
+                      ]}
+                      onPress={() => handleToggleSessionFormat(format)}
+                    >
+                      <View style={styles.checkboxContainer}>
+                        <View
+                          style={[
+                            styles.checkbox,
+                            isSelected && styles.checkboxSelected,
+                          ]}
+                        >
+                          {isSelected && (
+                            <Text style={styles.checkmark}>✓</Text>
+                          )}
+                        </View>
+                        <Text
+                          style={[
+                            styles.sessionTypeOptionText,
+                            isSelected && styles.sessionTypeOptionTextSelected,
+                          ]}
+                        >
+                          {displayName}
                         </Text>
                       </View>
                     </Pressable>

@@ -443,16 +443,14 @@ export default function ExpertDetailScreen() {
       }),
     ]).start();
 
-    if (selectedFullDate && selectedTime) {
-      const formattedDate = `${selectedFullDate.getDate()} ${
-        monthNames[selectedFullDate.getMonth()]
-      } ${selectedFullDate.getFullYear()}`;
-      // In a real app, this would handle booking logic
-      alert(
-        `Session booked with ${expert.name} on ${formattedDate} at ${selectedTime}`
-      );
+    // Navigate to booking screen with expert ID
+    if (expertId) {
+      router.push({
+        pathname: '/booking',
+        params: { expertId: expertId }
+      });
     } else {
-      alert("Please select a date and time");
+      alert("Expert information not available");
     }
   };
 

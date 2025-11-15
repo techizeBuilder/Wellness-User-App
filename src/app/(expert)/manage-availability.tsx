@@ -1,6 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Modal,
@@ -38,17 +38,16 @@ interface DayAvailability {
   timeRanges: TimeRange[];
 }
 
-const defaultAvailability: DayAvailability[] = [
-  { day: "Sunday", dayName: "S", isOpen: false, timeRanges: [] },
-  { day: "Monday", dayName: "M", isOpen: false, timeRanges: [] },
-  { day: "Tuesday", dayName: "T", isOpen: false, timeRanges: [] },
-  { day: "Wednesday", dayName: "W", isOpen: false, timeRanges: [] },
-  { day: "Thursday", dayName: "T", isOpen: false, timeRanges: [] },
-  { day: "Friday", dayName: "F", isOpen: false, timeRanges: [] },
-  { day: "Saturday", dayName: "S", isOpen: false, timeRanges: [] },
-];
-
 export default function ManageAvailabilityScreen() {
+  const defaultAvailability: DayAvailability[] = [
+    { day: "Sunday", dayName: "S", isOpen: false, timeRanges: [] },
+    { day: "Monday", dayName: "M", isOpen: false, timeRanges: [] },
+    { day: "Tuesday", dayName: "T", isOpen: false, timeRanges: [] },
+    { day: "Wednesday", dayName: "W", isOpen: false, timeRanges: [] },
+    { day: "Thursday", dayName: "T", isOpen: false, timeRanges: [] },
+    { day: "Friday", dayName: "F", isOpen: false, timeRanges: [] },
+    { day: "Saturday", dayName: "S", isOpen: false, timeRanges: [] },
+  ];
 
   const [availability, setAvailability] =
     useState<DayAvailability[]>(defaultAvailability);
@@ -62,7 +61,11 @@ export default function ManageAvailabilityScreen() {
   } | null>(null);
   const [tempTime, setTempTime] = useState<Date | null>(null);
 
-  const loadAvailability = useCallback(async () => {
+  useEffect(() => {
+    loadAvailability();
+  }, []);
+
+  const loadAvailability = async () => {
     try {
       setLoading(true);
       const response = await apiService.getExpertAvailability();
@@ -86,11 +89,7 @@ export default function ManageAvailabilityScreen() {
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    loadAvailability();
-  }, [loadAvailability]);
+  };
 
   const toggleDay = (index: number) => {
     const updated = [...availability];
@@ -266,20 +265,20 @@ export default function ManageAvailabilityScreen() {
         availabilityToSave
       );
       if (response.success) {
-        Alert.alert("Success", "Session times updated successfully!", [
+        Alert.alert("Success", "Availability updated successfully!", [
           { text: "OK", onPress: () => router.back() },
         ]);
       } else {
         Alert.alert(
           "Error",
-          response.message || "Failed to update session times"
+          response.message || "Failed to update availability"
         );
       }
     } catch (error: any) {
       console.error("Error saving availability:", error);
       Alert.alert(
         "Error",
-        error.message || "Failed to save session times. Please try again."
+        error.message || "Failed to save availability. Please try again."
       );
     } finally {
       setSaving(false);
@@ -308,22 +307,23 @@ export default function ManageAvailabilityScreen() {
             <Pressable style={styles.backButton} onPress={() => router.back()}>
               <Text style={styles.backArrow}>←</Text>
             </Pressable>
-            <Text style={styles.headerTitle}>Manage Sessions</Text>
+            <Text style={styles.headerTitle}>Manage Availability</Text>
             <View style={styles.headerRight} />
           </View>
 
           {/* Instructions */}
           <View style={styles.instructionsCard}>
             <Text style={styles.instructionsText}>
-              Set your weekly session times. Toggle each day on/off and add time
-              ranges when open. Tap on the time fields to select your session times.
+              Set your weekly availability. Toggle each day on/off and add time
+              ranges when open. Tap on the time fields to select your
+              availability times.
             </Text>
           </View>
 
           {loading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#10B981" />
-              <Text style={styles.loadingText}>Loading session times...</Text>
+              <Text style={styles.loadingText}>Loading availability...</Text>
             </View>
           ) : (
             <>
@@ -435,7 +435,7 @@ export default function ManageAvailabilityScreen() {
                 {saving ? (
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
-                  <Text style={styles.saveButtonText}>Save Sessions</Text>
+                  <Text style={styles.saveButtonText}>Save Availability</Text>
                 )}
               </Pressable>
             </>

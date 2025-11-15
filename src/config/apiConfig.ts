@@ -30,6 +30,13 @@ export const ENDPOINTS = {
     UPDATE_PROFILE: '/experts/profile',
     BANK_ACCOUNT: '/experts/bank-account',
     AVAILABILITY: '/experts/availability',
+  },
+  BOOKINGS: {
+    CREATE: '/bookings',
+    USER_BOOKINGS: '/bookings/user',
+    EXPERT_BOOKINGS: '/bookings/expert',
+    AVAILABILITY: '/bookings/availability',
+    UPDATE_STATUS: '/bookings',
   }
 };
 
@@ -61,5 +68,12 @@ export const API_URLS = {
     UPDATE_PROFILE: buildUrl(ENDPOINTS.EXPERTS.UPDATE_PROFILE),
     BANK_ACCOUNT: buildUrl(ENDPOINTS.EXPERTS.BANK_ACCOUNT),
     AVAILABILITY: buildUrl(ENDPOINTS.EXPERTS.AVAILABILITY),
+  },
+  BOOKINGS: {
+    CREATE: buildUrl(ENDPOINTS.BOOKINGS.CREATE),
+    USER_BOOKINGS: buildUrl(ENDPOINTS.BOOKINGS.USER_BOOKINGS),
+    EXPERT_BOOKINGS: buildUrl(ENDPOINTS.BOOKINGS.EXPERT_BOOKINGS),
+    AVAILABILITY: (expertId: string) => buildUrl(`${ENDPOINTS.BOOKINGS.AVAILABILITY}/${expertId}`),
+    UPDATE_STATUS: (id: string) => buildUrl(`${ENDPOINTS.BOOKINGS.UPDATE_STATUS}/${id}/status`),
   }
 };

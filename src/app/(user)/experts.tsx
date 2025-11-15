@@ -468,12 +468,30 @@ export default function ExpertsScreen() {
                         <Text style={styles.rating}>⭐ {ratingDisplay}</Text>
                         <Text style={styles.price}>{priceDisplay}</Text>
                       </View>
-                      <LinearGradient
-                        colors={['#2da898ff', '#2da898ff']}
-                        style={styles.viewProfileButton}
-                      >
-                        <Text style={styles.viewProfileText}>View Profile</Text>
-                      </LinearGradient>
+                      <View style={styles.buttonContainer}>
+                        <Pressable
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            handleExpertPress(expertId);
+                          }}
+                        >
+                          <LinearGradient
+                            colors={['#2da898ff', '#2da898ff']}
+                            style={styles.viewProfileButton}
+                          >
+                            <Text style={styles.viewProfileText}>View Profile</Text>
+                          </LinearGradient>
+                        </Pressable>
+                        <Pressable
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            router.push({ pathname: '/booking', params: { expertId: expertId } });
+                          }}
+                          style={styles.bookSessionButton}
+                        >
+                          <Text style={styles.bookSessionText}>Book Session</Text>
+                        </Pressable>
+                      </View>
                     </View>
                   </View>
                 </Pressable>
@@ -877,6 +895,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  buttonContainer: {
+    flexDirection: 'column',
+    gap: getResponsiveMargin(6),
+    alignItems: 'flex-end',
+  },
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -903,6 +926,22 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   viewProfileText: {
+    fontSize: getResponsiveFontSize(11),
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  bookSessionButton: {
+    paddingHorizontal: getResponsivePadding(12),
+    paddingVertical: getResponsivePadding(6),
+    borderRadius: getResponsiveBorderRadius(12),
+    backgroundColor: '#F59E0B',
+    shadowColor: '#F59E0B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  bookSessionText: {
     fontSize: getResponsiveFontSize(11),
     color: '#ffffff',
     fontWeight: '600',

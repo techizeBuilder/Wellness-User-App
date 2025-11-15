@@ -433,6 +433,65 @@ class ApiService {
       body: JSON.stringify(userData),
     });
   }
+
+  // Booking APIs
+  async getAvailableSlots(expertId: string, date: string) {
+    return this.request(`${ENDPOINTS.BOOKINGS.AVAILABILITY}/${expertId}?date=${date}`);
+  }
+
+  async createBooking(bookingData: {
+    expertId: string;
+    sessionDate: string; // YYYY-MM-DD
+    startTime: string; // HH:MM
+    duration: number; // minutes
+    consultationMethod: string;
+    sessionType: string;
+    notes?: string;
+  }) {
+    return this.request(ENDPOINTS.BOOKINGS.CREATE, {
+      method: "POST",
+      body: JSON.stringify(bookingData),
+    });
+  }
+
+  async getUserBookings(params?: { status?: string; page?: number; limit?: number }) {
+    let endpoint = ENDPOINTS.BOOKINGS.USER_BOOKINGS;
+    if (params && Object.keys(params).length > 0) {
+      const query = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          query.append(key, String(value));
+        }
+      });
+      if (Array.from(query.keys()).length > 0) {
+        endpoint = `${endpoint}?${query.toString()}`;
+      }
+    }
+    return this.request(endpoint);
+  }
+
+  async getExpertBookings(params?: { status?: string; page?: number; limit?: number }) {
+    let endpoint = ENDPOINTS.BOOKINGS.EXPERT_BOOKINGS;
+    if (params && Object.keys(params).length > 0) {
+      const query = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          query.append(key, String(value));
+        }
+      });
+      if (Array.from(query.keys()).length > 0) {
+        endpoint = `${endpoint}?${query.toString()}`;
+      }
+    }
+    return this.request(endpoint);
+  }
+
+  async updateBookingStatus(bookingId: string, status: string, cancellationReason?: string) {
+    return this.request(`${ENDPOINTS.BOOKINGS.UPDATE_STATUS}/${bookingId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status, cancellationReason }),
+    });
+  }
 }
 
 // Create and export a singleton instance
