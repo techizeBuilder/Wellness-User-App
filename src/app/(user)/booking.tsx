@@ -26,13 +26,81 @@ type Expert = {
   };
 };
 
+type Appointment = {
+  _id: string;
+  sessionDate: string;
+  startTime: string;
+  endTime: string;
+  duration: number;
+  consultationMethod: string;
+  sessionType: string;
+  notes?: string;
+};
+
 export default function BookingScreen() {
   const params = useLocalSearchParams();
-  const expertId = params.expertId as string;
+  
+  const [expertId, setExpertId] = useState<string>('');
+  const [appointmentId, setAppointmentId] = useState<string | undefined>(undefined);
+  const [mode, setMode] = useState<string | undefined>(undefined);
+  const [isReschedule, setIsReschedule] = useState(false);
+  const [paramsExtracted, setParamsExtracted] = useState(false);
 
   const [expert, setExpert] = useState<Expert | null>(null);
+  const [existingAppointment, setExistingAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
+  
+  // Safely extract params in useEffect to avoid bridge serialization issues
+  useEffect(() => {
+    try {
+      console.log('Booking screen params:', params);
+      
+      // Handle params that might be arrays (expo-router behavior)
+      const getParam = (key: string): string | undefined => {
+        try {
+          const value = params[key];
+          console.log(`Param ${key}:`, value, typeof value);
+          if (value === null || value === undefined) return undefined;
+          if (Array.isArray(value)) {
+            const first = value[0];
+            return first ? String(first) : undefined;
+          }
+          const str = String(value);
+          // Filter out invalid string representations
+          if (str === 'null' || str === 'undefined' || str === '') return undefined;
+          return str;
+        } catch (error) {
+          console.error(`Error getting param ${key}:`, error);
+          return undefined;
+        }
+      };
+      
+      const extractedExpertId = getParam('expertId') || '';
+      const extractedAppointmentId = getParam('appointmentId');
+      const extractedMode = getParam('mode');
+      
+      console.log('Extracted params:', { extractedExpertId, extractedAppointmentId, extractedMode });
+      
+      // Validate expertId before setting state
+      if (!extractedExpertId || extractedExpertId.trim() === '') {
+        console.error('Expert ID is missing from params');
+        Alert.alert('Error', 'Expert ID is required');
+        router.back();
+        return;
+      }
+      
+      setExpertId(extractedExpertId);
+      setAppointmentId(extractedAppointmentId);
+      setMode(extractedMode);
+      setIsReschedule(extractedMode === 'reschedule' && !!extractedAppointmentId);
+      setParamsExtracted(true);
+    } catch (error) {
+      console.error('Error extracting params:', error);
+      Alert.alert('Error', 'Failed to load booking screen. Please try again.');
+      router.back();
+    }
+  }, [params]);
   
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
@@ -72,10 +140,17 @@ export default function BookingScreen() {
   const dates = generateDates();
 
   useEffect(() => {
-    if (expertId) {
+    // Only fetch expert data after params are extracted and expertId is available
+    if (paramsExtracted && expertId && expertId.trim() !== '') {
       fetchExpertData();
     }
-  }, [expertId]);
+  }, [expertId, paramsExtracted]);
+
+  useEffect(() => {
+    if (isReschedule && appointmentId) {
+      fetchExistingAppointment();
+    }
+  }, [isReschedule, appointmentId]);
 
   useEffect(() => {
     if (expert && selectedDate) {
@@ -105,15 +180,75 @@ export default function BookingScreen() {
     }
   };
 
+  const fetchExistingAppointment = async () => {
+    if (!appointmentId) return;
+    
+    try {
+      const response = await apiService.getUserBookings();
+      const appointments = response?.data?.appointments || response?.appointments || [];
+      
+      // Compare IDs as strings to handle both string and object IDs
+      const appointment = appointments.find((apt: any) => {
+        const aptId = typeof apt._id === 'string' ? apt._id : String(apt._id);
+        return aptId === appointmentId;
+      });
+      
+      if (appointment) {
+        setExistingAppointment(appointment);
+        // Pre-fill form with existing appointment data
+        const date = new Date(appointment.sessionDate);
+        const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        setSelectedDate(dateString);
+        setSelectedTime(appointment.startTime);
+        setSelectedDuration(appointment.duration);
+        setSelectedConsultationMethod(appointment.consultationMethod);
+        setSelectedSessionType(appointment.sessionType);
+        setNotes(appointment.notes || '');
+      } else {
+        Alert.alert('Error', 'Appointment not found. Please try again.');
+        router.back();
+      }
+    } catch (error) {
+      console.error('Error fetching existing appointment:', error);
+      Alert.alert('Error', handleApiError(error));
+      router.back();
+    }
+  };
+
   const fetchAvailableSlots = async () => {
     if (!expertId || !selectedDate) return;
     
     try {
       setLoadingSlots(true);
       const response = await apiService.getAvailableSlots(expertId, selectedDate);
-      const slots = response?.data?.availableSlots || [];
+      let slots = response?.data?.availableSlots || [];
+      
+      // Filter out past time slots if the selected date is today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const selectedDateObj = new Date(selectedDate);
+      selectedDateObj.setHours(0, 0, 0, 0);
+      
+      if (selectedDateObj.getTime() === today.getTime()) {
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMin = now.getMinutes();
+        const currentTotal = currentHour * 60 + currentMin;
+        
+        slots = slots.filter((slot: string) => {
+          const [hour, min] = slot.split(':').map(Number);
+          const slotTotal = hour * 60 + min;
+          return slotTotal >= currentTotal;
+        });
+      }
+      
       setAvailableSlots(slots);
-      setSelectedTime(''); // Reset selected time when date changes
+      
+      // If rescheduling and the current time slot is still available, keep it selected
+      // Otherwise, reset selected time when date changes
+      if (!isReschedule || !slots.includes(selectedTime)) {
+        setSelectedTime('');
+      }
     } catch (error) {
       console.error('Error fetching slots:', error);
       setAvailableSlots([]);
@@ -161,34 +296,62 @@ export default function BookingScreen() {
 
     try {
       setBooking(true);
-      const response = await apiService.createBooking({
-        expertId,
-        sessionDate: selectedDate,
-        startTime: selectedTime,
-        duration: selectedDuration,
-        consultationMethod: selectedConsultationMethod,
-        sessionType: selectedSessionType,
-        notes: notes || undefined
-      });
+      
+      if (isReschedule && appointmentId) {
+        // Reschedule existing booking
+        const response = await apiService.rescheduleBooking(appointmentId, {
+          sessionDate: selectedDate,
+          startTime: selectedTime,
+          duration: selectedDuration
+        });
 
-      Alert.alert(
-        'Booking Successful!',
-        `Your ${selectedDuration}-minute session has been booked successfully. Waiting for expert confirmation.`,
-        [
-          { 
-            text: 'View Bookings', 
-            onPress: () => {
-              router.push('/sessions');
+        Alert.alert(
+          'Reschedule Successful!',
+          'Your appointment has been rescheduled successfully. Waiting for expert confirmation.',
+          [
+            { 
+              text: 'View Bookings', 
+              onPress: () => {
+                router.push('/sessions');
+              }
+            },
+            { 
+              text: 'OK', 
+              onPress: () => router.back()
             }
-          },
-          { 
-            text: 'OK', 
-            onPress: () => router.back()
-          }
-        ]
-      );
+          ]
+        );
+      } else {
+        // Create new booking
+        const response = await apiService.createBooking({
+          expertId,
+          sessionDate: selectedDate,
+          startTime: selectedTime,
+          duration: selectedDuration,
+          consultationMethod: selectedConsultationMethod,
+          sessionType: selectedSessionType,
+          notes: notes || undefined
+        });
+
+        Alert.alert(
+          'Booking Successful!',
+          `Your ${selectedDuration}-minute session has been booked successfully. Waiting for expert confirmation.`,
+          [
+            { 
+              text: 'View Bookings', 
+              onPress: () => {
+                router.push('/sessions');
+              }
+            },
+            { 
+              text: 'OK', 
+              onPress: () => router.back()
+            }
+          ]
+        );
+      }
     } catch (error) {
-      Alert.alert('Booking Failed', handleApiError(error));
+      Alert.alert(isReschedule ? 'Reschedule Failed' : 'Booking Failed', handleApiError(error));
     } finally {
       setBooking(false);
     }
@@ -241,7 +404,7 @@ export default function BookingScreen() {
           <Pressable style={styles.backButton} onPress={handleBackPress}>
             <Text style={styles.backArrow}>←</Text>
           </Pressable>
-          <Text style={styles.headerTitle}>Book Session</Text>
+          <Text style={styles.headerTitle}>{isReschedule ? 'Reschedule Session' : 'Book Session'}</Text>
           <View style={styles.headerSpacer} />
         </View>
 
@@ -263,7 +426,7 @@ export default function BookingScreen() {
         {/* Consultation Method Selection - Session Format */}
         {expert.consultationMethods && expert.consultationMethods.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Session Format</Text>
+            <Text style={styles.sectionTitle}>Session Format {isReschedule && '(Cannot be changed)'}</Text>
             <View style={styles.optionsContainer}>
               {expert.consultationMethods.map((method) => {
                 const methodLabels: Record<string, string> = {
@@ -278,13 +441,16 @@ export default function BookingScreen() {
                     key={method}
                     style={[
                       styles.optionCard,
-                      selectedConsultationMethod === method && styles.optionCardSelected
+                      selectedConsultationMethod === method && styles.optionCardSelected,
+                      isReschedule && styles.optionCardDisabled
                     ]}
-                    onPress={() => setSelectedConsultationMethod(method)}
+                    onPress={() => !isReschedule && setSelectedConsultationMethod(method)}
+                    disabled={isReschedule}
                   >
                     <Text style={[
                       styles.optionLabel,
-                      selectedConsultationMethod === method && styles.optionLabelSelected
+                      selectedConsultationMethod === method && styles.optionLabelSelected,
+                      isReschedule && styles.optionLabelDisabled
                     ]}>
                       {displayLabel}
                     </Text>
@@ -298,7 +464,7 @@ export default function BookingScreen() {
         {/* Session Type Selection */}
         {expert.sessionType && expert.sessionType.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Session Type</Text>
+            <Text style={styles.sectionTitle}>Session Type {isReschedule && '(Cannot be changed)'}</Text>
             <View style={styles.optionsContainer}>
               {expert.sessionType.map((type) => {
                 const typeLabels: Record<string, string> = {
@@ -310,13 +476,16 @@ export default function BookingScreen() {
                     key={type}
                     style={[
                       styles.optionCard,
-                      selectedSessionType === type && styles.optionCardSelected
+                      selectedSessionType === type && styles.optionCardSelected,
+                      isReschedule && styles.optionCardDisabled
                     ]}
-                    onPress={() => setSelectedSessionType(type)}
+                    onPress={() => !isReschedule && setSelectedSessionType(type)}
+                    disabled={isReschedule}
                   >
                     <Text style={[
                       styles.optionLabel,
-                      selectedSessionType === type && styles.optionLabelSelected
+                      selectedSessionType === type && styles.optionLabelSelected,
+                      isReschedule && styles.optionLabelDisabled
                     ]}>
                       {typeLabels[type] || type}
                     </Text>
@@ -347,12 +516,12 @@ export default function BookingScreen() {
                   {duration} min
                 </Text>
                 {expert.hourlyRate && (
-                  <Text style={[
-                    styles.durationPrice,
+                <Text style={[
+                  styles.durationPrice,
                     selectedDuration === duration && styles.durationPriceSelected
-                  ]}>
+                ]}>
                     ₹{Math.round((expert.hourlyRate * duration) / 60)}
-                  </Text>
+                </Text>
                 )}
               </Pressable>
             ))}
@@ -391,33 +560,33 @@ export default function BookingScreen() {
 
         {/* Time Selection */}
         {selectedDate && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Select Time</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Select Time</Text>
             {loadingSlots ? (
               <View style={styles.loadingSlotsContainer}>
                 <ActivityIndicator size="small" color="#10b981" />
                 <Text style={styles.loadingSlotsText}>Loading available slots...</Text>
               </View>
             ) : availableSlots.length > 0 ? (
-              <View style={styles.timeSlotsContainer}>
+          <View style={styles.timeSlotsContainer}>
                 {availableSlots.map((time) => (
-                  <Pressable
-                    key={time}
-                    style={[
-                      styles.timeSlot,
-                      selectedTime === time && styles.timeSlotSelected
-                    ]}
-                    onPress={() => setSelectedTime(time)}
-                  >
-                    <Text style={[
-                      styles.timeSlotText,
-                      selectedTime === time && styles.timeSlotTextSelected
-                    ]}>
+              <Pressable
+                key={time}
+                style={[
+                  styles.timeSlot,
+                  selectedTime === time && styles.timeSlotSelected
+                ]}
+                onPress={() => setSelectedTime(time)}
+              >
+                <Text style={[
+                  styles.timeSlotText,
+                  selectedTime === time && styles.timeSlotTextSelected
+                ]}>
                       {formatTime(time)}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
+                </Text>
+              </Pressable>
+            ))}
+          </View>
             ) : (
               <Text style={styles.noSlotsText}>No available slots for this date</Text>
             )}
@@ -469,7 +638,7 @@ export default function BookingScreen() {
               <ActivityIndicator size="small" color="#ffffff" />
             ) : (
               <Text style={styles.bookButtonText}>
-                Confirm Booking - ₹{calculatePrice()}
+                {isReschedule ? 'Reschedule Session' : `Confirm Booking - ₹${calculatePrice()}`}
               </Text>
             )}
           </Pressable>
@@ -633,6 +802,12 @@ const styles = StyleSheet.create({
   optionLabelSelected: {
     color: '#10b981',
     fontWeight: 'bold',
+  },
+  optionCardDisabled: {
+    opacity: 0.6,
+  },
+  optionLabelDisabled: {
+    opacity: 0.6,
   },
   durationContainer: {
     flexDirection: 'row',

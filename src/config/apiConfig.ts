@@ -37,6 +37,7 @@ export const ENDPOINTS = {
     EXPERT_BOOKINGS: '/bookings/expert',
     AVAILABILITY: '/bookings/availability',
     UPDATE_STATUS: '/bookings',
+    RESCHEDULE: '/bookings',
   }
 };
 
@@ -75,5 +76,6 @@ export const API_URLS = {
     EXPERT_BOOKINGS: buildUrl(ENDPOINTS.BOOKINGS.EXPERT_BOOKINGS),
     AVAILABILITY: (expertId: string) => buildUrl(`${ENDPOINTS.BOOKINGS.AVAILABILITY}/${expertId}`),
     UPDATE_STATUS: (id: string) => buildUrl(`${ENDPOINTS.BOOKINGS.UPDATE_STATUS}/${id}/status`),
+    RESCHEDULE: (id: string) => buildUrl(`${ENDPOINTS.BOOKINGS.RESCHEDULE}/${id}/reschedule`),
   }
 };

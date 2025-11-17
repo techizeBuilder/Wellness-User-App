@@ -144,10 +144,51 @@ export default function SessionsScreen() {
   };
 
   const handleReschedule = (appointment: Appointment) => {
-    router.push({
-      pathname: '/booking',
-      params: { expertId: appointment.expert._id }
-    });
+    try {
+      // Safely extract IDs with defensive checks
+      let expertId: string | null = null;
+      let appointmentId: string | null = null;
+      
+      // Handle appointment ID
+      if (appointment && appointment._id) {
+        appointmentId = typeof appointment._id === 'string' 
+          ? appointment._id 
+          : String(appointment._id);
+      }
+      
+      // Handle expert ID - check if expert exists and has _id
+      if (appointment && appointment.expert) {
+        const expertIdValue = appointment.expert._id;
+        if (expertIdValue) {
+          expertId = typeof expertIdValue === 'string' 
+            ? expertIdValue 
+            : String(expertIdValue);
+        }
+      }
+      
+      // Validate IDs are not empty
+      if (!expertId || !appointmentId) {
+        console.error('Missing IDs:', { expertId, appointmentId, appointment });
+        Alert.alert('Error', 'Invalid appointment data. Please try again.');
+        return;
+      }
+      
+      // Ensure IDs are valid strings (not 'null' or 'undefined')
+      if (expertId === 'null' || expertId === 'undefined' || 
+          appointmentId === 'null' || appointmentId === 'undefined') {
+        Alert.alert('Error', 'Invalid appointment data. Please try again.');
+        return;
+      }
+      
+      // Use href format with query params to avoid serialization issues
+      const href = `/booking?expertId=${encodeURIComponent(expertId)}&appointmentId=${encodeURIComponent(appointmentId)}&mode=reschedule`;
+      console.log('Navigating to reschedule with href:', href);
+      console.log('Expert ID:', expertId, 'Appointment ID:', appointmentId);
+      router.push(href);
+    } catch (error) {
+      console.error('Error in handleReschedule:', error);
+      Alert.alert('Error', 'Failed to open reschedule screen. Please try again.');
+    }
   };
 
   const handleJoinSession = (meetingLink?: string) => {

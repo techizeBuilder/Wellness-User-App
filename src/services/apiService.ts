@@ -492,6 +492,17 @@ class ApiService {
       body: JSON.stringify({ status, cancellationReason }),
     });
   }
+
+  async rescheduleBooking(bookingId: string, rescheduleData: {
+    sessionDate: string; // YYYY-MM-DD
+    startTime: string; // HH:MM
+    duration: number; // minutes
+  }) {
+    return this.request(`${ENDPOINTS.BOOKINGS.RESCHEDULE}/${bookingId}/reschedule`, {
+      method: "PATCH",
+      body: JSON.stringify(rescheduleData),
+    });
+  }
 }
 
 // Create and export a singleton instance

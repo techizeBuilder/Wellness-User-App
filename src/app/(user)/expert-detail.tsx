@@ -446,8 +446,8 @@ export default function ExpertDetailScreen() {
     // Navigate to booking screen with expert ID
     if (expertId) {
       router.push({
-        pathname: '/booking',
-        params: { expertId: expertId }
+        pathname: "/booking",
+        params: { expertId: expertId },
       });
     } else {
       alert("Expert information not available");
@@ -516,8 +516,14 @@ export default function ExpertDetailScreen() {
                   </Text>
                 )}
               </View>
-              <Text style={styles.expertTitle}>{expert.title}</Text>
-              <Text style={styles.headerDescription}>{expert.about}</Text>
+              {/* <Text style={styles.expertTitle}>{expert.title}</Text> */}
+              <Text
+                style={styles.headerDescription}
+                numberOfLines={6}
+                ellipsizeMode="tail"
+              >
+                {expert.about}
+              </Text>
               <View style={styles.expertMeta}>
                 <Text style={styles.expertSpecialty}>{expert.specialty}</Text>
                 {expert.verified && (
