@@ -24,6 +24,7 @@ import {
   getResponsiveWidth,
   screenData,
 } from "@/utils/dimensions";
+import { resolveProfileImageUrl } from "@/utils/imageHelpers";
 
 const { width } = Dimensions.get("window");
 
@@ -69,7 +70,9 @@ export default function DashboardScreen() {
               firstName: response.data.user.firstName,
               lastName: response.data.user.lastName,
               email: response.data.user.email,
-              profileImage: response.data.user.profileImage,
+              profileImage:
+                resolveProfileImageUrl(response.data.user.profileImage) ||
+                undefined,
             });
           }
         } catch (error) {

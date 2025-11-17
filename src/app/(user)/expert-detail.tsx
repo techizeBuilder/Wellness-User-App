@@ -28,6 +28,7 @@ import {
   getResponsiveWidth,
 } from "@/utils/dimensions";
 import { apiService, handleApiError } from "@/services/apiService";
+import { getProfileImageWithFallback } from "@/utils/imageHelpers";
 
 export default function ExpertDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -250,7 +251,7 @@ export default function ExpertDetailScreen() {
     }
 
     const profileImage =
-      expertData?.profileImage ||
+      getProfileImageWithFallback(expertData?.profileImage, fullName || "Expert") ||
       (fullName
         ? `https://ui-avatars.com/api/?name=${encodeURIComponent(
             fullName

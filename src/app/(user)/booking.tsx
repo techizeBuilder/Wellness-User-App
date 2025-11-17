@@ -11,6 +11,7 @@ import {
     getResponsiveWidth
 } from '@/utils/dimensions';
 import { apiService, handleApiError } from '@/services/apiService';
+import { getProfileImageWithFallback } from '@/utils/imageHelpers';
 
 type Expert = {
   _id: string;
@@ -388,7 +389,7 @@ export default function BookingScreen() {
   }
 
   const expertName = [expert.firstName, expert.lastName].filter(Boolean).join(' ') || 'Expert';
-  const expertImage = expert.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(expertName)}&background=37b9a8&color=fff&size=128`;
+  const expertImage = getProfileImageWithFallback(expert.profileImage, expertName) || `https://ui-avatars.com/api/?name=${encodeURIComponent(expertName)}&background=37b9a8&color=fff&size=128`;
   const rating = expert.rating?.average || 0;
 
   return (

@@ -1,12 +1,14 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import ExpertFooter from '@/components/ExpertFooter';
 import Footer, { FOOTER_HEIGHT } from '@/components/Footer';
 import authService from '@/services/authService';
 import apiService from '@/services/apiService';
+import { handleApiError } from '@/services/apiService';
 import { colors } from '@/utils/colors';
 import {
   fontSizes,
@@ -18,6 +20,8 @@ import {
   getResponsiveWidth,
   screenData
 } from '@/utils/dimensions';
+import { resolveProfileImageUrl } from '@/utils/imageHelpers';
+import { showErrorToast, showSuccessToast } from '@/utils/toastConfig';
 
 const StarIcon = ({ size = 24, color = "#F59E0B" }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
@@ -37,7 +41,13 @@ export default function ProfileScreen() {
     specialization?: string;
   } | null>(null);
   const [expertData, setExpertData] = useState<any>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const params = useLocalSearchParams();
+
+  const formatProfileImage = (value?: string | null) => {
+    const resolved = resolveProfileImageUrl(value);
+    return resolved || undefined;
+  };
 
   useEffect(() => {
     const checkAccountTypeAndFetchProfile = async () => {
@@ -50,23 +60,25 @@ export default function ProfileScreen() {
           if (accountType === 'Expert') {
             const response = await apiService.getCurrentExpertProfile();
             if (response.success && response.data?.expert) {
-              setExpertData(response.data.expert);
+              const expertProfile = response.data.expert;
+              setExpertData(expertProfile);
               setUserData({
-                firstName: response.data.expert.firstName,
-                lastName: response.data.expert.lastName,
-                email: response.data.expert.email,
-                profileImage: response.data.expert.profileImage,
-                specialization: response.data.expert.specialization,
+                firstName: expertProfile.firstName,
+                lastName: expertProfile.lastName,
+                email: expertProfile.email,
+                profileImage: formatProfileImage(expertProfile.profileImage),
+                specialization: expertProfile.specialization,
               });
             }
           } else {
             const response = await apiService.getUserProfile();
             if (response.success && response.data?.user) {
+              const currentUser = response.data.user;
               setUserData({
-                firstName: response.data.user.firstName,
-                lastName: response.data.user.lastName,
-                email: response.data.user.email,
-                profileImage: response.data.user.profileImage,
+                firstName: currentUser.firstName,
+                lastName: currentUser.lastName,
+                email: currentUser.email,
+                profileImage: formatProfileImage(currentUser.profileImage),
               });
             }
           }
@@ -276,6 +288,110 @@ export default function ProfileScreen() {
 
   const profileSections = isExpert ? expertProfileSections : userProfileSections;
 
+  const handleProfileImagePress = () => {
+    if (isUploadingImage) {
+      return;
+    }
+
+    const options = [
+      {
+        text: 'Take Photo',
+        onPress: () => pickImage('camera'),
+      },
+      {
+        text: 'Choose from Library',
+        onPress: () => pickImage('library'),
+      },
+      {
+        text: 'Cancel',
+        style: 'cancel' as const,
+      },
+    ];
+
+    if (Platform.OS === 'ios') {
+      Alert.alert('Update Profile Photo', 'Select an option', options);
+    } else {
+      Alert.alert('Update Profile Photo', '', options);
+    }
+  };
+
+  const pickImage = async (type: 'camera' | 'library') => {
+    try {
+      let permissionGranted = true;
+
+      if (type === 'camera') {
+        const permission = await ImagePicker.requestCameraPermissionsAsync();
+        permissionGranted = permission.status === 'granted';
+      } else {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        permissionGranted = permission.status === 'granted';
+      }
+
+      if (!permissionGranted) {
+        showErrorToast('Permission Needed', 'Please grant access to continue.');
+        return;
+      }
+
+      const pickerOptions: ImagePicker.ImagePickerOptions = {
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      };
+
+      const result =
+        type === 'camera'
+          ? await ImagePicker.launchCameraAsync(pickerOptions)
+          : await ImagePicker.launchImageLibraryAsync(pickerOptions);
+
+      if (!result.canceled && result.assets?.length) {
+        await uploadProfileImage(result.assets[0]);
+      }
+    } catch (error) {
+      showErrorToast('Image Error', 'Unable to select image. Please try again.');
+    }
+  };
+
+  const uploadProfileImage = async (asset: ImagePicker.ImagePickerAsset) => {
+    try {
+      setIsUploadingImage(true);
+
+      const formData = new FormData();
+      formData.append('profileImage', {
+        uri: asset.uri,
+        type: asset.mimeType || 'image/jpeg',
+        name: asset.fileName || `profile-${Date.now()}.jpg`,
+      } as any);
+
+      const response = isExpert
+        ? await apiService.updateExpertProfileWithImage(formData)
+        : await apiService.updateUserProfileWithImage(formData);
+
+      if (response.success) {
+        const updatedProfile = isExpert ? response.data?.expert : response.data?.user;
+        if (updatedProfile) {
+          setUserData((prev) => ({
+            firstName: updatedProfile.firstName ?? prev?.firstName,
+            lastName: updatedProfile.lastName ?? prev?.lastName,
+            email: updatedProfile.email ?? prev?.email,
+            profileImage: formatProfileImage(updatedProfile.profileImage),
+            specialization: updatedProfile.specialization ?? prev?.specialization,
+          }));
+          showSuccessToast('Profile Updated', 'Your profile photo has been updated.');
+        } else {
+          showErrorToast('Upload Failed', response.message || 'Could not update profile photo.');
+        }
+      } else {
+        showErrorToast('Upload Failed', response.message || 'Could not update profile photo.');
+      }
+    } catch (error) {
+      const message = handleApiError(error);
+      showErrorToast('Upload Failed', message);
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
   return (
     <LinearGradient
       colors={['#2DD4BF', '#14B8A6', '#0D9488']}
@@ -312,8 +428,21 @@ export default function ProfileScreen() {
                 </Text>
               </View>
             )}
-            <Pressable style={styles.editButton}>
-              <Text style={styles.editIcon}>✏️</Text>
+            {isUploadingImage && (
+              <View style={styles.imageOverlay}>
+                <ActivityIndicator color={colors.white} size="small" />
+              </View>
+            )}
+            <Pressable
+              style={[styles.editButton, isUploadingImage && styles.editButtonDisabled]}
+              onPress={handleProfileImagePress}
+              disabled={isUploadingImage}
+            >
+              {isUploadingImage ? (
+                <ActivityIndicator color={colors.white} size="small" />
+              ) : (
+                <Text style={styles.editIcon}>📷</Text>
+              )}
             </Pressable>
           </View>
           <Text style={styles.profileName}>
@@ -600,6 +729,8 @@ const styles = StyleSheet.create({
   profileImageContainer: {
     position: 'relative',
     marginBottom: getResponsiveMargin(20),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   profileImage: {
     width: getResponsiveWidth(screenData.isSmall ? 100 : 120),
@@ -623,6 +754,17 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#ffffff',
   },
+  imageOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderRadius: getResponsiveBorderRadius(screenData.isSmall ? 50 : 60),
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   editButton: {
     position: 'absolute',
     bottom: 0,
@@ -635,6 +777,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: colors.white,
+  },
+  editButtonDisabled: {
+    opacity: 0.7,
   },
   editIcon: {
     fontSize: fontSizes.sm,

@@ -23,6 +23,7 @@ import {
   getResponsiveWidth
 } from '@/utils/dimensions';
 import { apiService, handleApiError } from '@/services/apiService';
+import { getProfileImageWithFallback } from '@/utils/imageHelpers';
 
 type Expert = {
   _id?: string;
@@ -435,7 +436,7 @@ export default function ExpertsScreen() {
               (expert.verificationStatus || '').toLowerCase() === 'approved';
             const avatarName = encodeURIComponent(displayName || 'Expert');
             const profileImage =
-              expert.profileImage ||
+              getProfileImageWithFallback(expert.profileImage, displayName) ||
               `https://ui-avatars.com/api/?name=${avatarName}&background=37b9a8&color=fff&size=128`;
 
             return (

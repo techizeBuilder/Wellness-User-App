@@ -374,6 +374,13 @@ class ApiService {
     });
   }
 
+  async updateExpertProfileWithImage(formData: FormData) {
+    return this.requestFormData(ENDPOINTS.EXPERTS.UPDATE_PROFILE, {
+      method: "PUT",
+      body: formData,
+    });
+  }
+
   async getExpertAvailability() {
     return this.request(ENDPOINTS.EXPERTS.AVAILABILITY);
   }
@@ -431,6 +438,13 @@ class ApiService {
     return this.request(ENDPOINTS.AUTH.PROFILE, {
       method: "PUT",
       body: JSON.stringify(userData),
+    });
+  }
+
+  async updateUserProfileWithImage(formData: FormData) {
+    return this.requestFormData(ENDPOINTS.AUTH.PROFILE, {
+      method: "PUT",
+      body: formData,
     });
   }
 

@@ -24,6 +24,7 @@ import {
   getResponsivePadding,
   getResponsiveWidth,
 } from "@/utils/dimensions";
+import { resolveProfileImageUrl } from "@/utils/imageHelpers";
 
 const { width } = Dimensions.get("window");
 
@@ -59,7 +60,9 @@ export default function ExpertDashboardScreen() {
             setExpertProfile({
               firstName: response.data.expert.firstName,
               lastName: response.data.expert.lastName,
-              profileImage: response.data.expert.profileImage,
+              profileImage:
+                resolveProfileImageUrl(response.data.expert.profileImage) ||
+                undefined,
               specialization: response.data.expert.specialization,
             });
           }

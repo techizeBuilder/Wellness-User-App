@@ -12,6 +12,7 @@ import {
     getResponsiveWidth
 } from '@/utils/dimensions';
 import { apiService, handleApiError } from '@/services/apiService';
+import { getProfileImageWithFallback } from '@/utils/imageHelpers';
 
 type Appointment = {
   _id: string;
@@ -235,8 +236,10 @@ export default function SessionsScreen() {
       appointment.expert?.lastName
     ].filter(Boolean).join(' ') || 'Expert';
 
-    const expertImage = appointment.expert?.profileImage || 
-      `https://ui-avatars.com/api/?name=${encodeURIComponent(expertName)}&background=37b9a8&color=fff&size=128`;
+    const expertImage = getProfileImageWithFallback(
+      appointment.expert?.profileImage,
+      expertName
+    ) || `https://ui-avatars.com/api/?name=${encodeURIComponent(expertName)}&background=37b9a8&color=fff&size=128`;
 
     const sessionId = appointment._id.substring(appointment._id.length - 6).toUpperCase();
 
