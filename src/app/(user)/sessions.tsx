@@ -33,6 +33,7 @@ type Appointment = {
   price: number;
   notes?: string;
   meetingLink?: string;
+  agoraChannelName?: string;
   cancelledBy?: 'user' | 'expert';
   cancellationReason?: string;
   createdAt: string;
@@ -44,6 +45,7 @@ export default function SessionsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [joiningId, setJoiningId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAllBookings();
@@ -116,6 +118,31 @@ export default function SessionsScreen() {
       'in-person': 'In-Person'
     };
     return labels[method] || method.charAt(0).toUpperCase() + method.slice(1);
+  };
+
+  const getAppointmentDateTimes = (appointment: Appointment) => {
+    const sessionDate = new Date(appointment.sessionDate);
+    const [startHour, startMin] = appointment.startTime.split(':').map(Number);
+    const [endHour, endMin] = appointment.endTime.split(':').map(Number);
+
+    const startDateTime = new Date(sessionDate);
+    startDateTime.setHours(startHour, startMin, 0, 0);
+
+    const endDateTime = new Date(sessionDate);
+    endDateTime.setHours(endHour, endMin, 0, 0);
+
+    return { startDateTime, endDateTime };
+  };
+
+  const canJoinVideoCall = (appointment: Appointment) => {
+    if (appointment.consultationMethod !== 'video' || appointment.status !== 'confirmed') {
+      return false;
+    }
+    const { startDateTime, endDateTime } = getAppointmentDateTimes(appointment);
+    const now = new Date();
+    const joinOpensAt = new Date(startDateTime.getTime() - 5 * 60 * 1000);
+    const joinClosesAt = new Date(endDateTime.getTime() + 15 * 60 * 1000);
+    return now >= joinOpensAt && now <= joinClosesAt;
   };
 
   const handleCancel = async (appointmentId: string) => {
@@ -192,12 +219,33 @@ export default function SessionsScreen() {
     }
   };
 
-  const handleJoinSession = (meetingLink?: string) => {
-    if (meetingLink) {
-      Alert.alert('Join Session', `Opening meeting: ${meetingLink}`);
-      // In a real app, this would open the meeting link
-    } else {
-      Alert.alert('No Meeting Link', 'Meeting link will be provided before the session.');
+  const handleJoinSession = async (appointment: Appointment) => {
+    if (joiningId) return;
+    try {
+      setJoiningId(appointment._id);
+      const response = await apiService.getAgoraToken(appointment._id);
+      const payload = response?.data || response;
+      const agoraData = payload?.data || payload;
+
+      if (!agoraData?.token || !agoraData?.channelName || !agoraData?.appId) {
+        throw new Error('Unable to start video session. Please try again.');
+      }
+
+      router.push({
+        pathname: '/video-call',
+        params: {
+          appId: encodeURIComponent(String(agoraData.appId)),
+          channelName: encodeURIComponent(String(agoraData.channelName)),
+          token: encodeURIComponent(String(agoraData.token)),
+          uid: encodeURIComponent(String(agoraData.uid ?? '')),
+          role: encodeURIComponent(String(agoraData.role || 'audience')),
+          displayName: encodeURIComponent('You')
+        }
+      });
+    } catch (error) {
+      Alert.alert('Unable to Join', handleApiError(error));
+    } finally {
+      setJoiningId(null);
     }
   };
 
@@ -325,13 +373,28 @@ export default function SessionsScreen() {
           <View style={styles.actionButtons}>
             {isUpcoming && (
               <>
-                {appointment.status === 'confirmed' && appointment.meetingLink && (
-                  <Pressable 
-                    style={styles.joinButton}
-                    onPress={() => handleJoinSession(appointment.meetingLink)}
-                  >
-                    <Text style={styles.joinButtonText}>Join Session</Text>
-                  </Pressable>
+                {appointment.consultationMethod === 'video' && appointment.status === 'confirmed' && (
+                  <View style={styles.joinSection}>
+                    <Pressable 
+                      style={[
+                        styles.joinButton,
+                        (!canJoinVideoCall(appointment) || joiningId === appointment._id) && styles.joinButtonDisabled
+                      ]}
+                      onPress={() => handleJoinSession(appointment)}
+                      disabled={!canJoinVideoCall(appointment) || joiningId === appointment._id}
+                    >
+                      {joiningId === appointment._id ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : (
+                        <Text style={styles.joinButtonText}>
+                          {canJoinVideoCall(appointment) ? 'Join Video Call' : 'Join Opens Soon'}
+                        </Text>
+                      )}
+                    </Pressable>
+                    {!canJoinVideoCall(appointment) && (
+                      <Text style={styles.joinHint}>Join link unlocks 5 min before start</Text>
+                    )}
+                  </View>
                 )}
                 <Pressable 
                   style={styles.rescheduleButton}
@@ -673,6 +736,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: getResponsiveWidth(12),
   },
+  joinSection: {
+    flex: 1,
+  },
   joinButton: {
     flex: 1,
     backgroundColor: '#14B8A6',
@@ -680,10 +746,19 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveBorderRadius(8),
     alignItems: 'center',
   },
+  joinButtonDisabled: {
+    opacity: 0.6,
+  },
   joinButtonText: {
     color: '#FFFFFF',
     fontWeight: 'bold',
     fontSize: getResponsiveFontSize(14),
+  },
+  joinHint: {
+    marginTop: getResponsiveHeight(6),
+    color: '#0f172a',
+    fontSize: getResponsiveFontSize(11),
+    fontStyle: 'italic',
   },
   rescheduleButton: {
     flex: 1,

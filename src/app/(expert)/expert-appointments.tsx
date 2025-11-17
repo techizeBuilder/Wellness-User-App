@@ -46,6 +46,7 @@ type Appointment = {
   price: number;
   notes?: string;
   meetingLink?: string;
+  agoraChannelName?: string;
 };
 
 export default function ExpertAppointmentsScreen() {
@@ -59,6 +60,7 @@ export default function ExpertAppointmentsScreen() {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [appointmentToCancel, setAppointmentToCancel] = useState<Appointment | null>(null);
   const [cancellationReason, setCancellationReason] = useState('');
+  const [joiningId, setJoiningId] = useState<string | null>(null);
 
   const statusFilters = ['All', 'Confirmed', 'Pending', 'Completed', 'Cancelled'];
 
@@ -137,6 +139,31 @@ export default function ExpertAppointmentsScreen() {
     return labels[method] || method;
   };
 
+  const getAppointmentDateTimes = (appointment: Appointment) => {
+    const sessionDate = new Date(appointment.sessionDate);
+    const [startHour, startMin] = appointment.startTime.split(':').map(Number);
+    const [endHour, endMin] = appointment.endTime.split(':').map(Number);
+
+    const startDateTime = new Date(sessionDate);
+    startDateTime.setHours(startHour, startMin, 0, 0);
+
+    const endDateTime = new Date(sessionDate);
+    endDateTime.setHours(endHour, endMin, 0, 0);
+
+    return { startDateTime, endDateTime };
+  };
+
+  const canJoinVideoCall = (appointment: Appointment) => {
+    if (appointment.consultationMethod !== 'video' || appointment.status !== 'confirmed') {
+      return false;
+    }
+    const { startDateTime, endDateTime } = getAppointmentDateTimes(appointment);
+    const now = new Date();
+    const joinOpensAt = new Date(startDateTime.getTime() - 5 * 60 * 1000);
+    const joinClosesAt = new Date(endDateTime.getTime() + 15 * 60 * 1000);
+    return now >= joinOpensAt && now <= joinClosesAt;
+  };
+
   const handleStatusUpdate = async (appointmentId: string, newStatus: string, reason?: string) => {
     try {
       setUpdatingId(appointmentId);
@@ -184,6 +211,36 @@ export default function ExpertAppointmentsScreen() {
         }
       ]
     );
+  };
+
+  const handleJoinSession = async (appointment: Appointment) => {
+    if (joiningId) return;
+    try {
+      setJoiningId(appointment._id);
+      const response = await apiService.getAgoraToken(appointment._id);
+      const payload = response?.data || response;
+      const agoraData = payload?.data || payload;
+
+      if (!agoraData?.token || !agoraData?.channelName || !agoraData?.appId) {
+        throw new Error('Unable to start video session. Please try again.');
+      }
+
+      router.push({
+        pathname: '/video-call',
+        params: {
+          appId: encodeURIComponent(String(agoraData.appId)),
+          channelName: encodeURIComponent(String(agoraData.channelName)),
+          token: encodeURIComponent(String(agoraData.token)),
+          uid: encodeURIComponent(String(agoraData.uid ?? '')),
+          role: encodeURIComponent(String(agoraData.role || 'host')),
+          displayName: encodeURIComponent('Expert')
+        }
+      });
+    } catch (error) {
+      Alert.alert('Unable to Join', handleApiError(error));
+    } finally {
+      setJoiningId(null);
+    }
   };
 
   const handleAppointmentPress = (appointment: Appointment) => {
@@ -356,14 +413,26 @@ export default function ExpertAppointmentsScreen() {
                               </Pressable>
                             </View>
                           )}
-                          {appointment.status === 'confirmed' && (
+                          {appointment.status === 'confirmed' && appointment.consultationMethod === 'video' && (
                             <View style={styles.confirmedActions}>
-                              {appointment.meetingLink ? (
-                                <Pressable style={styles.joinButton}>
-                                  <Text style={styles.joinButtonText}>Join Session</Text>
-                                </Pressable>
-                              ) : (
-                                <Text style={styles.waitingText}>Waiting for meeting link</Text>
+                              <Pressable
+                                style={[
+                                  styles.joinButton,
+                                  (!canJoinVideoCall(appointment) || joiningId === appointment._id) && styles.buttonDisabled
+                                ]}
+                                onPress={() => handleJoinSession(appointment)}
+                                disabled={!canJoinVideoCall(appointment) || joiningId === appointment._id}
+                              >
+                                {joiningId === appointment._id ? (
+                                  <ActivityIndicator size="small" color="#FFFFFF" />
+                                ) : (
+                                  <Text style={styles.joinButtonText}>
+                                    {canJoinVideoCall(appointment) ? 'Join Video Call' : 'Join Opens Soon'}
+                                  </Text>
+                                )}
+                              </Pressable>
+                              {!canJoinVideoCall(appointment) && (
+                                <Text style={styles.waitingText}>Join link unlocks 5 min before start</Text>
                               )}
                               <Pressable
                                 style={[styles.cancelButton, isUpdating && styles.buttonDisabled]}

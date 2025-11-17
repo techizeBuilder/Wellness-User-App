@@ -517,6 +517,10 @@ class ApiService {
       body: JSON.stringify(rescheduleData),
     });
   }
+
+  async getAgoraToken(bookingId: string) {
+    return this.request(`${ENDPOINTS.BOOKINGS.AGORA_TOKEN}/${bookingId}/agora-token`);
+  }
 }
 
 // Create and export a singleton instance
