@@ -345,11 +345,39 @@ export default function ExpertDetailScreen() {
     { date: "12", day: "Sat", available: true },
   ];
 
-  const reviews =
-    Array.isArray((expertData as any)?.reviews) &&
-    (expertData as any)?.reviews.length > 0
-      ? (expertData as any).reviews
+  const rawFeedback =
+    Array.isArray((expertData as any)?.recentFeedback) &&
+    (expertData as any)?.recentFeedback.length > 0
+      ? (expertData as any).recentFeedback
       : [];
+
+  const reviews = rawFeedback.map((feedback: any, index: number) => {
+    const reviewerName =
+      feedback?.user?.name ||
+      `${feedback?.user?.firstName || ''} ${feedback?.user?.lastName || ''}`.trim() ||
+      'Client';
+    const reviewerImage =
+      getProfileImageWithFallback(feedback?.user?.profileImage, reviewerName) ||
+      `https://ui-avatars.com/api/?name=${encodeURIComponent(reviewerName)}&background=37b9a8&color=fff&size=128`;
+
+    const submittedAt = feedback?.submittedAt || feedback?.sessionDate;
+    const formattedDate = submittedAt
+      ? new Date(submittedAt).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        })
+      : 'Recently';
+
+    return {
+      id: feedback?.id || feedback?._id || `review-${index}`,
+      name: reviewerName,
+      comment: feedback?.comment || '',
+      rating: feedback?.rating || 0,
+      date: formattedDate,
+      image: reviewerImage,
+    };
+  });
 
   const suggestedExperts = [
     {
@@ -423,7 +451,7 @@ export default function ExpertDetailScreen() {
     }, 3000); // Auto-scroll every 3 seconds
 
     return () => clearInterval(interval);
-  }, [currentScrollIndex, isUserScrolling]);
+  }, [currentScrollIndex, isUserScrolling, suggestedExperts.length]);
 
   const handleBackPress = () => {
     router.back();

@@ -1,5 +1,6 @@
+import * as DocumentPicker from 'expo-document-picker';
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -13,7 +14,8 @@ import {
     StyleSheet,
     Text,
     TextInput,
-    View
+    View,
+    Linking
 } from 'react-native';
 import ExpertFooter, { EXPERT_FOOTER_HEIGHT } from '@/components/ExpertFooter';
 import {
@@ -25,6 +27,7 @@ import {
     getResponsiveWidth,
 } from '@/utils/dimensions';
 import { apiService, handleApiError } from '@/services/apiService';
+import { UPLOADS_URL } from '@/config/apiConfig';
 
 const { width } = Dimensions.get('window');
 
@@ -47,7 +50,18 @@ type Appointment = {
   notes?: string;
   meetingLink?: string;
   agoraChannelName?: string;
+  feedbackRating?: number;
+  feedbackComment?: string;
+  feedbackSubmittedAt?: string;
+  prescription?: {
+    url?: string;
+    originalName?: string;
+    uploadedAt?: string;
+  };
 };
+
+const STAR_SCALE = [1, 2, 3, 4, 5];
+const PRESCRIPTION_MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
 export default function ExpertAppointmentsScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -61,8 +75,111 @@ export default function ExpertAppointmentsScreen() {
   const [appointmentToCancel, setAppointmentToCancel] = useState<Appointment | null>(null);
   const [cancellationReason, setCancellationReason] = useState('');
   const [joiningId, setJoiningId] = useState<string | null>(null);
+  const [uploadingPrescriptionId, setUploadingPrescriptionId] = useState<string | null>(null);
 
   const statusFilters = ['All', 'Confirmed', 'Pending', 'Completed', 'Cancelled'];
+
+  const renderRatingStars = (value: number) => (
+    <View style={styles.feedbackStarsRow}>
+      {STAR_SCALE.map((star) => (
+        <Text
+          key={star}
+          style={[
+            styles.feedbackStar,
+            star <= value ? styles.feedbackStarFilled : styles.feedbackStarEmpty
+          ]}
+        >
+          ★
+        </Text>
+      ))}
+    </View>
+  );
+
+  const recentFeedbackEntries = useMemo(() => {
+    return appointments
+      .filter((apt) => typeof apt.feedbackRating === 'number')
+      .sort((a, b) => {
+        const dateA = new Date(a.feedbackSubmittedAt || a.sessionDate).getTime();
+        const dateB = new Date(b.feedbackSubmittedAt || b.sessionDate).getTime();
+        return dateB - dateA;
+      })
+      .slice(0, 4);
+  }, [appointments]);
+
+  const buildAbsoluteUrl = (relative?: string | null) => {
+    if (!relative) {
+      return null;
+    }
+    if (/^https?:\/\//i.test(relative)) {
+      return relative;
+    }
+    if (relative.startsWith('/')) {
+      return `${UPLOADS_URL}${relative}`;
+    }
+    return `${UPLOADS_URL}/${relative}`;
+  };
+
+  const formatTimestamp = (dateString?: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const datePart = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const timePart = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    return `${datePart} • ${timePart}`;
+  };
+
+  const handleOpenPrescription = async (url: string) => {
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (!supported) {
+        throw new Error('Unsupported URL');
+      }
+      await Linking.openURL(url);
+    } catch (error) {
+      console.error('Unable to open prescription:', error);
+      Alert.alert('Unable to open file', 'Please try again later.');
+    }
+  };
+
+  const handlePrescriptionUpload = async (appointment: Appointment) => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/pdf',
+        multiple: false,
+        copyToCacheDirectory: true
+      });
+
+      if (result.canceled) {
+        return;
+      }
+
+      const asset = result.assets?.[0];
+      if (!asset || !asset.uri) {
+        Alert.alert('Upload failed', 'Unable to read the selected file.');
+        return;
+      }
+
+      if (asset.size && asset.size > PRESCRIPTION_MAX_SIZE) {
+        Alert.alert('File too large', 'Please select a PDF smaller than 5MB.');
+        return;
+      }
+
+      setUploadingPrescriptionId(appointment._id);
+
+      await apiService.uploadPrescription(appointment._id, {
+        uri: asset.uri,
+        name: asset.name,
+        mimeType: asset.mimeType
+      });
+
+      Alert.alert('Success', appointment.prescription?.url ? 'Prescription replaced.' : 'Prescription uploaded.');
+      await fetchAppointments();
+    } catch (error) {
+      console.error('Prescription upload failed:', error);
+      Alert.alert('Upload failed', handleApiError(error));
+    } finally {
+      setUploadingPrescriptionId(null);
+    }
+  };
 
   useEffect(() => {
     fetchAppointments();
@@ -162,6 +279,14 @@ export default function ExpertAppointmentsScreen() {
     const joinOpensAt = new Date(startDateTime.getTime() - 5 * 60 * 1000);
     const joinClosesAt = new Date(endDateTime.getTime() + 15 * 60 * 1000);
     return now >= joinOpensAt && now <= joinClosesAt;
+  };
+
+  const canMarkSessionCompleted = (appointment: Appointment) => {
+    if (appointment.status !== 'confirmed') {
+      return false;
+    }
+    const { startDateTime } = getAppointmentDateTimes(appointment);
+    return new Date() >= startDateTime;
   };
 
   const handleStatusUpdate = async (appointmentId: string, newStatus: string, reason?: string) => {
@@ -311,6 +436,44 @@ export default function ExpertAppointmentsScreen() {
         </ScrollView>
       </View>
 
+      {recentFeedbackEntries.length > 0 && (
+        <View style={styles.feedbackHighlightsContainer}>
+          <Text style={styles.feedbackHighlightsTitle}>Recent Feedback</Text>
+          {recentFeedbackEntries.map((appointment) => {
+            const user = appointment.user || {};
+            const userName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Client';
+            const submittedLabel = appointment.feedbackSubmittedAt
+              ? new Date(appointment.feedbackSubmittedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+              : formatDate(appointment.sessionDate);
+
+            return (
+              <View key={appointment._id} style={styles.feedbackHighlightCard}>
+                <View style={styles.feedbackHighlightHeader}>
+                  <Text style={styles.feedbackHighlightName}>{userName}</Text>
+                  <Text style={styles.feedbackHighlightTimestamp}>{submittedLabel}</Text>
+                </View>
+                {renderRatingStars(appointment.feedbackRating as number)}
+                {appointment.feedbackComment ? (
+                  <Text
+                    style={styles.feedbackHighlightComment}
+                    numberOfLines={3}
+                  >
+                    {appointment.feedbackComment}
+                  </Text>
+                ) : (
+                  <Text style={styles.feedbackHighlightPlaceholder}>
+                    Rated this session {appointment.feedbackRating}/5
+                  </Text>
+                )}
+                <Text style={styles.feedbackHighlightMeta}>
+                  {formatDate(appointment.sessionDate)} • {formatTimeRange(appointment.startTime, appointment.endTime)}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      )}
+
       {/* Appointments List */}
       {loading ? (
         <View style={styles.loadingContainer}>
@@ -346,6 +509,8 @@ export default function ExpertAppointmentsScreen() {
               const userName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User';
               const userImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=37b9a8&color=fff&size=128`;
               const isUpdating = updatingId === appointment._id;
+              const prescriptionUrl = buildAbsoluteUrl(appointment.prescription?.url);
+              const prescriptionUploadedText = formatTimestamp(appointment.prescription?.uploadedAt);
 
               return (
                 <View
@@ -384,6 +549,74 @@ export default function ExpertAppointmentsScreen() {
                       {appointment.notes && (
                         <Text style={styles.appointmentNotes}>{appointment.notes}</Text>
                       )}
+
+                      {appointment.status === 'completed' && !appointment.prescription?.url && (
+                        <Pressable
+                          style={[
+                            styles.prescriptionActionButton,
+                            uploadingPrescriptionId === appointment._id && styles.buttonDisabled
+                          ]}
+                          onPress={() => handlePrescriptionUpload(appointment)}
+                          disabled={uploadingPrescriptionId === appointment._id}
+                        >
+                          {uploadingPrescriptionId === appointment._id ? (
+                            <ActivityIndicator size="small" color="#FFFFFF" />
+                          ) : (
+                            <Text style={styles.prescriptionActionButtonText}>Upload Prescription (PDF)</Text>
+                          )}
+                        </Pressable>
+                      )}
+
+                      {appointment.prescription?.url && (
+                        <View style={styles.prescriptionContainer}>
+                          <View style={styles.prescriptionHeader}>
+                            <Text style={styles.prescriptionTitle}>Prescription</Text>
+                            {prescriptionUrl && (
+                              <Pressable onPress={() => handleOpenPrescription(prescriptionUrl)}>
+                                <Text style={styles.prescriptionLink}>Download PDF</Text>
+                              </Pressable>
+                            )}
+                          </View>
+                          {appointment.prescription?.originalName && (
+                            <Text style={styles.prescriptionMeta} numberOfLines={1}>
+                              {appointment.prescription.originalName}
+                            </Text>
+                          )}
+                          {prescriptionUploadedText ? (
+                            <Text style={styles.prescriptionMeta}>{prescriptionUploadedText}</Text>
+                          ) : null}
+                          <Pressable
+                            style={[
+                              styles.replaceButton,
+                              uploadingPrescriptionId === appointment._id && styles.buttonDisabled
+                            ]}
+                            onPress={() => handlePrescriptionUpload(appointment)}
+                            disabled={uploadingPrescriptionId === appointment._id}
+                          >
+                            {uploadingPrescriptionId === appointment._id ? (
+                              <ActivityIndicator size="small" color="#FFFFFF" />
+                            ) : (
+                              <Text style={styles.replaceButtonText}>Replace PDF</Text>
+                            )}
+                          </Pressable>
+                        </View>
+                      )}
+
+                      {typeof appointment.feedbackRating === 'number' && (
+                        <View style={styles.appointmentFeedback}>
+                          <View style={styles.appointmentFeedbackHeader}>
+                            <Text style={styles.appointmentFeedbackTitle}>Client feedback</Text>
+                            {renderRatingStars(appointment.feedbackRating)}
+                          </View>
+                          {appointment.feedbackComment ? (
+                            <Text style={styles.appointmentFeedbackComment}>{appointment.feedbackComment}</Text>
+                          ) : (
+                            <Text style={styles.appointmentFeedbackPlaceholder}>
+                              Client rated this session {appointment.feedbackRating}/5
+                            </Text>
+                          )}
+                        </View>
+                      )}
                       
                       <View style={styles.appointmentFooter}>
                         <View style={styles.appointmentActions}>
@@ -413,26 +646,47 @@ export default function ExpertAppointmentsScreen() {
                               </Pressable>
                             </View>
                           )}
-                          {appointment.status === 'confirmed' && appointment.consultationMethod === 'video' && (
+                          {appointment.status === 'confirmed' && (
                             <View style={styles.confirmedActions}>
+                              {appointment.consultationMethod === 'video' && (
+                                <>
+                                  <Pressable
+                                    style={[
+                                      styles.joinButton,
+                                      (!canJoinVideoCall(appointment) || joiningId === appointment._id) && styles.buttonDisabled
+                                    ]}
+                                    onPress={() => handleJoinSession(appointment)}
+                                    disabled={!canJoinVideoCall(appointment) || joiningId === appointment._id}
+                                  >
+                                    {joiningId === appointment._id ? (
+                                      <ActivityIndicator size="small" color="#FFFFFF" />
+                                    ) : (
+                                      <Text style={styles.joinButtonText}>
+                                        {canJoinVideoCall(appointment) ? 'Join Video Call' : 'Join Opens Soon'}
+                                      </Text>
+                                    )}
+                                  </Pressable>
+                                  {!canJoinVideoCall(appointment) && (
+                                    <Text style={styles.waitingText}>Join link unlocks 5 min before start</Text>
+                                  )}
+                                </>
+                              )}
                               <Pressable
                                 style={[
-                                  styles.joinButton,
-                                  (!canJoinVideoCall(appointment) || joiningId === appointment._id) && styles.buttonDisabled
+                                  styles.completeButton,
+                                  (!canMarkSessionCompleted(appointment) || isUpdating) && styles.buttonDisabled
                                 ]}
-                                onPress={() => handleJoinSession(appointment)}
-                                disabled={!canJoinVideoCall(appointment) || joiningId === appointment._id}
+                                onPress={() => handleStatusUpdate(appointment._id, 'completed')}
+                                disabled={!canMarkSessionCompleted(appointment) || isUpdating}
                               >
-                                {joiningId === appointment._id ? (
+                                {isUpdating ? (
                                   <ActivityIndicator size="small" color="#FFFFFF" />
                                 ) : (
-                                  <Text style={styles.joinButtonText}>
-                                    {canJoinVideoCall(appointment) ? 'Join Video Call' : 'Join Opens Soon'}
-                                  </Text>
+                                  <Text style={styles.completeButtonText}>Mark as Completed</Text>
                                 )}
                               </Pressable>
-                              {!canJoinVideoCall(appointment) && (
-                                <Text style={styles.waitingText}>Join link unlocks 5 min before start</Text>
+                              {!canMarkSessionCompleted(appointment) && (
+                                <Text style={styles.waitingText}>Available once the session starts</Text>
                               )}
                               <Pressable
                                 style={[styles.cancelButton, isUpdating && styles.buttonDisabled]}
@@ -572,6 +826,72 @@ const styles = StyleSheet.create({
     paddingLeft: getResponsiveWidth(20),
     marginBottom: getResponsiveHeight(24),
   },
+  feedbackHighlightsContainer: {
+    marginHorizontal: getResponsiveMargin(20),
+    marginBottom: getResponsiveMargin(24),
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: getResponsiveBorderRadius(16),
+    padding: getResponsivePadding(16),
+  },
+  feedbackHighlightsTitle: {
+    color: '#FFFFFF',
+    fontSize: getResponsiveFontSize(16),
+    fontWeight: '700',
+    marginBottom: getResponsiveHeight(12),
+  },
+  feedbackHighlightCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: getResponsiveBorderRadius(12),
+    padding: getResponsivePadding(12),
+    marginBottom: getResponsiveMargin(12),
+  },
+  feedbackHighlightHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  feedbackHighlightName: {
+    fontSize: getResponsiveFontSize(14),
+    fontWeight: '600',
+    color: '#1F2937',
+    flex: 1,
+    marginRight: getResponsiveWidth(8),
+  },
+  feedbackHighlightTimestamp: {
+    fontSize: getResponsiveFontSize(12),
+    color: '#6B7280',
+  },
+  feedbackHighlightComment: {
+    fontSize: getResponsiveFontSize(13),
+    color: '#374151',
+    marginTop: getResponsiveHeight(6),
+  },
+  feedbackHighlightPlaceholder: {
+    fontSize: getResponsiveFontSize(13),
+    color: '#6B7280',
+    fontStyle: 'italic',
+    marginTop: getResponsiveHeight(6),
+  },
+  feedbackHighlightMeta: {
+    fontSize: getResponsiveFontSize(12),
+    color: '#6B7280',
+    marginTop: getResponsiveHeight(8),
+  },
+  feedbackStarsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: getResponsiveHeight(4),
+  },
+  feedbackStar: {
+    fontSize: getResponsiveFontSize(14),
+    marginRight: 2,
+  },
+  feedbackStarFilled: {
+    color: '#F59E0B',
+  },
+  feedbackStarEmpty: {
+    color: '#D1D5DB',
+  },
   filterChip: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     paddingHorizontal: getResponsiveWidth(12),
@@ -682,6 +1002,88 @@ const styles = StyleSheet.create({
     lineHeight: getResponsiveHeight(12),
     marginBottom: getResponsiveHeight(8),
   },
+  prescriptionActionButton: {
+    backgroundColor: '#2563EB',
+    paddingVertical: getResponsiveHeight(8),
+    paddingHorizontal: getResponsiveWidth(12),
+    borderRadius: getResponsiveBorderRadius(10),
+    alignItems: 'center',
+    marginBottom: getResponsiveHeight(10),
+  },
+  prescriptionActionButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: getResponsiveFontSize(12),
+  },
+  prescriptionContainer: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: getResponsiveBorderRadius(12),
+    padding: getResponsivePadding(12),
+    marginBottom: getResponsiveHeight(10),
+    backgroundColor: '#F9FAFB',
+  },
+  prescriptionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: getResponsiveHeight(6),
+  },
+  prescriptionTitle: {
+    fontSize: getResponsiveFontSize(12),
+    fontWeight: '700',
+    color: '#111827',
+  },
+  prescriptionLink: {
+    fontSize: getResponsiveFontSize(12),
+    color: '#2563EB',
+    fontWeight: '600',
+  },
+  prescriptionMeta: {
+    fontSize: getResponsiveFontSize(11),
+    color: '#4B5563',
+    marginBottom: getResponsiveHeight(4),
+  },
+  replaceButton: {
+    backgroundColor: '#059669',
+    paddingVertical: getResponsiveHeight(8),
+    borderRadius: getResponsiveBorderRadius(10),
+    alignItems: 'center',
+    marginTop: getResponsiveHeight(6),
+  },
+  replaceButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: getResponsiveFontSize(12),
+  },
+  appointmentFeedback: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: getResponsiveBorderRadius(12),
+    padding: getResponsivePadding(12),
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginBottom: getResponsiveHeight(10),
+  },
+  appointmentFeedbackHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: getResponsiveHeight(4),
+  },
+  appointmentFeedbackTitle: {
+    fontSize: getResponsiveFontSize(12),
+    fontWeight: '700',
+    color: '#111827',
+  },
+  appointmentFeedbackComment: {
+    fontSize: getResponsiveFontSize(12),
+    color: '#374151',
+  },
+  appointmentFeedbackPlaceholder: {
+    fontSize: getResponsiveFontSize(12),
+    color: '#6B7280',
+    fontStyle: 'italic',
+  },
   appointmentFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -736,6 +1138,22 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '600',
   },
+  completeButton: {
+    backgroundColor: '#0EA5E9',
+    paddingHorizontal: getResponsiveWidth(12),
+    paddingVertical: getResponsiveHeight(6),
+    borderRadius: getResponsiveBorderRadius(12),
+    shadowColor: '#0EA5E9',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  completeButtonText: {
+    fontSize: getResponsiveFontSize(11),
+    color: '#ffffff',
+    fontWeight: '600',
+  },
   waitingText: {
     fontSize: getResponsiveFontSize(11),
     color: '#6B7280',
@@ -754,9 +1172,9 @@ const styles = StyleSheet.create({
     height: EXPERT_FOOTER_HEIGHT + getResponsiveHeight(60),
   },
   confirmedActions: {
-    flexDirection: 'row',
-    gap: getResponsiveWidth(8),
-    alignItems: 'center',
+    flexDirection: 'column',
+    gap: getResponsiveHeight(10),
+    alignItems: 'stretch',
   },
   cancelButton: {
     backgroundColor: '#F44336',

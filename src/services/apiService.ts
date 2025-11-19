@@ -518,8 +518,36 @@ class ApiService {
     });
   }
 
+  async uploadPrescription(
+    bookingId: string,
+    file: {
+      uri: string;
+      name?: string | null;
+      mimeType?: string | null;
+    }
+  ) {
+    const formData = new FormData();
+    formData.append("prescription", {
+      uri: file.uri,
+      name: file.name || `prescription-${Date.now()}.pdf`,
+      type: file.mimeType || "application/pdf",
+    } as any);
+
+    return this.requestFormData(`${ENDPOINTS.BOOKINGS.PRESCRIPTION}/${bookingId}/prescription`, {
+      method: "POST",
+      body: formData,
+    });
+  }
+
   async getAgoraToken(bookingId: string) {
     return this.request(`${ENDPOINTS.BOOKINGS.AGORA_TOKEN}/${bookingId}/agora-token`);
+  }
+
+  async submitFeedback(bookingId: string, payload: { rating: number; comment?: string }) {
+    return this.request(`${ENDPOINTS.BOOKINGS.FEEDBACK}/${bookingId}/feedback`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
   }
 }
 

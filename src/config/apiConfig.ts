@@ -39,6 +39,8 @@ export const ENDPOINTS = {
     UPDATE_STATUS: '/bookings',
     RESCHEDULE: '/bookings',
     AGORA_TOKEN: '/bookings',
+    FEEDBACK: '/bookings',
+    PRESCRIPTION: '/bookings',
   }
 };
 
@@ -79,5 +81,7 @@ export const API_URLS = {
     UPDATE_STATUS: (id: string) => buildUrl(`${ENDPOINTS.BOOKINGS.UPDATE_STATUS}/${id}/status`),
     RESCHEDULE: (id: string) => buildUrl(`${ENDPOINTS.BOOKINGS.RESCHEDULE}/${id}/reschedule`),
     AGORA_TOKEN: (id: string) => buildUrl(`${ENDPOINTS.BOOKINGS.AGORA_TOKEN}/${id}/agora-token`),
+    FEEDBACK: (id: string) => buildUrl(`${ENDPOINTS.BOOKINGS.FEEDBACK}/${id}/feedback`),
+    PRESCRIPTION: (id: string) => buildUrl(`${ENDPOINTS.BOOKINGS.PRESCRIPTION}/${id}/prescription`),
   }
 };

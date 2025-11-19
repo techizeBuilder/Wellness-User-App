@@ -11,8 +11,10 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "This app uses the camera to scan QR codes for enhanced user experience."
-      }
+        "NSCameraUsageDescription": "This app uses the camera to scan QR codes for enhanced user experience.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.utkarshh.zenovia"
     },
     "android": {
       "adaptiveIcon": {

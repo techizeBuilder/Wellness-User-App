@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Modal, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, Text, TextInput, View, Linking } from 'react-native';
 import Footer, { FOOTER_HEIGHT } from '@/components/Footer';
 import {
     getResponsiveBorderRadius,
@@ -13,6 +13,7 @@ import {
 } from '@/utils/dimensions';
 import { apiService, handleApiError } from '@/services/apiService';
 import { getProfileImageWithFallback } from '@/utils/imageHelpers';
+import { UPLOADS_URL } from '@/config/apiConfig';
 
 type Appointment = {
   _id: string;
@@ -37,6 +38,14 @@ type Appointment = {
   cancelledBy?: 'user' | 'expert';
   cancellationReason?: string;
   createdAt: string;
+  feedbackRating?: number;
+  feedbackComment?: string;
+  feedbackSubmittedAt?: string;
+  prescription?: {
+    url?: string;
+    originalName?: string;
+    uploadedAt?: string;
+  };
 };
 
 export default function SessionsScreen() {
@@ -46,6 +55,51 @@ export default function SessionsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [joiningId, setJoiningId] = useState<string | null>(null);
+  const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
+  const [feedbackAppointment, setFeedbackAppointment] = useState<Appointment | null>(null);
+  const [feedbackRating, setFeedbackRating] = useState(0);
+  const [feedbackComment, setFeedbackComment] = useState('');
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const ratingScale = [1, 2, 3, 4, 5];
+  const renderStaticStars = (value: number) => {
+    return (
+      <View style={styles.feedbackStarsRow}>
+        {ratingScale.map((star) => (
+          <Text
+            key={star}
+            style={[
+              styles.feedbackStar,
+              star <= value ? styles.starFilled : styles.starEmpty
+            ]}
+          >
+            ★
+          </Text>
+        ))}
+      </View>
+    );
+  };
+
+  const getPrescriptionUrl = (appointment: Appointment) => {
+    const relative = appointment.prescription?.url;
+    if (!relative) return null;
+    if (/^https?:\/\//i.test(relative)) return relative;
+    if (relative.startsWith('/')) return `${UPLOADS_URL}${relative}`;
+    return `${UPLOADS_URL}/${relative}`;
+  };
+
+  const handleDownloadPrescription = async (url: string) => {
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (!supported) {
+        throw new Error('URL not supported');
+      }
+      await Linking.openURL(url);
+    } catch (error) {
+      console.error('Unable to open prescription:', error);
+      Alert.alert('Unable to open file', 'Please try again later.');
+    }
+  };
+
 
   useEffect(() => {
     fetchAllBookings();
@@ -78,6 +132,58 @@ export default function SessionsScreen() {
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  const openFeedbackModal = (appointment: Appointment) => {
+    setFeedbackAppointment(appointment);
+    setFeedbackRating(appointment.feedbackRating || 0);
+    setFeedbackComment(appointment.feedbackComment || '');
+    setFeedbackModalVisible(true);
+  };
+
+  const closeFeedbackModal = (force = false) => {
+    if (feedbackSubmitting && !force) return;
+    setFeedbackModalVisible(false);
+    setFeedbackAppointment(null);
+    setFeedbackRating(0);
+    setFeedbackComment('');
+  };
+
+  const handleSubmitFeedback = async () => {
+    if (!feedbackAppointment) return;
+    if (!feedbackRating) {
+      Alert.alert('Required', 'Please select a rating to continue.');
+      return;
+    }
+
+    const trimmedComment = feedbackComment.trim();
+    setFeedbackSubmitting(true);
+    try {
+      await apiService.submitFeedback(feedbackAppointment._id, {
+        rating: feedbackRating,
+        comment: trimmedComment || undefined
+      });
+
+      setAllAppointments((prev) =>
+        prev.map((apt) =>
+          apt._id === feedbackAppointment._id
+            ? {
+                ...apt,
+                feedbackRating,
+                feedbackComment: trimmedComment || undefined,
+                feedbackSubmittedAt: new Date().toISOString()
+              }
+            : apt
+        )
+      );
+
+      Alert.alert('Thank you!', 'Your feedback has been submitted.');
+      closeFeedbackModal(true);
+    } catch (error) {
+      Alert.alert('Error', handleApiError(error));
+    } finally {
+      setFeedbackSubmitting(false);
     }
   };
 
@@ -290,6 +396,16 @@ export default function SessionsScreen() {
     ) || `https://ui-avatars.com/api/?name=${encodeURIComponent(expertName)}&background=37b9a8&color=fff&size=128`;
 
     const sessionId = appointment._id.substring(appointment._id.length - 6).toUpperCase();
+    const prescriptionUrl = getPrescriptionUrl(appointment);
+    const prescriptionUploadedAt = appointment.prescription?.uploadedAt
+      ? new Date(appointment.prescription.uploadedAt).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+        })
+      : null;
 
     return (
       <View key={appointment._id} style={styles.sessionCard}>
@@ -369,6 +485,25 @@ export default function SessionsScreen() {
             </View>
           )}
 
+          {prescriptionUrl && (
+            <View style={styles.prescriptionCard}>
+              <View style={styles.prescriptionHeader}>
+                <Text style={styles.prescriptionTitle}>Prescription</Text>
+                <Pressable onPress={() => handleDownloadPrescription(prescriptionUrl)}>
+                  <Text style={styles.prescriptionLink}>Download PDF</Text>
+                </Pressable>
+              </View>
+              {appointment.prescription?.originalName ? (
+                <Text style={styles.prescriptionMeta} numberOfLines={1}>
+                  {appointment.prescription.originalName}
+                </Text>
+              ) : null}
+              {prescriptionUploadedAt ? (
+                <Text style={styles.prescriptionMeta}>{prescriptionUploadedAt}</Text>
+              ) : null}
+            </View>
+          )}
+
           {/* Action Buttons */}
           <View style={styles.actionButtons}>
             {isUpcoming && (
@@ -423,6 +558,31 @@ export default function SessionsScreen() {
               </View>
             )}
           </View>
+
+          {isCompleted && (
+            <View style={styles.feedbackSection}>
+              {typeof appointment.feedbackRating === 'number' ? (
+                <View style={styles.feedbackSummary}>
+                  <Text style={styles.feedbackLabel}>Your Feedback</Text>
+                  {renderStaticStars(appointment.feedbackRating)}
+                  {appointment.feedbackComment ? (
+                    <Text style={styles.feedbackCommentText}>{appointment.feedbackComment}</Text>
+                  ) : (
+                    <Text style={styles.feedbackCommentPlaceholder}>
+                      You rated this session {appointment.feedbackRating}/5.
+                    </Text>
+                  )}
+                </View>
+              ) : (
+                <Pressable
+                  style={styles.feedbackButton}
+                  onPress={() => openFeedbackModal(appointment)}
+                >
+                  <Text style={styles.feedbackButtonText}>Leave Feedback</Text>
+                </Pressable>
+              )}
+            </View>
+          )}
         </LinearGradient>
       </View>
     );
@@ -527,6 +687,81 @@ export default function SessionsScreen() {
       )}
 
       <Footer activeRoute="sessions" />
+
+      <Modal
+        transparent
+        animationType="fade"
+        visible={feedbackModalVisible}
+        onRequestClose={closeFeedbackModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Share your feedback</Text>
+            {feedbackAppointment && (
+              <Text style={styles.modalSubtitle}>
+                {`How was your session with ${[
+                  feedbackAppointment.expert?.firstName,
+                  feedbackAppointment.expert?.lastName
+                ].filter(Boolean).join(' ') || 'the expert'}?`}
+              </Text>
+            )}
+
+            <View style={styles.modalStarRow}>
+              {ratingScale.map((value) => (
+                <Pressable
+                  key={value}
+                  onPress={() => setFeedbackRating(value)}
+                  hitSlop={8}
+                >
+                  <Text
+                    style={[
+                      styles.modalStar,
+                      value <= feedbackRating ? styles.starFilled : styles.starEmpty
+                    ]}
+                  >
+                    ★
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Add a comment (optional)"
+              placeholderTextColor="#9CA3AF"
+              multiline
+              numberOfLines={4}
+              value={feedbackComment}
+              onChangeText={setFeedbackComment}
+              editable={!feedbackSubmitting}
+            />
+
+            <View style={styles.modalActions}>
+              <Pressable
+                style={[styles.modalActionButton, styles.modalActionSecondary]}
+                onPress={closeFeedbackModal}
+                disabled={feedbackSubmitting}
+              >
+                <Text style={[styles.modalActionText, styles.modalActionSecondaryText]}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.modalActionButton,
+                  (!feedbackRating || feedbackSubmitting) && styles.modalActionDisabled
+                ]}
+                onPress={handleSubmitFeedback}
+                disabled={!feedbackRating || feedbackSubmitting}
+              >
+                {feedbackSubmitting ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.modalActionText}>Submit</Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 }
@@ -731,6 +966,34 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(14),
     color: '#2C3E50',
   },
+  prescriptionCard: {
+    backgroundColor: 'rgba(20, 184, 166, 0.15)',
+    padding: getResponsivePadding(12),
+    borderRadius: getResponsiveBorderRadius(12),
+    marginBottom: getResponsiveMargin(16),
+    borderWidth: 1,
+    borderColor: 'rgba(20, 184, 166, 0.4)',
+  },
+  prescriptionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: getResponsiveMargin(6),
+  },
+  prescriptionTitle: {
+    fontSize: getResponsiveFontSize(14),
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  prescriptionLink: {
+    fontSize: getResponsiveFontSize(13),
+    fontWeight: '600',
+    color: '#0EA5E9',
+  },
+  prescriptionMeta: {
+    fontSize: getResponsiveFontSize(12),
+    color: '#0f172a',
+  },
   actionButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -799,6 +1062,54 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: getResponsiveFontSize(14),
   },
+  feedbackSection: {
+    marginTop: getResponsiveMargin(16),
+  },
+  feedbackSummary: {
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: getResponsiveBorderRadius(12),
+    padding: getResponsivePadding(12),
+  },
+  feedbackLabel: {
+    fontSize: getResponsiveFontSize(13),
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: getResponsiveMargin(8),
+  },
+  feedbackStarsRow: {
+    flexDirection: 'row',
+    marginBottom: getResponsiveMargin(8),
+  },
+  feedbackStar: {
+    fontSize: getResponsiveFontSize(18),
+    marginRight: 4,
+  },
+  starFilled: {
+    color: '#F59E0B',
+  },
+  starEmpty: {
+    color: '#D1D5DB',
+  },
+  feedbackCommentText: {
+    color: '#374151',
+    fontSize: getResponsiveFontSize(14),
+    lineHeight: getResponsiveHeight(20),
+  },
+  feedbackCommentPlaceholder: {
+    color: '#6B7280',
+    fontSize: getResponsiveFontSize(13),
+  },
+  feedbackButton: {
+    backgroundColor: '#F59E0B',
+    paddingVertical: getResponsivePadding(12),
+    borderRadius: getResponsiveBorderRadius(10),
+    alignItems: 'center',
+  },
+  feedbackButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: getResponsiveFontSize(14),
+  },
   emptyState: {
     alignItems: 'center',
     padding: getResponsivePadding(40),
@@ -835,5 +1146,73 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: FOOTER_HEIGHT + getResponsiveHeight(30),
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: getResponsivePadding(20),
+  },
+  modalCard: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: getResponsiveBorderRadius(16),
+    padding: getResponsivePadding(20),
+  },
+  modalTitle: {
+    fontSize: getResponsiveFontSize(18),
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: getResponsiveMargin(8),
+  },
+  modalSubtitle: {
+    fontSize: getResponsiveFontSize(14),
+    color: '#4B5563',
+    marginBottom: getResponsiveMargin(16),
+  },
+  modalStarRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: getResponsiveMargin(16),
+  },
+  modalStar: {
+    fontSize: getResponsiveFontSize(32),
+  },
+  modalInput: {
+    minHeight: getResponsiveHeight(100),
+    borderRadius: getResponsiveBorderRadius(12),
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    padding: getResponsivePadding(12),
+    textAlignVertical: 'top',
+    color: '#111827',
+    marginBottom: getResponsiveMargin(16),
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: getResponsiveWidth(12),
+  },
+  modalActionButton: {
+    flex: 1,
+    backgroundColor: '#14B8A6',
+    paddingVertical: getResponsivePadding(12),
+    borderRadius: getResponsiveBorderRadius(10),
+    alignItems: 'center',
+  },
+  modalActionSecondary: {
+    backgroundColor: 'rgba(15, 23, 42, 0.1)',
+  },
+  modalActionDisabled: {
+    opacity: 0.6,
+  },
+  modalActionText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: getResponsiveFontSize(14),
+  },
+  modalActionSecondaryText: {
+    color: '#111827',
   },
 });
