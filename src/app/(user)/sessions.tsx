@@ -63,7 +63,23 @@ export default function SessionsScreen() {
   const [feedbackComment, setFeedbackComment] = useState('');
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
   const [downloadingPrescriptionId, setDownloadingPrescriptionId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [consultationFilter, setConsultationFilter] = useState<'all' | 'video' | 'audio' | 'chat' | 'in-person'>('all');
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
   const ratingScale = [1, 2, 3, 4, 5];
+  const consultationFilters = [
+    { label: 'All types', value: 'all' },
+    { label: 'Video', value: 'video' },
+    { label: 'Audio', value: 'audio' },
+    { label: 'Chat', value: 'chat' },
+    { label: 'In-Person', value: 'in-person' }
+  ] as const;
+  const dateFilters = [
+    { label: 'All dates', value: 'all' },
+    { label: 'Today', value: 'today' },
+    { label: 'Last 7 days', value: 'week' },
+    { label: 'This month', value: 'month' }
+  ] as const;
   const renderStaticStars = (value: number) => {
     return (
       <View style={styles.feedbackStarsRow}>
@@ -396,6 +412,60 @@ export default function SessionsScreen() {
     }
   };
 
+  const matchesDateFilter = (appointment: Appointment) => {
+    if (dateFilter === 'all') return true;
+    const appointmentDate = new Date(appointment.sessionDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (dateFilter === 'today') {
+      return (
+        appointmentDate.getFullYear() === today.getFullYear() &&
+        appointmentDate.getMonth() === today.getMonth() &&
+        appointmentDate.getDate() === today.getDate()
+      );
+    }
+
+    if (dateFilter === 'week') {
+      const weekAgo = new Date(today);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      return appointmentDate >= weekAgo && appointmentDate <= new Date(today.getTime() + 24 * 60 * 60 * 1000);
+    }
+
+    if (dateFilter === 'month') {
+      return (
+        appointmentDate.getFullYear() === today.getFullYear() &&
+        appointmentDate.getMonth() === today.getMonth()
+      );
+    }
+
+    return true;
+  };
+
+  const matchesSearchQuery = (appointment: Appointment) => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return true;
+
+    const expertName = [
+      appointment.expert?.firstName,
+      appointment.expert?.lastName
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+
+    const notes = appointment.notes?.toLowerCase() || '';
+    const sessionType = appointment.consultationMethod?.toLowerCase() || '';
+    const shortId = appointment._id.substring(appointment._id.length - 6).toLowerCase();
+
+    return (
+      expertName.includes(query) ||
+      notes.includes(query) ||
+      sessionType.includes(query) ||
+      shortId.includes(query)
+    );
+  };
+
   const getCurrentSessions = () => {
     let filtered = allAppointments;
     
@@ -419,6 +489,17 @@ export default function SessionsScreen() {
     }
     
     return filtered;
+  };
+
+  const getFilteredSessions = () => {
+    let sessions = getCurrentSessions();
+
+    if (consultationFilter !== 'all') {
+      sessions = sessions.filter((apt) => apt.consultationMethod === consultationFilter);
+    }
+
+    sessions = sessions.filter(matchesSearchQuery).filter(matchesDateFilter);
+    return sessions;
   };
 
   const renderSessionCard = (appointment: Appointment) => {
@@ -690,6 +771,67 @@ export default function SessionsScreen() {
         })}
       </View>
 
+      {/* Search & Filters */}
+      <View style={styles.filterSection}>
+        <View style={styles.searchBar}>
+          <TextInput
+            placeholder="Search by expert, notes, or session ID"
+            placeholderTextColor="#9CA3AF"
+            style={styles.searchInput}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCapitalize="none"
+            returnKeyType="search"
+          />
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterChipRow}
+        >
+          {consultationFilters.map((filter) => (
+            <Pressable
+              key={filter.value}
+              style={[
+                styles.filterChip,
+                consultationFilter === filter.value && styles.filterChipActive
+              ]}
+              onPress={() => setConsultationFilter(filter.value)}
+            >
+              <Text
+                style={[
+                  styles.filterChipText,
+                  consultationFilter === filter.value && styles.filterChipTextActive
+                ]}
+              >
+                {filter.label}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+        <View style={styles.dateFilterRow}>
+          {dateFilters.map((filter) => (
+            <Pressable
+              key={filter.value}
+              style={[
+                styles.dateFilterChip,
+                dateFilter === filter.value && styles.dateFilterChipActive
+              ]}
+              onPress={() => setDateFilter(filter.value)}
+            >
+              <Text
+                style={[
+                  styles.dateFilterText,
+                  dateFilter === filter.value && styles.dateFilterTextActive
+                ]}
+              >
+                {filter.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
       {/* Sessions List */}
       {loading ? (
         <View style={styles.loadingContainer}>
@@ -709,8 +851,8 @@ export default function SessionsScreen() {
             />
           }
         >
-          {getCurrentSessions().length > 0 ? (
-            getCurrentSessions().map((session) => renderSessionCard(session))
+          {getFilteredSessions().length > 0 ? (
+            getFilteredSessions().map((session) => renderSessionCard(session))
           ) : (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateIcon}>📅</Text>
@@ -851,6 +993,72 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveBorderRadius(25),
     padding: getResponsivePadding(4),
     marginBottom: getResponsiveMargin(20),
+  },
+  filterSection: {
+    marginHorizontal: getResponsiveMargin(20),
+    marginBottom: getResponsiveMargin(20),
+    gap: getResponsiveHeight(12),
+  },
+  searchBar: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: getResponsiveBorderRadius(16),
+    paddingHorizontal: getResponsivePadding(16),
+    paddingVertical: getResponsivePadding(10),
+    borderWidth: 1,
+    borderColor: 'rgba(15, 23, 42, 0.08)',
+  },
+  searchInput: {
+    color: '#0f172a',
+    fontSize: getResponsiveFontSize(14),
+  },
+  filterChipRow: {
+    gap: getResponsiveWidth(8),
+  },
+  filterChip: {
+    paddingHorizontal: getResponsivePadding(14),
+    paddingVertical: getResponsivePadding(8),
+    borderRadius: getResponsiveBorderRadius(16),
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    marginRight: getResponsiveMargin(8),
+  },
+  filterChipActive: {
+    backgroundColor: '#0EA5E9',
+    borderColor: '#0EA5E9',
+  },
+  filterChipText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: getResponsiveFontSize(12),
+  },
+  filterChipTextActive: {
+    color: '#FFFFFF',
+  },
+  dateFilterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: getResponsiveWidth(8),
+  },
+  dateFilterChip: {
+    paddingHorizontal: getResponsivePadding(12),
+    paddingVertical: getResponsivePadding(6),
+    borderRadius: getResponsiveBorderRadius(12),
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  dateFilterChipActive: {
+    backgroundColor: '#F97316',
+    borderColor: '#F97316',
+  },
+  dateFilterText: {
+    color: '#FFFFFF',
+    fontSize: getResponsiveFontSize(12),
+    fontWeight: '500',
+  },
+  dateFilterTextActive: {
+    color: '#FFFFFF',
   },
   tab: {
     flex: 1,
