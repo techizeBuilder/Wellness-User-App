@@ -2,6 +2,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, Text, TextInput, View, Linking } from 'react-native';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import Footer, { FOOTER_HEIGHT } from '@/components/Footer';
 import {
     getResponsiveBorderRadius,
@@ -60,6 +62,7 @@ export default function SessionsScreen() {
   const [feedbackRating, setFeedbackRating] = useState(0);
   const [feedbackComment, setFeedbackComment] = useState('');
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [downloadingPrescriptionId, setDownloadingPrescriptionId] = useState<string | null>(null);
   const ratingScale = [1, 2, 3, 4, 5];
   const renderStaticStars = (value: number) => {
     return (
@@ -83,20 +86,58 @@ export default function SessionsScreen() {
     const relative = appointment.prescription?.url;
     if (!relative) return null;
     if (/^https?:\/\//i.test(relative)) return relative;
+    // If the relative URL already starts with /uploads/, remove it to avoid duplication
+    if (relative.startsWith('/uploads/')) {
+      // Extract the path after /uploads/ and construct the full URL
+      const pathAfterUploads = relative.replace(/^\/uploads\//, '');
+      return `${UPLOADS_URL}/${pathAfterUploads}`;
+    }
     if (relative.startsWith('/')) return `${UPLOADS_URL}${relative}`;
     return `${UPLOADS_URL}/${relative}`;
   };
 
-  const handleDownloadPrescription = async (url: string) => {
+  const handleDownloadPrescription = async (url: string, appointment: Appointment) => {
     try {
-      const supported = await Linking.canOpenURL(url);
-      if (!supported) {
-        throw new Error('URL not supported');
+      setDownloadingPrescriptionId(appointment._id);
+      
+      // Get the filename from the prescription or generate one
+      const fileName = appointment.prescription?.originalName || 
+        `prescription-${appointment._id.substring(appointment._id.length - 6)}.pdf`;
+      
+      // Create a file URI in the cache directory
+      const fileUri = `${FileSystem.cacheDirectory}${fileName}`;
+      
+      // Download the file
+      const downloadResult = await FileSystem.downloadAsync(url, fileUri);
+      
+      if (downloadResult.status !== 200) {
+        throw new Error('Failed to download file');
       }
-      await Linking.openURL(url);
+      
+      // Check if sharing is available
+      const isAvailable = await Sharing.isAvailableAsync();
+      
+      if (isAvailable) {
+        // Share/open the file (this will allow user to save to downloads or open with an app)
+        await Sharing.shareAsync(downloadResult.uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'Save Prescription',
+          UTI: 'com.adobe.pdf'
+        });
+      } else {
+        // Fallback: open the file URL if sharing is not available
+        const supported = await Linking.canOpenURL(url);
+        if (supported) {
+          await Linking.openURL(url);
+        } else {
+          Alert.alert('Download Complete', `File saved to: ${fileUri}`);
+        }
+      }
     } catch (error) {
-      console.error('Unable to open prescription:', error);
-      Alert.alert('Unable to open file', 'Please try again later.');
+      console.error('Unable to download prescription:', error);
+      Alert.alert('Download Failed', 'Unable to download the prescription. Please try again later.');
+    } finally {
+      setDownloadingPrescriptionId(null);
     }
   };
 
@@ -489,8 +530,15 @@ export default function SessionsScreen() {
             <View style={styles.prescriptionCard}>
               <View style={styles.prescriptionHeader}>
                 <Text style={styles.prescriptionTitle}>Prescription</Text>
-                <Pressable onPress={() => handleDownloadPrescription(prescriptionUrl)}>
-                  <Text style={styles.prescriptionLink}>Download PDF</Text>
+                <Pressable 
+                  onPress={() => handleDownloadPrescription(prescriptionUrl, appointment)}
+                  disabled={downloadingPrescriptionId === appointment._id}
+                >
+                  {downloadingPrescriptionId === appointment._id ? (
+                    <ActivityIndicator size="small" color="#0EA5E9" />
+                  ) : (
+                    <Text style={styles.prescriptionLink}>Download PDF</Text>
+                  )}
                 </Pressable>
               </View>
               {appointment.prescription?.originalName ? (
