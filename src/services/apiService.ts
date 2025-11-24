@@ -549,6 +549,81 @@ class ApiService {
       body: JSON.stringify(payload),
     });
   }
+
+  // Certificate APIs
+  async uploadCertificates(files: { uri: string; name: string; type: string }[]) {
+    const formData = new FormData();
+    files.forEach((file, index) => {
+      formData.append('certificates', {
+        uri: file.uri,
+        name: file.name || `certificate-${index}.pdf`,
+        type: file.type || 'application/pdf',
+      } as any);
+    });
+    return this.requestFormData(ENDPOINTS.EXPERTS.CERTIFICATES, {
+      method: "POST",
+      body: formData,
+    });
+  }
+
+  async deleteCertificate(certificateId: string) {
+    return this.request(`${ENDPOINTS.EXPERTS.CERTIFICATES}/${certificateId}`, {
+      method: "DELETE",
+    });
+  }
+
+  // Plan APIs
+  async getMyPlans() {
+    return this.request(ENDPOINTS.PLANS.MY_PLANS);
+  }
+
+  async getExpertPlans(expertId: string) {
+    return this.request(`${ENDPOINTS.PLANS.EXPERT_PLANS}/${expertId}`);
+  }
+
+  async getPlanById(planId: string) {
+    return this.request(`${ENDPOINTS.PLANS.DETAIL}/${planId}`);
+  }
+
+  async createPlan(planData: {
+    name: string;
+    type: 'single' | 'monthly';
+    description?: string;
+    sessionClassType?: string;
+    sessionFormat?: 'one-on-one' | 'one-to-many';
+    price: number;
+    duration?: number;
+    classesPerMonth?: number;
+    monthlyPrice?: number;
+  }) {
+    return this.request(ENDPOINTS.PLANS.CREATE, {
+      method: "POST",
+      body: JSON.stringify(planData),
+    });
+  }
+
+  async updatePlan(planId: string, planData: {
+    name?: string;
+    description?: string;
+    sessionClassType?: string;
+    sessionFormat?: 'one-on-one' | 'one-to-many';
+    price?: number;
+    duration?: number;
+    classesPerMonth?: number;
+    monthlyPrice?: number;
+    isActive?: boolean;
+  }) {
+    return this.request(`${ENDPOINTS.PLANS.UPDATE}/${planId}`, {
+      method: "PUT",
+      body: JSON.stringify(planData),
+    });
+  }
+
+  async deletePlan(planId: string) {
+    return this.request(`${ENDPOINTS.PLANS.DELETE}/${planId}`, {
+      method: "DELETE",
+    });
+  }
 }
 
 // Create and export a singleton instance

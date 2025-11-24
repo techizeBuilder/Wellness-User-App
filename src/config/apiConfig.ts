@@ -30,6 +30,16 @@ export const ENDPOINTS = {
     UPDATE_PROFILE: '/experts/profile',
     BANK_ACCOUNT: '/experts/bank-account',
     AVAILABILITY: '/experts/availability',
+    CERTIFICATES: '/experts/certificates',
+  },
+  PLANS: {
+    LIST: '/plans',
+    MY_PLANS: '/plans',
+    EXPERT_PLANS: '/plans/expert',
+    DETAIL: '/plans',
+    CREATE: '/plans',
+    UPDATE: '/plans',
+    DELETE: '/plans',
   },
   BOOKINGS: {
     CREATE: '/bookings',

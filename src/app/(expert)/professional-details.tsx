@@ -13,8 +13,9 @@ import {
   TextInput,
   View,
 } from "react-native";
+import * as DocumentPicker from "expo-document-picker";
 import ExpertFooter, { EXPERT_FOOTER_HEIGHT } from "@/components/ExpertFooter";
-import apiService from "@/services/apiService";
+import apiService, { handleApiError } from "@/services/apiService";
 import {
   getResponsiveBorderRadius,
   getResponsiveFontSize,
@@ -22,6 +23,7 @@ import {
   getResponsivePadding,
   getResponsiveWidth,
 } from "@/utils/dimensions";
+import { UPLOADS_URL } from "@/config/apiConfig";
 
 const AVAILABLE_SESSION_TYPES = ["video", "chat", "audio"];
 const AVAILABLE_SESSION_FORMATS = ["one-on-one", "one-to-many"];
@@ -32,6 +34,10 @@ export default function ProfessionalDetailsScreen() {
   const [perSessionCost, setPerSessionCost] = useState("");
   const [sessionTypes, setSessionTypes] = useState<string[]>([]);
   const [sessionFormats, setSessionFormats] = useState<string[]>([]);
+  const [specialties, setSpecialties] = useState<string[]>([]);
+  const [newSpecialty, setNewSpecialty] = useState("");
+  const [certificates, setCertificates] = useState<any[]>([]);
+  const [uploadingCertificates, setUploadingCertificates] = useState(false);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [isTextAreaFocused, setIsTextAreaFocused] = useState(false);
@@ -62,6 +68,15 @@ export default function ProfessionalDetailsScreen() {
           AVAILABLE_SESSION_FORMATS.includes(type.toLowerCase())
         );
         setSessionFormats(validFormats);
+        // Load specialties
+        setSpecialties(expert.specialties || []);
+        // Load certificates
+        if (expert.certificates && Array.isArray(expert.certificates)) {
+          setCertificates(expert.certificates.map((cert: any) => ({
+            ...cert,
+            url: cert.url || (cert.filename ? `${UPLOADS_URL}/documents/${cert.filename}` : null)
+          })));
+        }
       }
     } catch (error) {
       console.error("Error loading expert profile:", error);
@@ -106,6 +121,7 @@ export default function ProfessionalDetailsScreen() {
         hourlyRate: cost,
         consultationMethods: sessionTypes,
         sessionType: sessionFormats,
+        specialties: specialties,
       });
 
       if (response.success) {
@@ -161,6 +177,87 @@ export default function ProfessionalDetailsScreen() {
       setSessionFormats(sessionFormats.filter((f) => f !== format));
     } else {
       setSessionFormats([...sessionFormats, format]);
+    }
+  };
+
+  const handleAddSpecialty = () => {
+    const trimmed = newSpecialty.trim();
+    if (trimmed && !specialties.includes(trimmed)) {
+      setSpecialties([...specialties, trimmed]);
+      setNewSpecialty("");
+    }
+  };
+
+  const handleRemoveSpecialty = (specialty: string) => {
+    setSpecialties(specialties.filter((s) => s !== specialty));
+  };
+
+  const handlePickCertificates = async () => {
+    try {
+      const currentCount = certificates.length;
+      const remainingSlots = 3 - currentCount;
+      
+      if (remainingSlots <= 0) {
+        Alert.alert("Limit Reached", "You can upload a maximum of 3 certificates.");
+        return;
+      }
+
+      const result = await DocumentPicker.getDocumentAsync({
+        type: "application/pdf",
+        multiple: remainingSlots > 1,
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled) {
+        return;
+      }
+
+      const selectedFiles = result.assets || [];
+      if (selectedFiles.length === 0) {
+        return;
+      }
+
+      if (currentCount + selectedFiles.length > 3) {
+        Alert.alert("Limit Exceeded", `You can only upload ${remainingSlots} more certificate(s).`);
+        return;
+      }
+
+      setUploadingCertificates(true);
+
+      const filesToUpload = selectedFiles.map((file) => ({
+        uri: file.uri,
+        name: file.name || "certificate.pdf",
+        type: file.mimeType || "application/pdf",
+      }));
+
+      const response = await apiService.uploadCertificates(filesToUpload);
+
+      if (response.success && response.data?.certificates) {
+        setCertificates(response.data.certificates);
+        Alert.alert("Success", "Certificates uploaded successfully");
+      } else {
+        Alert.alert("Error", response.message || "Failed to upload certificates");
+      }
+    } catch (error: any) {
+      console.error("Error uploading certificates:", error);
+      Alert.alert("Error", handleApiError(error));
+    } finally {
+      setUploadingCertificates(false);
+    }
+  };
+
+  const handleDeleteCertificate = async (certificateId: string) => {
+    try {
+      const response = await apiService.deleteCertificate(certificateId);
+      if (response.success) {
+        setCertificates(certificates.filter((cert) => cert._id !== certificateId && cert.filename !== certificateId));
+        Alert.alert("Success", "Certificate deleted successfully");
+      } else {
+        Alert.alert("Error", response.message || "Failed to delete certificate");
+      }
+    } catch (error: any) {
+      console.error("Error deleting certificate:", error);
+      Alert.alert("Error", handleApiError(error));
     }
   };
 
@@ -285,6 +382,91 @@ export default function ProfessionalDetailsScreen() {
                 }}
               />
               <Text style={styles.characterCount}>{education.length}/1000</Text>
+            </View>
+
+            {/* Specialties Section */}
+            <View style={styles.card}>
+              <Text style={styles.label}>Specialties</Text>
+              <Text style={styles.labelHint}>
+                Add your yoga specialties (e.g., Power Yoga, Meditation Yoga, Prenatal Yoga)
+              </Text>
+              
+              {/* Add Specialty Input */}
+              <View style={styles.addSpecialtyContainer}>
+                <TextInput
+                  style={styles.specialtyInput}
+                  value={newSpecialty}
+                  onChangeText={setNewSpecialty}
+                  placeholder="Enter specialty name"
+                  placeholderTextColor="#9CA3AF"
+                  onSubmitEditing={handleAddSpecialty}
+                />
+                <Pressable
+                  style={styles.addButton}
+                  onPress={handleAddSpecialty}
+                  disabled={!newSpecialty.trim()}
+                >
+                  <Text style={styles.addButtonText}>Add</Text>
+                </Pressable>
+              </View>
+
+              {/* Specialties List */}
+              {specialties.length > 0 && (
+                <View style={styles.specialtiesList}>
+                  {specialties.map((specialty, index) => (
+                    <View key={index} style={styles.specialtyChip}>
+                      <Text style={styles.specialtyChipText}>{specialty}</Text>
+                      <Pressable
+                        onPress={() => handleRemoveSpecialty(specialty)}
+                        style={styles.removeSpecialtyButton}
+                      >
+                        <Text style={styles.removeSpecialtyText}>×</Text>
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            {/* Certificates Section */}
+            <View style={styles.card}>
+              <Text style={styles.label}>Certificates (Max 3 PDFs)</Text>
+              <Text style={styles.labelHint}>
+                Upload your professional certificates (Yoga Alliance, RYT-200, etc.)
+              </Text>
+              
+              <Pressable
+                style={[styles.uploadButton, uploadingCertificates && styles.uploadButtonDisabled]}
+                onPress={handlePickCertificates}
+                disabled={uploadingCertificates || certificates.length >= 3}
+              >
+                <Text style={styles.uploadButtonText}>
+                  {uploadingCertificates
+                    ? "Uploading..."
+                    : certificates.length >= 3
+                    ? "Maximum 3 certificates"
+                    : `Upload Certificate${certificates.length > 0 ? "s" : ""} (${certificates.length}/3)`}
+                </Text>
+              </Pressable>
+
+              {/* Certificates List */}
+              {certificates.length > 0 && (
+                <View style={styles.certificatesList}>
+                  {certificates.map((cert, index) => (
+                    <View key={cert._id || index} style={styles.certificateItem}>
+                      <Text style={styles.certificateName} numberOfLines={1}>
+                        {cert.originalName || cert.filename || `Certificate ${index + 1}`}
+                      </Text>
+                      <Pressable
+                        onPress={() => handleDeleteCertificate(cert._id || cert.filename)}
+                        style={styles.deleteCertificateButton}
+                      >
+                        <Text style={styles.deleteCertificateText}>Delete</Text>
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
 
             {/* Session Types Section */}
@@ -608,6 +790,116 @@ const styles = StyleSheet.create({
   },
   sessionTypeOptionTextSelected: {
     color: "#059669",
+    fontWeight: "600",
+  },
+  addSpecialtyContainer: {
+    flexDirection: "row",
+    gap: getResponsiveWidth(8),
+    marginTop: getResponsiveHeight(12),
+  },
+  specialtyInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    borderRadius: getResponsiveBorderRadius(12),
+    padding: getResponsivePadding(12),
+    fontSize: getResponsiveFontSize(14),
+    color: "#1F2937",
+    backgroundColor: "#FFFFFF",
+  },
+  addButton: {
+    backgroundColor: "#059669",
+    borderRadius: getResponsiveBorderRadius(12),
+    paddingHorizontal: getResponsivePadding(20),
+    paddingVertical: getResponsivePadding(12),
+    justifyContent: "center",
+  },
+  addButtonText: {
+    color: "#FFFFFF",
+    fontSize: getResponsiveFontSize(14),
+    fontWeight: "600",
+  },
+  specialtiesList: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: getResponsiveWidth(8),
+    marginTop: getResponsiveHeight(12),
+  },
+  specialtyChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0FDF4",
+    borderWidth: 1,
+    borderColor: "#059669",
+    borderRadius: getResponsiveBorderRadius(20),
+    paddingHorizontal: getResponsivePadding(12),
+    paddingVertical: getResponsivePadding(6),
+  },
+  specialtyChipText: {
+    fontSize: getResponsiveFontSize(14),
+    color: "#059669",
+    fontWeight: "500",
+    marginRight: getResponsiveWidth(8),
+  },
+  removeSpecialtyButton: {
+    width: getResponsiveWidth(20),
+    height: getResponsiveHeight(20),
+    borderRadius: getResponsiveBorderRadius(10),
+    backgroundColor: "#059669",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  removeSpecialtyText: {
+    color: "#FFFFFF",
+    fontSize: getResponsiveFontSize(16),
+    fontWeight: "bold",
+    lineHeight: getResponsiveFontSize(16),
+  },
+  uploadButton: {
+    backgroundColor: "#059669",
+    borderRadius: getResponsiveBorderRadius(12),
+    padding: getResponsivePadding(16),
+    alignItems: "center",
+    marginTop: getResponsiveHeight(12),
+  },
+  uploadButtonDisabled: {
+    backgroundColor: "#9CA3AF",
+    opacity: 0.6,
+  },
+  uploadButtonText: {
+    color: "#FFFFFF",
+    fontSize: getResponsiveFontSize(16),
+    fontWeight: "600",
+  },
+  certificatesList: {
+    marginTop: getResponsiveHeight(12),
+    gap: getResponsiveHeight(8),
+  },
+  certificateItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#F9FAFB",
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    borderRadius: getResponsiveBorderRadius(12),
+    padding: getResponsivePadding(12),
+  },
+  certificateName: {
+    flex: 1,
+    fontSize: getResponsiveFontSize(14),
+    color: "#1F2937",
+    marginRight: getResponsiveWidth(8),
+  },
+  deleteCertificateButton: {
+    backgroundColor: "#EF4444",
+    borderRadius: getResponsiveBorderRadius(8),
+    paddingHorizontal: getResponsivePadding(12),
+    paddingVertical: getResponsivePadding(6),
+  },
+  deleteCertificateText: {
+    color: "#FFFFFF",
+    fontSize: getResponsiveFontSize(12),
     fontWeight: "600",
   },
 });
