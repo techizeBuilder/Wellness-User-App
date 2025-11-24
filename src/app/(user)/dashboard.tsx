@@ -39,6 +39,7 @@ const getGreeting = (): string => {
 export default function DashboardScreen() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [currentExpertIndex, setCurrentExpertIndex] = useState(0);
+  const [selectedYogaCategory, setSelectedYogaCategory] = useState("All Yoga");
   const [userData, setUserData] = useState<{
     firstName?: string;
     lastName?: string;
@@ -96,6 +97,25 @@ export default function DashboardScreen() {
 
   const handleProfilePress = () => {
     router.push("/(user)/profile");
+  };
+
+  const handleCategorySelect = (categoryName: string) => {
+    router.push({
+      pathname: "/(user)/experts",
+      params: { specialization: categoryName },
+    });
+  };
+
+  const handleYogaExplore = () => {
+    if (selectedYogaCategory === "All Yoga") {
+      router.push("/(user)/experts");
+      return;
+    }
+
+    router.push({
+      pathname: "/(user)/experts",
+      params: { specialization: selectedYogaCategory },
+    });
   };
 
   // Expert navigation functions
@@ -181,6 +201,14 @@ export default function DashboardScreen() {
     { name: "Diet", icon: "🥗", backgroundColor: "#edebf0ff" },
     { name: "Astro Health", icon: "🔮", backgroundColor: "#edebf0ff" },
     { name: "Meditation", icon: "🕯️", backgroundColor: "#edebf0ff" },
+  ];
+
+  const yogaCategories = [
+    { name: "All Yoga", description: "Browse every style", icon: "✨" },
+    { name: "Power Yoga", description: "Strength & cardo boost", icon: "⚡" },
+    { name: "Meditation Yoga", description: "Calming breath work", icon: "🧠" },
+    { name: "Prenatal Yoga", description: "Gentle prenatal flow", icon: "🤰" },
+    { name: "Restorative Yoga", description: "Deep relaxation", icon: "💤" },
   ];
 
   const experts = [
@@ -346,7 +374,10 @@ export default function DashboardScreen() {
                   { backgroundColor: category.backgroundColor },
                 ]}
               >
-                <Pressable style={styles.categoryPressable}>
+                <Pressable
+                  style={styles.categoryPressable}
+                  onPress={() => handleCategorySelect(category.name)}
+                >
                   <View style={styles.categoryIconWrapper}>
                     <Text style={styles.categoryIcon}>{category.icon}</Text>
                   </View>
@@ -912,6 +943,73 @@ const styles = StyleSheet.create({
   categoriesContainer: {
     paddingHorizontal: getResponsivePadding(screenData.isSmall ? 12 : 16),
     gap: getResponsiveMargin(screenData.isSmall ? 10 : 12),
+  },
+  yogaSection: {
+    paddingHorizontal: getResponsivePadding(screenData.isSmall ? 12 : 16),
+    marginTop: getResponsiveMargin(8),
+  },
+  yogaSubtitle: {
+    fontSize: fontSizes.sm,
+    color: "rgba(255,255,255,0.85)",
+  },
+  yogaFiltersContainer: {
+    paddingVertical: getResponsivePadding(10),
+    gap: getResponsiveMargin(10),
+  },
+  yogaFilterCard: {
+    width: getResponsiveWidth(180),
+    borderRadius: getResponsiveBorderRadius(18),
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.25)",
+    padding: getResponsivePadding(14),
+    marginRight: getResponsiveMargin(12),
+    backgroundColor: "rgba(255,255,255,0.12)",
+  },
+  yogaFilterCardActive: {
+    borderColor: "#F59E0B",
+    backgroundColor: "rgba(245,158,11,0.15)",
+    shadowColor: "#F59E0B",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  yogaFilterIcon: {
+    fontSize: fontSizes.lg,
+    marginBottom: getResponsiveMargin(6),
+  },
+  yogaFilterName: {
+    fontSize: fontSizes.md,
+    fontWeight: "600",
+    color: "#FDFDFD",
+  },
+  yogaFilterNameActive: {
+    color: "#FDE68A",
+  },
+  yogaFilterDescription: {
+    fontSize: fontSizes.sm,
+    color: "rgba(255,255,255,0.8)",
+    marginTop: getResponsiveMargin(4),
+  },
+  yogaExploreButton: {
+    marginTop: getResponsiveMargin(12),
+    borderRadius: getResponsiveBorderRadius(16),
+    overflow: "hidden",
+  },
+  yogaExploreGradient: {
+    paddingVertical: getResponsivePadding(14),
+    paddingHorizontal: getResponsivePadding(20),
+    alignItems: "center",
+  },
+  yogaExploreText: {
+    color: "#ffffff",
+    fontSize: fontSizes.lg,
+    fontWeight: "700",
+  },
+  yogaExploreSubtext: {
+    color: "rgba(255,255,255,0.85)",
+    fontSize: fontSizes.sm,
+    marginTop: getResponsiveMargin(2),
   },
   categoryCard: {
     width: getResponsiveWidth(screenData.isSmall ? 75 : 85),

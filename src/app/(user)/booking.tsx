@@ -38,6 +38,25 @@ type Appointment = {
   notes?: string;
 };
 
+type PlanDetails = {
+  _id: string;
+  name: string;
+  type: "single" | "monthly";
+  price: number;
+  monthlyPrice?: number;
+  classesPerMonth?: number;
+  duration?: number;
+  sessionFormat?: "one-on-one" | "one-to-many";
+};
+
+type PlanSessionSelection = {
+  sessionDate: string;
+  startTime: string;
+  duration: number;
+  consultationMethod: string;
+  sessionType: string;
+};
+
 export default function BookingScreen() {
   const params = useLocalSearchParams();
   
@@ -46,6 +65,10 @@ export default function BookingScreen() {
   const [mode, setMode] = useState<string | undefined>(undefined);
   const [isReschedule, setIsReschedule] = useState(false);
   const [paramsExtracted, setParamsExtracted] = useState(false);
+  const [planId, setPlanId] = useState<string | undefined>(undefined);
+  const [planDetails, setPlanDetails] = useState<PlanDetails | null>(null);
+  const [planLoading, setPlanLoading] = useState(false);
+  const [planSessions, setPlanSessions] = useState<PlanSessionSelection[]>([]);
 
   const [expert, setExpert] = useState<Expert | null>(null);
   const [existingAppointment, setExistingAppointment] = useState<Appointment | null>(null);
@@ -80,6 +103,7 @@ export default function BookingScreen() {
       const extractedExpertId = getParam('expertId') || '';
       const extractedAppointmentId = getParam('appointmentId');
       const extractedMode = getParam('mode');
+      const extractedPlanId = getParam('planId');
       
       console.log('Extracted params:', { extractedExpertId, extractedAppointmentId, extractedMode });
       
@@ -94,6 +118,7 @@ export default function BookingScreen() {
       setExpertId(extractedExpertId);
       setAppointmentId(extractedAppointmentId);
       setMode(extractedMode);
+      setPlanId(extractedPlanId);
       setIsReschedule(extractedMode === 'reschedule' && !!extractedAppointmentId);
       setParamsExtracted(true);
     } catch (error) {
@@ -139,6 +164,10 @@ export default function BookingScreen() {
   };
 
   const dates = generateDates();
+  const isPlanBooking = !!planDetails;
+  const isMonthlyPlan = isPlanBooking && planDetails?.type === "monthly";
+  const lockedSessionType = planDetails?.sessionFormat;
+  const lockedDuration = planDetails?.duration;
 
   useEffect(() => {
     // Only fetch expert data after params are extracted and expertId is available
@@ -146,6 +175,39 @@ export default function BookingScreen() {
       fetchExpertData();
     }
   }, [expertId, paramsExtracted]);
+
+  useEffect(() => {
+    const fetchPlanDetails = async () => {
+      if (!planId) {
+        setPlanDetails(null);
+        setPlanSessions([]);
+        return;
+      }
+
+      try {
+        setPlanLoading(true);
+        const response = await apiService.getPlanById(planId);
+        const plan =
+          response?.data?.plan || response?.plan || response?.data || null;
+        setPlanDetails(plan);
+        setPlanSessions([]);
+
+        if (plan?.type === "single" && plan.duration) {
+          setSelectedDuration(plan.duration);
+        }
+        if (plan?.sessionFormat) {
+          setSelectedSessionType(plan.sessionFormat);
+        }
+      } catch (error) {
+        Alert.alert("Plan Error", handleApiError(error));
+        setPlanId(undefined);
+      } finally {
+        setPlanLoading(false);
+      }
+    };
+
+    fetchPlanDetails();
+  }, [planId]);
 
   useEffect(() => {
     if (isReschedule && appointmentId) {
@@ -179,6 +241,61 @@ export default function BookingScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddPlanSession = () => {
+    if (!planDetails || planDetails.type !== "monthly") {
+      return;
+    }
+
+    if (planSessions.length >= (planDetails.classesPerMonth || 0)) {
+      Alert.alert(
+        "Limit reached",
+        "You have already scheduled all classes for this subscription."
+      );
+      return;
+    }
+
+    if (!selectedDate || !selectedTime) {
+      Alert.alert("Missing slot", "Please select a date and time first.");
+      return;
+    }
+
+    if (!selectedConsultationMethod || !selectedSessionType) {
+      Alert.alert(
+        "Missing format",
+        "Please select consultation method and session type."
+      );
+      return;
+    }
+
+    const duplicate = planSessions.find(
+      (session) =>
+        session.sessionDate === selectedDate && session.startTime === selectedTime
+    );
+    if (duplicate) {
+      Alert.alert(
+        "Duplicate slot",
+        "This date and time is already part of your plan schedule."
+      );
+      return;
+    }
+
+    const newSession: PlanSessionSelection = {
+      sessionDate: selectedDate,
+      startTime: selectedTime,
+      duration: planDetails.duration || selectedDuration,
+      consultationMethod: selectedConsultationMethod,
+      sessionType: planDetails.sessionFormat || selectedSessionType,
+    };
+
+    setPlanSessions((prev) => [...prev, newSession]);
+    setSelectedDate("");
+    setSelectedTime("");
+  };
+
+  const handleRemovePlanSession = (index: number) => {
+    setPlanSessions((prev) => prev.filter((_, idx) => idx !== index));
   };
 
   const fetchExistingAppointment = async () => {
@@ -267,8 +384,41 @@ export default function BookingScreen() {
   };
 
   const calculatePrice = () => {
+    if (planDetails) {
+      if (planDetails.type === "monthly") {
+        return planDetails.monthlyPrice || planDetails.price || 0;
+      }
+      return planDetails.price || 0;
+    }
     if (!expert || !expert.hourlyRate) return 0;
     return Math.round((expert.hourlyRate * selectedDuration) / 60);
+  };
+
+  const planSessionsRequired = planDetails?.classesPerMonth || 0;
+  const baseSlotReady =
+    !!selectedDate &&
+    !!selectedTime &&
+    !!selectedConsultationMethod &&
+    !!selectedSessionType;
+  const rescheduleReady = !!selectedDate && !!selectedTime;
+  const planReady = planDetails
+    ? planDetails.type === "monthly"
+      ? planSessions.length === planSessionsRequired
+      : !!selectedDate && !!selectedTime
+    : baseSlotReady;
+  const isBookDisabled = booking || (isReschedule ? !rescheduleReady : !planReady);
+
+  const bookingCtaLabel = () => {
+    if (isReschedule) {
+      return "Reschedule Session";
+    }
+    if (planDetails) {
+      if (planDetails.type === "monthly") {
+        return `Start Plan • ₹${calculatePrice().toLocaleString()}`;
+      }
+      return `Book ${planDetails.name}`;
+    }
+    return `Confirm Booking - ₹${calculatePrice()}`;
   };
 
   const handleBackPress = () => {
@@ -276,9 +426,24 @@ export default function BookingScreen() {
   };
 
   const handleBooking = async () => {
-    if (!selectedDate || !selectedTime || !selectedConsultationMethod || !selectedSessionType) {
-      Alert.alert('Missing Information', 'Please fill in all required fields.');
-      return;
+    if (!planDetails) {
+      if (!selectedDate || !selectedTime || !selectedConsultationMethod || !selectedSessionType) {
+        Alert.alert('Missing Information', 'Please fill in all required fields.');
+        return;
+      }
+    } else if (planDetails.type === "single") {
+      if (!selectedDate || !selectedTime) {
+        Alert.alert('Missing Information', 'Please select the date and time for this plan.');
+        return;
+      }
+    } else if (planDetails.type === "monthly") {
+      if (planSessions.length !== (planDetails.classesPerMonth || 0)) {
+        Alert.alert(
+          'Schedule Pending',
+          `Please schedule all ${planDetails.classesPerMonth} classes before confirming.`
+        );
+        return;
+      }
     }
 
     // Animate button press
@@ -322,6 +487,56 @@ export default function BookingScreen() {
             }
           ]
         );
+      } else if (planDetails && planId) {
+        if (planDetails.type === "monthly") {
+          await apiService.createBooking({
+            expertId,
+            planId,
+            planType: planDetails.type,
+            planSessions: planSessions,
+            notes: notes || undefined,
+          });
+
+          Alert.alert(
+            'Plan Scheduled!',
+            `All ${planDetails.classesPerMonth} classes have been scheduled. Waiting for expert confirmation.`,
+            [
+              {
+                text: 'View Bookings',
+                onPress: () => router.push('/sessions'),
+              },
+              { text: 'OK', onPress: () => router.back() },
+            ]
+          );
+        } else {
+          await apiService.createBooking({
+            expertId,
+            planId,
+            planType: planDetails.type,
+            planSessions: [
+              {
+                sessionDate: selectedDate,
+                startTime: selectedTime,
+                duration: planDetails.duration || selectedDuration,
+                consultationMethod: selectedConsultationMethod,
+                sessionType: selectedSessionType,
+              },
+            ],
+            notes: notes || undefined,
+          });
+
+          Alert.alert(
+            'Plan Booked!',
+            `${planDetails.name} has been scheduled successfully.`,
+            [
+              {
+                text: 'View Bookings',
+                onPress: () => router.push('/sessions'),
+              },
+              { text: 'OK', onPress: () => router.back() },
+            ]
+          );
+        }
       } else {
         // Create new booking
         const response = await apiService.createBooking({
@@ -424,6 +639,30 @@ export default function BookingScreen() {
           </View>
         </View>
 
+        {planId && planLoading && (
+          <View style={styles.planSummaryCard}>
+            <ActivityIndicator size="small" color="#10b981" />
+            <Text style={styles.planSummaryLoadingText}>Loading plan details…</Text>
+          </View>
+        )}
+
+        {planDetails && !planLoading && (
+          <View style={styles.planSummaryCard}>
+            <Text style={styles.planSummaryLabel}>Selected Plan</Text>
+            <Text style={styles.planSummaryName}>{planDetails.name}</Text>
+            <Text style={styles.planSummaryMeta}>
+              {planDetails.type === "monthly"
+                ? `${planDetails.classesPerMonth || 0} classes / month`
+                : `${planDetails.duration || 60} minute session`}
+            </Text>
+            <Text style={styles.planSummaryPrice}>
+              {planDetails.type === "monthly"
+                ? `₹${(planDetails.monthlyPrice || planDetails.price).toLocaleString()} / month`
+                : `₹${planDetails.price.toLocaleString()} per class`}
+            </Text>
+          </View>
+        )}
+
         {/* Consultation Method Selection - Session Format */}
         {expert.consultationMethods && expert.consultationMethods.length > 0 && (
           <View style={styles.section}>
@@ -472,21 +711,22 @@ export default function BookingScreen() {
                   'one-on-one': 'One-on-One',
                   'one-to-many': 'Group Session'
                 };
+                const typeDisabled = isReschedule || (lockedSessionType && type !== lockedSessionType);
                 return (
                   <Pressable
                     key={type}
                     style={[
                       styles.optionCard,
                       selectedSessionType === type && styles.optionCardSelected,
-                      isReschedule && styles.optionCardDisabled
+                      typeDisabled && styles.optionCardDisabled
                     ]}
-                    onPress={() => !isReschedule && setSelectedSessionType(type)}
-                    disabled={isReschedule}
+                    onPress={() => !typeDisabled && setSelectedSessionType(type)}
+                    disabled={typeDisabled}
                   >
                     <Text style={[
                       styles.optionLabel,
                       selectedSessionType === type && styles.optionLabelSelected,
-                      isReschedule && styles.optionLabelDisabled
+                      typeDisabled && styles.optionLabelDisabled
                     ]}>
                       {typeLabels[type] || type}
                     </Text>
@@ -500,33 +740,39 @@ export default function BookingScreen() {
         {/* Session Duration */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Session Duration</Text>
-          <View style={styles.durationContainer}>
-            {sessionDurations.map((duration) => (
-              <Pressable
-                key={duration}
-                style={[
-                  styles.durationCard,
-                  selectedDuration === duration && styles.durationCardSelected
-                ]}
-                onPress={() => setSelectedDuration(duration)}
-              >
-                <Text style={[
-                  styles.durationLabel,
-                  selectedDuration === duration && styles.durationLabelSelected
-                ]}>
-                  {duration} min
-                </Text>
-                {expert.hourlyRate && (
-                <Text style={[
-                  styles.durationPrice,
-                    selectedDuration === duration && styles.durationPriceSelected
-                ]}>
-                    ₹{Math.round((expert.hourlyRate * duration) / 60)}
-                </Text>
-                )}
-              </Pressable>
-            ))}
-          </View>
+          {lockedDuration ? (
+            <Text style={styles.lockedDurationText}>
+              This plan uses fixed {lockedDuration}-minute sessions.
+            </Text>
+          ) : (
+            <View style={styles.durationContainer}>
+              {sessionDurations.map((duration) => (
+                <Pressable
+                  key={duration}
+                  style={[
+                    styles.durationCard,
+                    selectedDuration === duration && styles.durationCardSelected
+                  ]}
+                  onPress={() => setSelectedDuration(duration)}
+                >
+                  <Text style={[
+                    styles.durationLabel,
+                    selectedDuration === duration && styles.durationLabelSelected
+                  ]}>
+                    {duration} min
+                  </Text>
+                  {expert.hourlyRate && (
+                  <Text style={[
+                    styles.durationPrice,
+                      selectedDuration === duration && styles.durationPriceSelected
+                  ]}>
+                      ₹{Math.round((expert.hourlyRate * duration) / 60)}
+                  </Text>
+                  )}
+                </Pressable>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* Date Selection */}
@@ -594,6 +840,58 @@ export default function BookingScreen() {
           </View>
         )}
 
+        {isMonthlyPlan && planDetails?.classesPerMonth ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              Scheduled Classes ({planSessions.length}/{planDetails.classesPerMonth})
+            </Text>
+            <Text style={styles.planSessionsHint}>
+              Pick a date and time above, then tap "Add Class" to queue it.
+            </Text>
+            {planSessions.length === 0 ? (
+              <Text style={styles.planSessionsEmpty}>
+                No classes scheduled yet. Add each session to finalize your subscription.
+              </Text>
+            ) : (
+              planSessions.map((session, index) => (
+                <View key={`${session.sessionDate}-${session.startTime}`} style={styles.planSessionCard}>
+                  <View>
+                    <Text style={styles.planSessionTitle}>Class {index + 1}</Text>
+                    <Text style={styles.planSessionMeta}>
+                      {session.sessionDate} • {formatTime(session.startTime)}
+                    </Text>
+                    <Text style={styles.planSessionMeta}>
+                      {session.duration} min • {session.sessionType === "one-on-one" ? "1:1" : "Group"} ({session.consultationMethod})
+                    </Text>
+                  </View>
+                  <Pressable
+                    style={styles.planSessionRemove}
+                    onPress={() => handleRemovePlanSession(index)}
+                  >
+                    <Text style={styles.planSessionRemoveText}>Remove</Text>
+                  </Pressable>
+                </View>
+              ))
+            )}
+            <Pressable
+              style={[
+                styles.addSessionButton,
+                (planSessions.length >= planDetails.classesPerMonth ||
+                  !selectedDate ||
+                  !selectedTime) && styles.addSessionButtonDisabled,
+              ]}
+              onPress={handleAddPlanSession}
+              disabled={
+                planSessions.length >= planDetails.classesPerMonth ||
+                !selectedDate ||
+                !selectedTime
+              }
+            >
+              <Text style={styles.addSessionButtonText}>Add Class</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
         {/* Notes */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Additional Notes (Optional)</Text>
@@ -613,7 +911,13 @@ export default function BookingScreen() {
           <Text style={styles.sectionTitle}>Price Summary</Text>
           <View style={styles.priceCard}>
             <View style={styles.priceRow}>
-              <Text style={styles.priceLabel}>Session ({selectedDuration} min)</Text>
+              <Text style={styles.priceLabel}>
+                {planDetails
+                  ? planDetails.type === "monthly"
+                    ? `${planDetails.classesPerMonth || 0} classes plan`
+                    : planDetails.name
+                  : `Session (${selectedDuration} min)`}
+              </Text>
               <Text style={styles.priceValue}>₹{calculatePrice()}</Text>
             </View>
             <View style={styles.priceDivider} />
@@ -631,15 +935,15 @@ export default function BookingScreen() {
       <View style={styles.bookingFooter}>
         <Animated.View style={[styles.bookButtonContainer, { transform: [{ scale: bookingAnim }] }]}>
           <Pressable 
-            style={[styles.bookButton, booking && styles.bookButtonDisabled]} 
+            style={[styles.bookButton, isBookDisabled && styles.bookButtonDisabled]} 
             onPress={handleBooking}
-            disabled={booking || !selectedDate || !selectedTime || !selectedConsultationMethod || !selectedSessionType}
+            disabled={isBookDisabled}
           >
             {booking ? (
               <ActivityIndicator size="small" color="#ffffff" />
             ) : (
               <Text style={styles.bookButtonText}>
-                {isReschedule ? 'Reschedule Session' : `Confirm Booking - ₹${calculatePrice()}`}
+                {bookingCtaLabel()}
               </Text>
             )}
           </Pressable>
@@ -731,6 +1035,44 @@ const styles = StyleSheet.create({
     shadowRadius: getResponsiveBorderRadius(8),
     elevation: 4,
   },
+  planSummaryCard: {
+    backgroundColor: '#ECFDF5',
+    borderRadius: getResponsiveBorderRadius(12),
+    marginHorizontal: getResponsiveMargin(20),
+    marginBottom: getResponsiveMargin(20),
+    padding: getResponsivePadding(16),
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  planSummaryLoadingText: {
+    marginTop: getResponsiveMargin(8),
+    color: '#065F46',
+    fontSize: getResponsiveFontSize(12),
+    textAlign: 'center',
+  },
+  planSummaryLabel: {
+    fontSize: getResponsiveFontSize(12),
+    color: '#047857',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  planSummaryName: {
+    fontSize: getResponsiveFontSize(18),
+    fontWeight: '700',
+    color: '#064E3B',
+    marginTop: getResponsiveMargin(4),
+  },
+  planSummaryMeta: {
+    fontSize: getResponsiveFontSize(12),
+    color: '#047857',
+    marginTop: getResponsiveMargin(2),
+  },
+  planSummaryPrice: {
+    fontSize: getResponsiveFontSize(16),
+    color: '#0F172A',
+    fontWeight: '700',
+    marginTop: getResponsiveMargin(8),
+  },
   expertImage: {
     width: getResponsiveWidth(60),
     height: getResponsiveHeight(60),
@@ -814,6 +1156,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: getResponsiveMargin(12),
+  },
+  lockedDurationText: {
+    fontSize: getResponsiveFontSize(13),
+    color: '#64748b',
+    backgroundColor: '#f1f5f9',
+    padding: getResponsivePadding(12),
+    borderRadius: getResponsiveBorderRadius(10),
   },
   durationCard: {
     flex: 1,
@@ -943,6 +1292,62 @@ const styles = StyleSheet.create({
     color: '#9ca3af',
     fontStyle: 'italic',
     padding: 20,
+  },
+  planSessionsHint: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginBottom: getResponsiveMargin(8),
+  },
+  planSessionsEmpty: {
+    fontSize: 13,
+    color: '#9ca3af',
+    marginBottom: getResponsiveMargin(12),
+    fontStyle: 'italic',
+  },
+  planSessionCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: getResponsivePadding(12),
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: getResponsiveBorderRadius(12),
+    marginBottom: getResponsiveMargin(10),
+    backgroundColor: '#ffffff',
+  },
+  planSessionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  planSessionMeta: {
+    fontSize: 12,
+    color: '#475569',
+    marginTop: getResponsiveMargin(2),
+  },
+  planSessionRemove: {
+    paddingHorizontal: getResponsivePadding(12),
+    paddingVertical: getResponsivePadding(6),
+    borderRadius: getResponsiveBorderRadius(8),
+    backgroundColor: '#fee2e2',
+  },
+  planSessionRemoveText: {
+    color: '#b91c1c',
+    fontWeight: '600',
+  },
+  addSessionButton: {
+    marginTop: getResponsiveMargin(10),
+    backgroundColor: '#10b981',
+    borderRadius: getResponsiveBorderRadius(10),
+    alignItems: 'center',
+    paddingVertical: getResponsivePadding(12),
+  },
+  addSessionButtonDisabled: {
+    opacity: 0.5,
+  },
+  addSessionButtonText: {
+    color: '#ffffff',
+    fontWeight: '700',
   },
   notesInput: {
     backgroundColor: '#ffffff',

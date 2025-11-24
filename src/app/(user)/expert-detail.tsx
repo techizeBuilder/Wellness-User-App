@@ -8,6 +8,7 @@ import React, {
   useState,
 } from "react";
 import {
+  Alert,
   ActivityIndicator,
   Animated,
   Image,
@@ -30,6 +31,19 @@ import {
 import { apiService, handleApiError } from "@/services/apiService";
 import { getProfileImageWithFallback } from "@/utils/imageHelpers";
 
+type ExpertPlan = {
+  _id: string;
+  name: string;
+  type: "single" | "monthly";
+  description?: string;
+  sessionClassType?: string;
+  sessionFormat?: "one-on-one" | "one-to-many";
+  price: number;
+  monthlyPrice?: number;
+  classesPerMonth?: number;
+  duration?: number;
+};
+
 export default function ExpertDetailScreen() {
   const { id } = useLocalSearchParams();
   const expertId = Array.isArray(id) ? id[0] : id;
@@ -41,6 +55,9 @@ export default function ExpertDetailScreen() {
   const [showMoreInfo, setShowMoreInfo] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [bookSessionAnim] = useState(new Animated.Value(1));
+  const [plans, setPlans] = useState<ExpertPlan[]>([]);
+  const [plansLoading, setPlansLoading] = useState(false);
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const fetchExpertDetails = useCallback(async () => {
     if (!expertId) {
       setExpertData(null);
@@ -71,6 +88,45 @@ export default function ExpertDetailScreen() {
   useEffect(() => {
     fetchExpertDetails();
   }, [fetchExpertDetails]);
+
+  const fetchExpertPlans = useCallback(async () => {
+    if (!expertId) {
+      setPlans([]);
+      setSelectedPlanId(null);
+      return;
+    }
+
+    try {
+      setPlansLoading(true);
+      const response = await apiService.getExpertPlans(expertId);
+      const planResponse =
+        response?.data?.plans ||
+        response?.data?.data?.plans ||
+        response?.plans ||
+        response?.data ||
+        [];
+      setPlans(planResponse);
+      if (planResponse.length === 0) {
+        setSelectedPlanId(null);
+      } else {
+        setSelectedPlanId((prev) =>
+          prev && planResponse.some((plan: ExpertPlan) => plan._id === prev)
+            ? prev
+            : planResponse[0]._id
+        );
+      }
+    } catch (error) {
+      console.error("Error loading expert plans:", error);
+      setPlans([]);
+      setSelectedPlanId(null);
+    } finally {
+      setPlansLoading(false);
+    }
+  }, [expertId]);
+
+  useEffect(() => {
+    fetchExpertPlans();
+  }, [fetchExpertPlans]);
 
   // Auto-scroll state and ref
   const suggestedExpertsScrollRef = useRef(null);
@@ -300,6 +356,13 @@ export default function ExpertDetailScreen() {
     };
   }, [expertData, expertId]);
 
+  const selectedPlan = useMemo(() => {
+    if (!selectedPlanId) {
+      return null;
+    }
+    return plans.find((plan) => plan._id === selectedPlanId) || null;
+  }, [plans, selectedPlanId]);
+
   const ratingDisplay = expert.ratingAvailable
     ? expert.rating.toFixed(1)
     : "Not available";
@@ -472,15 +535,20 @@ export default function ExpertDetailScreen() {
       }),
     ]).start();
 
-    // Navigate to booking screen with expert ID
-    if (expertId) {
-      router.push({
-        pathname: "/booking",
-        params: { expertId: expertId },
-      });
-    } else {
-      alert("Expert information not available");
+    if (!expertId) {
+      Alert.alert("Unavailable", "Expert information not available.");
+      return;
     }
+
+    if (!selectedPlanId) {
+      Alert.alert("Select a plan", "Please choose a plan to continue.");
+      return;
+    }
+
+    router.push({
+      pathname: "/booking",
+      params: { expertId: expertId, planId: selectedPlanId },
+    });
   };
 
   const handleMoreInfo = () => {
@@ -719,6 +787,86 @@ export default function ExpertDetailScreen() {
           </View>
         </View>
 
+        {/* Plan Selection */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Choose a Plan</Text>
+          <Text style={styles.planSectionHint}>
+            Select a yoga plan to lock pricing and session format before booking.
+          </Text>
+          {plansLoading ? (
+            <View style={styles.planLoadingState}>
+              <ActivityIndicator size="small" color="#ffffff" />
+              <Text style={styles.planLoadingText}>Loading plans...</Text>
+            </View>
+          ) : plans.length === 0 ? (
+            <View style={styles.planEmptyState}>
+              <Text style={styles.planEmptyTitle}>No plans published</Text>
+              <Text style={styles.planEmptySubtitle}>
+                This expert hasn&apos;t shared yoga plans yet.
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.planOptionsContainer}>
+              {plans.map((plan) => {
+                const isSelected = plan._id === selectedPlanId;
+                const planPrice =
+                  plan.type === "monthly"
+                    ? `₹${(plan.monthlyPrice || plan.price).toLocaleString()}/month`
+                    : `₹${plan.price.toLocaleString()} per class`;
+                const planMeta =
+                  plan.type === "monthly"
+                    ? `${plan.classesPerMonth || 0} classes/month`
+                    : `${plan.duration || 60} min session`;
+                return (
+                  <Pressable
+                    key={plan._id}
+                    style={[
+                      styles.planOptionCard,
+                      isSelected && styles.planOptionCardActive,
+                    ]}
+                    onPress={() => setSelectedPlanId(plan._id)}
+                  >
+                    <View style={styles.planOptionHeader}>
+                      <Text
+                        style={[
+                          styles.planOptionTitle,
+                          isSelected && styles.planOptionTitleActive,
+                        ]}
+                      >
+                        {plan.name}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.planTypePill,
+                          plan.type === "monthly"
+                            ? styles.planTypeMonthly
+                            : styles.planTypeSingle,
+                        ]}
+                      >
+                        {plan.type === "monthly" ? "Monthly" : "Single"}
+                      </Text>
+                    </View>
+                    <Text
+                      style={[
+                        styles.planOptionPrice,
+                        isSelected && styles.planOptionTitleActive,
+                      ]}
+                    >
+                      {planPrice}
+                    </Text>
+                    <Text style={styles.planOptionMeta}>{planMeta}</Text>
+                    {plan.sessionClassType && (
+                      <Text style={styles.planOptionSubtext}>
+                        Focus: {plan.sessionClassType}
+                      </Text>
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+        </View>
+
         {/* Availability Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Availability</Text>
@@ -827,7 +975,13 @@ export default function ExpertDetailScreen() {
                 <View style={styles.summaryRow}>
                   <Text style={styles.summaryIcon}>💰</Text>
                   <Text style={styles.summaryLabel}>Session Fee:</Text>
-                  <Text style={styles.summaryValue}>{expert.sessionPrice}</Text>
+                  <Text style={styles.summaryValue}>
+                    {selectedPlan
+                      ? selectedPlan.type === "monthly"
+                        ? `₹${(selectedPlan.monthlyPrice || selectedPlan.price).toLocaleString()}`
+                        : `₹${selectedPlan.price.toLocaleString()}`
+                      : expert.sessionPrice}
+                  </Text>
                 </View>
               </View>
 
@@ -1433,6 +1587,103 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(16),
     fontWeight: "600",
     color: "#FFFFFF",
+  },
+  planSectionHint: {
+    fontSize: getResponsiveFontSize(12),
+    color: "rgba(255,255,255,0.8)",
+    marginTop: getResponsiveMargin(4),
+    marginBottom: getResponsiveMargin(16),
+  },
+  planLoadingState: {
+    alignItems: "center",
+    paddingVertical: getResponsivePadding(20),
+    gap: getResponsivePadding(8),
+  },
+  planLoadingText: {
+    color: "#ffffff",
+    opacity: 0.8,
+  },
+  planEmptyState: {
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+    borderRadius: getResponsiveBorderRadius(16),
+    padding: getResponsivePadding(16),
+    alignItems: "center",
+  },
+  planEmptyTitle: {
+    fontSize: getResponsiveFontSize(16),
+    color: "#ffffff",
+    fontWeight: "700",
+    marginBottom: getResponsiveMargin(4),
+  },
+  planEmptySubtitle: {
+    fontSize: getResponsiveFontSize(13),
+    color: "rgba(255,255,255,0.8)",
+    textAlign: "center",
+  },
+  planOptionsContainer: {
+    gap: getResponsivePadding(10),
+  },
+  planOptionCard: {
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+    borderRadius: getResponsiveBorderRadius(16),
+    padding: getResponsivePadding(16),
+    backgroundColor: "rgba(0,0,0,0.1)",
+  },
+  planOptionCardActive: {
+    borderColor: "#F59E0B",
+    backgroundColor: "rgba(245,158,11,0.18)",
+    shadowColor: "#F59E0B",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    elevation: 6,
+  },
+  planOptionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: getResponsiveMargin(4),
+  },
+  planOptionTitle: {
+    fontSize: getResponsiveFontSize(16),
+    color: "#ffffff",
+    fontWeight: "600",
+  },
+  planOptionTitleActive: {
+    color: "#FDE68A",
+  },
+  planTypePill: {
+    fontSize: getResponsiveFontSize(10),
+    paddingHorizontal: getResponsivePadding(10),
+    paddingVertical: getResponsivePadding(4),
+    borderRadius: getResponsiveBorderRadius(12),
+    textTransform: "uppercase",
+    fontWeight: "700",
+  },
+  planTypeMonthly: {
+    backgroundColor: "rgba(59,130,246,0.25)",
+    color: "#BFDBFE",
+  },
+  planTypeSingle: {
+    backgroundColor: "rgba(16,185,129,0.25)",
+    color: "#A7F3D0",
+  },
+  planOptionPrice: {
+    fontSize: getResponsiveFontSize(14),
+    color: "#FCD34D",
+    fontWeight: "700",
+    marginBottom: getResponsiveMargin(4),
+  },
+  planOptionMeta: {
+    fontSize: getResponsiveFontSize(12),
+    color: "rgba(255,255,255,0.9)",
+  },
+  planOptionSubtext: {
+    fontSize: getResponsiveFontSize(11),
+    color: "rgba(255,255,255,0.75)",
+    marginTop: getResponsiveMargin(4),
   },
   loadingBanner: {
     flexDirection: "row",

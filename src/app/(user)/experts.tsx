@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -55,6 +55,11 @@ const RATING_FILTERS = ['All', '4.5+', '4.0+', '3.5+'];
 const RESULTS_PER_PAGE = 10;
 
 export default function ExpertsScreen() {
+  const params = useLocalSearchParams();
+  const specializationParam = Array.isArray(params.specialization)
+    ? params.specialization[0]
+    : params.specialization;
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedRating, setSelectedRating] = useState<string>(RATING_FILTERS[0]);
@@ -75,15 +80,29 @@ export default function ExpertsScreen() {
         unique.add(expert.specialization);
       }
     });
+    if (
+      specializationParam &&
+      typeof specializationParam === 'string' &&
+      specializationParam.trim().length > 0
+    ) {
+      unique.add(specializationParam);
+    }
+    if (selectedCategory !== 'All' && selectedCategory.trim().length > 0) {
+      unique.add(selectedCategory);
+    }
     const categoryList = Array.from(unique).sort((a, b) => a.localeCompare(b));
     return ['All', ...categoryList];
-  }, [experts]);
+  }, [experts, specializationParam, selectedCategory]);
 
   useEffect(() => {
-    if (selectedCategory !== 'All' && !categories.includes(selectedCategory)) {
-      setSelectedCategory('All');
+    if (
+      specializationParam &&
+      typeof specializationParam === 'string' &&
+      categories.includes(specializationParam)
+    ) {
+      setSelectedCategory(specializationParam);
     }
-  }, [categories, selectedCategory]);
+  }, [specializationParam, categories]);
 
   const fetchExperts = useCallback(
     async (options?: { refresh?: boolean; page?: number }) => {
@@ -451,48 +470,50 @@ export default function ExpertsScreen() {
                 >
                   <Image source={{ uri: profileImage }} style={styles.expertImage} />
                   <View style={styles.expertInfo}>
-                    <View style={styles.expertHeader}>
-                      <Text style={styles.expertName}>{displayName}</Text>
-                      {verified && (
-                        <View style={styles.verifiedBadge}>
-                          <Text style={styles.verifiedText}>✓</Text>
-                        </View>
-                      )}
+                    <View style={styles.expertTopRow}>
+                      <View style={styles.expertNameWrapper}>
+                        <Text style={styles.expertName}>{displayName}</Text>
+                        {verified && (
+                          <View style={styles.verifiedBadge}>
+                            <Text style={styles.verifiedText}>✓</Text>
+                          </View>
+                        )}
+                      </View>
+                      <View style={styles.pricePill}>
+                        <Text style={styles.priceText}>{priceDisplay}</Text>
+                      </View>
                     </View>
                     <Text style={styles.expertSpecialty}>{specialization}</Text>
-                    <Text style={styles.expertExperience}>{experienceText}</Text>
+                    <View style={styles.expertMetaRow}>
+                      <Text style={styles.expertExperience}>{experienceText}</Text>
+                      <View style={styles.ratingPill}>
+                        <Text style={styles.rating}>
+                          {ratingDisplay === 'New' ? 'New' : `⭐ ${ratingDisplay}`}
+                        </Text>
+                      </View>
+                    </View>
                     <Text style={styles.expertDescription} numberOfLines={2}>
                       {bio}
                     </Text>
-                    <View style={styles.expertFooter}>
-                      <View style={styles.ratingContainer}>
-                        <Text style={styles.rating}>⭐ {ratingDisplay}</Text>
-                        <Text style={styles.price}>{priceDisplay}</Text>
-                      </View>
-                      <View style={styles.buttonContainer}>
-                        <Pressable
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            handleExpertPress(expertId);
-                          }}
-                        >
-                          <LinearGradient
-                            colors={['#2da898ff', '#2da898ff']}
-                            style={styles.viewProfileButton}
-                          >
-                            <Text style={styles.viewProfileText}>View Profile</Text>
-                          </LinearGradient>
-                        </Pressable>
-                        <Pressable
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            router.push({ pathname: '/booking', params: { expertId: expertId } });
-                          }}
-                          style={styles.bookSessionButton}
-                        >
-                          <Text style={styles.bookSessionText}>Book Session</Text>
-                        </Pressable>
-                      </View>
+                    <View style={styles.compactActions}>
+                      <Pressable
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          handleExpertPress(expertId);
+                        }}
+                        style={styles.quickActionOutline}
+                      >
+                        <Text style={styles.quickActionOutlineText}>View</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          router.push({ pathname: '/booking', params: { expertId: expertId } });
+                        }}
+                        style={styles.quickActionSolid}
+                      >
+                        <Text style={styles.quickActionSolidText}>Book</Text>
+                      </Pressable>
                     </View>
                   </View>
                 </Pressable>
@@ -824,42 +845,49 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveMargin(12),
   },
   expertCard: {
-    borderRadius: getResponsiveBorderRadius(16),
-    marginBottom: getResponsiveMargin(16),
-    padding: getResponsivePadding(16),
-    borderWidth: 2,
-    borderColor: '#F59E0B',
+    borderRadius: getResponsiveBorderRadius(14),
+    marginBottom: getResponsiveMargin(14),
+    padding: getResponsivePadding(12),
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.4)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
   },
   expertCardPressable: {
     flexDirection: 'row',
-    padding: getResponsivePadding(12),
+    alignItems: 'flex-start',
+    gap: getResponsivePadding(12),
   },
   expertImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    marginRight: 12,
-    borderWidth: 3,
+    width: getResponsiveWidth(56),
+    height: getResponsiveHeight(56),
+    borderRadius: getResponsiveBorderRadius(28),
+    borderWidth: 2,
     borderColor: '#F59E0B',
   },
   expertInfo: {
     flex: 1,
   },
-  expertHeader: {
+  expertTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    justifyContent: 'space-between',
+    marginBottom: getResponsiveMargin(4),
+    gap: getResponsiveWidth(8),
+  },
+  expertNameWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: getResponsiveWidth(6),
+    flex: 1,
   },
   expertName: {
-    fontSize: 14,
+    fontSize: getResponsiveFontSize(13),
     fontWeight: 'bold',
     color: '#333',
-    flex: 1,
   },
   verifiedBadge: {
     backgroundColor: '#F59E0B',
@@ -880,72 +908,74 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: getResponsiveMargin(2),
   },
+  pricePill: {
+    backgroundColor: 'rgba(45, 168, 152, 0.1)',
+    paddingHorizontal: getResponsivePadding(10),
+    paddingVertical: getResponsivePadding(4),
+    borderRadius: getResponsiveBorderRadius(12),
+    borderWidth: 1,
+    borderColor: 'rgba(45, 168, 152, 0.2)',
+  },
+  priceText: {
+    fontSize: getResponsiveFontSize(12),
+    fontWeight: '600',
+    color: '#23665c',
+  },
+  expertMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: getResponsiveMargin(4),
+  },
   expertExperience: {
     fontSize: getResponsiveFontSize(11),
     color: '#575623ff',
-    marginBottom: getResponsiveMargin(6),
+  },
+  ratingPill: {
+    backgroundColor: 'rgba(184, 134, 11, 0.12)',
+    paddingHorizontal: getResponsivePadding(8),
+    paddingVertical: getResponsivePadding(2),
+    borderRadius: getResponsiveBorderRadius(10),
   },
   expertDescription: {
     fontSize: getResponsiveFontSize(11),
     color: '#444',
     lineHeight: getResponsiveHeight(14),
-    marginBottom: getResponsiveMargin(8),
-  },
-  expertFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  buttonContainer: {
-    flexDirection: 'column',
-    gap: getResponsiveMargin(6),
-    alignItems: 'flex-end',
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: getResponsiveWidth(12),
+    marginBottom: getResponsiveMargin(10),
   },
   rating: {
     fontSize: getResponsiveFontSize(11),
     color: '#B8860B',
     fontWeight: 'bold',
   },
-  price: {
-    fontSize: getResponsiveFontSize(12),
-    color: '#333',
-    fontWeight: 'bold',
+  compactActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: getResponsiveMargin(10),
   },
-  viewProfileButton: {
+  quickActionOutline: {
     paddingHorizontal: getResponsivePadding(12),
-    paddingVertical: getResponsivePadding(6),
-    borderRadius: getResponsiveBorderRadius(12),
-    shadowColor: '#2da898ff',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 2,
+    paddingVertical: getResponsivePadding(5),
+    borderRadius: getResponsiveBorderRadius(10),
+    borderWidth: 1,
+    borderColor: '#2da898',
+    backgroundColor: '#ffffff',
   },
-  viewProfileText: {
+  quickActionOutlineText: {
     fontSize: getResponsiveFontSize(11),
-    color: '#ffffff',
     fontWeight: '600',
+    color: '#2da898',
   },
-  bookSessionButton: {
-    paddingHorizontal: getResponsivePadding(12),
+  quickActionSolid: {
+    paddingHorizontal: getResponsivePadding(14),
     paddingVertical: getResponsivePadding(6),
-    borderRadius: getResponsiveBorderRadius(12),
+    borderRadius: getResponsiveBorderRadius(10),
     backgroundColor: '#F59E0B',
-    shadowColor: '#F59E0B',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 2,
   },
-  bookSessionText: {
+  quickActionSolidText: {
     fontSize: getResponsiveFontSize(11),
-    color: '#ffffff',
     fontWeight: '600',
+    color: '#ffffff',
   },
   bottomSpacer: {
     height: FOOTER_HEIGHT + getResponsiveHeight(60), // Footer height + extra padding for better spacing

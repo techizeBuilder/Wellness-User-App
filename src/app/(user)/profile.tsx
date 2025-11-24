@@ -141,6 +141,13 @@ export default function ProfileScreen() {
           action: () => router.push('/(expert)/professional-details')
         },
         { 
+          icon: '🗂️', 
+          iconColor: '#2DD4BF',
+          title: 'Plans', 
+          subtitle: 'Manage class packs & subscriptions', 
+          action: () => router.push('/(expert)/expert-plans')
+        },
+        { 
           icon: '💰', 
           iconColor: '#2DD4BF',
           title: 'Earnings & Payouts', 

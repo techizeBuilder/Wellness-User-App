@@ -455,12 +455,21 @@ class ApiService {
 
   async createBooking(bookingData: {
     expertId: string;
-    sessionDate: string; // YYYY-MM-DD
-    startTime: string; // HH:MM
-    duration: number; // minutes
-    consultationMethod: string;
-    sessionType: string;
+    sessionDate?: string;
+    startTime?: string;
+    duration?: number;
+    consultationMethod?: string;
+    sessionType?: string;
     notes?: string;
+    planId?: string;
+    planType?: "single" | "monthly";
+    planSessions?: Array<{
+      sessionDate: string;
+      startTime: string;
+      duration: number;
+      consultationMethod: string;
+      sessionType: string;
+    }>;
   }) {
     return this.request(ENDPOINTS.BOOKINGS.CREATE, {
       method: "POST",
