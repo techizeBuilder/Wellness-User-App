@@ -11,8 +11,11 @@ export interface LoginRequest {
 export interface LoginResponse {
   success: boolean;
   message: string;
+  requiresVerification?: boolean;
+  verificationType?: 'email' | 'login';
+  userType?: 'user' | 'expert';
   requiresAccountSelection?: boolean;
-  data: {
+  data?: {
     user: {
       id: string;
       email: string;

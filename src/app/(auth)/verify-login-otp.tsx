@@ -18,7 +18,10 @@ import {
 import { showErrorToast, showSuccessToast } from '@/utils/toastConfig';
 
 export default function VerifyLoginOTPScreen() {
-  const { email } = useLocalSearchParams();
+  const { email, userType: userTypeParam } = useLocalSearchParams();
+  const emailValue = Array.isArray(email) ? email[0] : email;
+  const rawUserType = Array.isArray(userTypeParam) ? userTypeParam[0] : userTypeParam;
+  const resolvedUserType = rawUserType === 'expert' ? 'expert' : 'user';
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
@@ -36,7 +39,7 @@ export default function VerifyLoginOTPScreen() {
       return;
     }
 
-    if (!email) {
+    if (!emailValue) {
       showErrorToast('Error', 'Email not found. Please try logging in again.');
       router.push('/(auth)/login');
       return;
@@ -50,8 +53,9 @@ export default function VerifyLoginOTPScreen() {
     setIsLoading(true);
     try {
       const response = await apiService.verifyOTP({
-        email: email as string,
-        otp: otpCode
+        email: emailValue as string,
+        otp: otpCode,
+        userType: resolvedUserType
       });
       
       if (response.success) {
@@ -59,13 +63,17 @@ export default function VerifyLoginOTPScreen() {
         const responseData = response.data || response;
         if (responseData.token) {
           await apiService.setToken(responseData.token);
-          const accountType = responseData.accountType || 'User';
+          const accountType = responseData.accountType || (resolvedUserType === 'expert' ? 'Expert' : 'User');
           await authService.setAccountType(accountType);
           
           showSuccessToast('Success', 'Email verified and logged in successfully!');
           
-          // Redirect to user dashboard
-          router.replace('/(user)/dashboard');
+          // Redirect to appropriate dashboard
+          if (accountType === 'Expert') {
+            router.replace('/(expert)/expert-dashboard');
+          } else {
+            router.replace('/(user)/dashboard');
+          }
         } else {
           // Just verification, redirect to login
           showSuccessToast('Success', 'Email verified successfully! Please log in.');
@@ -82,7 +90,7 @@ export default function VerifyLoginOTPScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [otp, email, isLoading]);
+  }, [otp, emailValue, isLoading, resolvedUserType]);
 
   // Store handleVerify in ref to avoid dependency issues
   useEffect(() => {
@@ -169,7 +177,7 @@ export default function VerifyLoginOTPScreen() {
   };
 
   const handleResendCode = async () => {
-    if (!email) {
+    if (!emailValue) {
       showErrorToast('Error', 'Email not found. Please try logging in again.');
       router.push('/(auth)/login');
       return;
@@ -181,7 +189,7 @@ export default function VerifyLoginOTPScreen() {
       showSuccessToast('Info', 'Please try logging in again to receive a new OTP.');
       router.push({
         pathname: '/(auth)/login',
-        params: { email: email as string, resend: 'true' }
+        params: { email: emailValue as string, resend: 'true' }
       });
     } catch (error: any) {
       showErrorToast('Failed to Resend', error?.message || 'Failed to resend OTP');
@@ -219,7 +227,7 @@ export default function VerifyLoginOTPScreen() {
             <View style={styles.headerSection}>
               <Text style={styles.title}>Verify Your Email</Text>
               <Text style={styles.subtitle}>
-                {`We've sent a 6-digit code to\n${email || 'your email'}\nPlease enter it below to complete your login.`}
+                {`We've sent a 6-digit code to\n${emailValue || 'your email'}\nPlease enter it below to complete your login.`}
               </Text>
             </View>
 

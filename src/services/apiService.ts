@@ -308,7 +308,7 @@ class ApiService {
     });
   }
 
-  async verifyOTP(data: { email: string; otp: string }) {
+  async verifyOTP(data: { email: string; otp: string; userType?: 'user' | 'expert' }) {
     return this.request(ENDPOINTS.AUTH.VERIFY_OTP, {
       method: "POST",
       body: JSON.stringify(data),
