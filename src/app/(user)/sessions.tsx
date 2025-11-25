@@ -334,54 +334,6 @@ export default function SessionsScreen() {
     );
   };
 
-  const handleReschedule = (appointment: Appointment) => {
-    try {
-      // Safely extract IDs with defensive checks
-      let expertId: string | null = null;
-      let appointmentId: string | null = null;
-      
-      // Handle appointment ID
-      if (appointment && appointment._id) {
-        appointmentId = typeof appointment._id === 'string' 
-          ? appointment._id 
-          : String(appointment._id);
-      }
-      
-      // Handle expert ID - check if expert exists and has _id
-      if (appointment && appointment.expert) {
-        const expertIdValue = appointment.expert._id;
-        if (expertIdValue) {
-          expertId = typeof expertIdValue === 'string' 
-            ? expertIdValue 
-            : String(expertIdValue);
-        }
-      }
-      
-      // Validate IDs are not empty
-      if (!expertId || !appointmentId) {
-        console.error('Missing IDs:', { expertId, appointmentId, appointment });
-        Alert.alert('Error', 'Invalid appointment data. Please try again.');
-        return;
-      }
-      
-      // Ensure IDs are valid strings (not 'null' or 'undefined')
-      if (expertId === 'null' || expertId === 'undefined' || 
-          appointmentId === 'null' || appointmentId === 'undefined') {
-        Alert.alert('Error', 'Invalid appointment data. Please try again.');
-        return;
-      }
-      
-      // Use href format with query params to avoid serialization issues
-      const href = `/booking?expertId=${encodeURIComponent(expertId)}&appointmentId=${encodeURIComponent(appointmentId)}&mode=reschedule`;
-      console.log('Navigating to reschedule with href:', href);
-      console.log('Expert ID:', expertId, 'Appointment ID:', appointmentId);
-      router.push(href);
-    } catch (error) {
-      console.error('Error in handleReschedule:', error);
-      Alert.alert('Error', 'Failed to open reschedule screen. Please try again.');
-    }
-  };
-
   const handleJoinSession = async (appointment: Appointment) => {
     if (joiningId) return;
     try {
@@ -660,12 +612,6 @@ export default function SessionsScreen() {
                     )}
                   </View>
                 )}
-                <Pressable 
-                  style={styles.rescheduleButton}
-                  onPress={() => handleReschedule(appointment)}
-                >
-                  <Text style={styles.rescheduleButtonText}>Reschedule</Text>
-                </Pressable>
                 <Pressable 
                   style={[styles.cancelButton, cancellingId === appointment._id && styles.cancelButtonDisabled]}
                   onPress={() => handleCancel(appointment._id)}
@@ -1278,18 +1224,6 @@ const styles = StyleSheet.create({
     color: '#0f172a',
     fontSize: getResponsiveFontSize(11),
     fontStyle: 'italic',
-  },
-  rescheduleButton: {
-    flex: 1,
-    backgroundColor: '#F59E0B',
-    paddingVertical: getResponsivePadding(12),
-    borderRadius: getResponsiveBorderRadius(8),
-    alignItems: 'center',
-  },
-  rescheduleButtonText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: getResponsiveFontSize(14),
   },
   cancelButton: {
     flex: 1,

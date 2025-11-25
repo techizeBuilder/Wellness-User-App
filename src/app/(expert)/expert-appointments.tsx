@@ -31,6 +31,17 @@ import { UPLOADS_URL } from '@/config/apiConfig';
 
 const { width } = Dimensions.get('window');
 
+type AppointmentFeedbackItem = {
+  _id?: string;
+  rating?: number;
+  comment?: string;
+  createdAt?: string;
+  submittedAt?: string;
+  sessionDate?: string;
+  startTime?: string;
+  endTime?: string;
+};
+
 type Appointment = {
   _id: string;
   user: {
@@ -53,6 +64,11 @@ type Appointment = {
   feedbackRating?: number;
   feedbackComment?: string;
   feedbackSubmittedAt?: string;
+  feedbackEntries?: AppointmentFeedbackItem[];
+  feedbackHistory?: AppointmentFeedbackItem[];
+  feedbacks?: AppointmentFeedbackItem[];
+  createdAt?: string;
+  updatedAt?: string;
   prescription?: {
     url?: string;
     originalName?: string;
@@ -60,8 +76,110 @@ type Appointment = {
   };
 };
 
+type DerivedFeedbackEntry = {
+  id: string;
+  appointmentId: string;
+  userName: string;
+  rating: number;
+  comment?: string;
+  createdAt?: string;
+  sessionDate?: string;
+  startTime?: string;
+  endTime?: string;
+};
+
+const FEEDBACK_PREVIEW_LIMIT = 2;
 const STAR_SCALE = [1, 2, 3, 4, 5];
 const PRESCRIPTION_MAX_SIZE = 5 * 1024 * 1024; // 5MB
+
+const buildUserDisplayName = (user?: Appointment['user']) => {
+  if (!user) {
+    return 'Client';
+  }
+  const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+  if (fullName.length > 0) {
+    return fullName;
+  }
+  if (user.email) {
+    return user.email;
+  }
+  return 'Client';
+};
+
+const getSafeTimestamp = (value?: string) => {
+  if (!value) {
+    return 0;
+  }
+  const date = new Date(value);
+  const millis = date.getTime();
+  return Number.isNaN(millis) ? 0 : millis;
+};
+
+const pickFeedbackSourceArray = (appointment: Appointment): AppointmentFeedbackItem[] | undefined => {
+  const candidates = [
+    appointment.feedbackEntries,
+    appointment.feedbackHistory,
+    appointment.feedbacks,
+  ];
+  return candidates.find((entries) => Array.isArray(entries) && entries.length > 0);
+};
+
+const deriveFeedbackEntries = (appointment: Appointment): DerivedFeedbackEntry[] => {
+  const userName = buildUserDisplayName(appointment.user);
+  const sourceEntries =
+    pickFeedbackSourceArray(appointment) ||
+    (typeof appointment.feedbackRating === 'number'
+      ? [
+          {
+            _id: `${appointment._id}-feedback`,
+            rating: appointment.feedbackRating,
+            comment: appointment.feedbackComment,
+            createdAt: appointment.feedbackSubmittedAt,
+            submittedAt: appointment.feedbackSubmittedAt,
+            sessionDate: appointment.sessionDate,
+            startTime: appointment.startTime,
+            endTime: appointment.endTime,
+          } as AppointmentFeedbackItem,
+        ]
+      : []);
+
+  return sourceEntries
+    .map((entry, index) => {
+      if (!entry) {
+        return null;
+      }
+      const ratingValue =
+        typeof entry.rating === 'number'
+          ? entry.rating
+          : typeof appointment.feedbackRating === 'number'
+          ? appointment.feedbackRating
+          : null;
+
+      if (ratingValue === null || Number.isNaN(ratingValue)) {
+        return null;
+      }
+
+      const createdAt =
+        entry.createdAt ||
+        entry.submittedAt ||
+        appointment.feedbackSubmittedAt ||
+        appointment.sessionDate ||
+        appointment.createdAt;
+
+      return {
+        id: entry._id || `${appointment._id}-feedback-${index}`,
+        appointmentId: appointment._id,
+        userName,
+        rating: ratingValue,
+        comment: entry.comment ?? appointment.feedbackComment,
+        createdAt,
+        sessionDate: entry.sessionDate || appointment.sessionDate,
+        startTime: entry.startTime || appointment.startTime,
+        endTime: entry.endTime || appointment.endTime,
+      };
+    })
+    .filter((entry): entry is DerivedFeedbackEntry => Boolean(entry));
+};
 
 export default function ExpertAppointmentsScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -76,6 +194,7 @@ export default function ExpertAppointmentsScreen() {
   const [cancellationReason, setCancellationReason] = useState('');
   const [joiningId, setJoiningId] = useState<string | null>(null);
   const [uploadingPrescriptionId, setUploadingPrescriptionId] = useState<string | null>(null);
+  const [expandedFeedbackAppointments, setExpandedFeedbackAppointments] = useState<Record<string, boolean>>({});
 
   const statusFilters = ['All', 'Confirmed', 'Pending', 'Completed', 'Cancelled'];
 
@@ -95,16 +214,29 @@ export default function ExpertAppointmentsScreen() {
     </View>
   );
 
-  const recentFeedbackEntries = useMemo(() => {
-    return appointments
-      .filter((apt) => typeof apt.feedbackRating === 'number')
-      .sort((a, b) => {
-        const dateA = new Date(a.feedbackSubmittedAt || a.sessionDate).getTime();
-        const dateB = new Date(b.feedbackSubmittedAt || b.sessionDate).getTime();
-        return dateB - dateA;
-      })
-      .slice(0, 4);
+  const feedbackEntriesByAppointment = useMemo(() => {
+    return appointments.reduce<Record<string, DerivedFeedbackEntry[]>>((acc, appointment) => {
+      acc[appointment._id] = deriveFeedbackEntries(appointment);
+      return acc;
+    }, {});
   }, [appointments]);
+
+  const allFlattenedFeedbackEntries = useMemo(
+    () => Object.values(feedbackEntriesByAppointment).flat(),
+    [feedbackEntriesByAppointment]
+  );
+
+  const recentFeedbackEntries = useMemo(() => {
+    if (allFlattenedFeedbackEntries.length === 0) {
+      return [];
+    }
+    return [...allFlattenedFeedbackEntries]
+      .sort(
+        (a, b) =>
+          getSafeTimestamp(b.createdAt || b.sessionDate) - getSafeTimestamp(a.createdAt || a.sessionDate)
+      )
+      .slice(0, FEEDBACK_PREVIEW_LIMIT);
+  }, [allFlattenedFeedbackEntries]);
 
   const buildAbsoluteUrl = (relative?: string | null) => {
     if (!relative) {
@@ -185,6 +317,10 @@ export default function ExpertAppointmentsScreen() {
     fetchAppointments();
   }, [selectedStatus]);
 
+  useEffect(() => {
+    setExpandedFeedbackAppointments({});
+  }, [appointments.length]);
+
   const fetchAppointments = async (isRefresh = false) => {
     try {
       if (isRefresh) {
@@ -199,17 +335,18 @@ export default function ExpertAppointmentsScreen() {
       }
 
       const response = await apiService.getExpertBookings({ status });
-      const bookings = response?.data?.appointments || [];
+      const bookings: Appointment[] = response?.data?.appointments || [];
 
-      // Sort by date (earliest first for upcoming, newest first for past)
-      bookings.sort((a: Appointment, b: Appointment) => {
-        const dateA = new Date(a.sessionDate).getTime();
-        const dateB = new Date(b.sessionDate).getTime();
-        if (dateA !== dateB) return dateA - dateB;
-        return a.startTime.localeCompare(b.startTime);
+      const sortedBookings = [...bookings].sort((a, b) => {
+        const createdDiff =
+          getSafeTimestamp(b.createdAt || b.sessionDate) - getSafeTimestamp(a.createdAt || a.sessionDate);
+        if (createdDiff !== 0) {
+          return createdDiff;
+        }
+        return getSafeTimestamp(b.sessionDate) - getSafeTimestamp(a.sessionDate);
       });
 
-      setAppointments(bookings);
+      setAppointments(sortedBookings);
     } catch (error) {
       console.error('Error fetching appointments:', error);
       // Don't show alert on initial load, just log
@@ -244,6 +381,28 @@ export default function ExpertAppointmentsScreen() {
 
   const formatTimeRange = (startTime: string, endTime: string) => {
     return `${formatTime(startTime)} - ${formatTime(endTime)}`;
+  };
+
+  const formatFeedbackMeta = (sessionDate?: string, startTime?: string, endTime?: string) => {
+    const parts: string[] = [];
+    if (sessionDate) {
+      parts.push(formatDate(sessionDate));
+    }
+    if (startTime && endTime) {
+      parts.push(formatTimeRange(startTime, endTime));
+    }
+    return parts.join(' • ');
+  };
+
+  const formatFeedbackDateLabel = (value?: string) => {
+    if (!value) {
+      return '';
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
   const formatConsultationMethod = (method: string) => {
@@ -373,6 +532,13 @@ export default function ExpertAppointmentsScreen() {
     console.log('Appointment pressed:', appointment._id);
   };
 
+  const toggleFeedbackExpansion = (appointmentId: string) => {
+    setExpandedFeedbackAppointments((prev) => ({
+      ...prev,
+      [appointmentId]: !prev[appointmentId],
+    }));
+  };
+
   const filteredAppointments = appointments.filter(appointment => {
     const user = appointment.user || {};
     const userName = `${user.firstName || ''} ${user.lastName || ''}`.trim().toLowerCase();
@@ -439,35 +605,37 @@ export default function ExpertAppointmentsScreen() {
       {recentFeedbackEntries.length > 0 && (
         <View style={styles.feedbackHighlightsContainer}>
           <Text style={styles.feedbackHighlightsTitle}>Recent Feedback</Text>
-          {recentFeedbackEntries.map((appointment) => {
-            const user = appointment.user || {};
-            const userName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Client';
-            const submittedLabel = appointment.feedbackSubmittedAt
-              ? new Date(appointment.feedbackSubmittedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-              : formatDate(appointment.sessionDate);
+          {recentFeedbackEntries.map((entry, index) => {
+            const submittedLabel = formatFeedbackDateLabel(entry.createdAt || entry.sessionDate);
+            const sessionMeta = formatFeedbackMeta(entry.sessionDate, entry.startTime, entry.endTime);
 
             return (
-              <View key={appointment._id} style={styles.feedbackHighlightCard}>
+              <View
+                key={entry.id}
+                style={[
+                  styles.feedbackHighlightCard,
+                  index === recentFeedbackEntries.length - 1 && styles.feedbackHighlightCardLast,
+                ]}
+              >
                 <View style={styles.feedbackHighlightHeader}>
-                  <Text style={styles.feedbackHighlightName}>{userName}</Text>
-                  <Text style={styles.feedbackHighlightTimestamp}>{submittedLabel}</Text>
+                  <Text style={styles.feedbackHighlightName}>{entry.userName}</Text>
+                  {!!submittedLabel && (
+                    <Text style={styles.feedbackHighlightTimestamp}>{submittedLabel}</Text>
+                  )}
                 </View>
-                {renderRatingStars(appointment.feedbackRating as number)}
-                {appointment.feedbackComment ? (
-                  <Text
-                    style={styles.feedbackHighlightComment}
-                    numberOfLines={3}
-                  >
-                    {appointment.feedbackComment}
+                {renderRatingStars(entry.rating)}
+                {entry.comment ? (
+                  <Text style={styles.feedbackHighlightComment} numberOfLines={2}>
+                    {entry.comment}
                   </Text>
                 ) : (
                   <Text style={styles.feedbackHighlightPlaceholder}>
-                    Rated this session {appointment.feedbackRating}/5
+                    Rated this session {entry.rating}/5
                   </Text>
                 )}
-                <Text style={styles.feedbackHighlightMeta}>
-                  {formatDate(appointment.sessionDate)} • {formatTimeRange(appointment.startTime, appointment.endTime)}
-                </Text>
+                {!!sessionMeta && (
+                  <Text style={styles.feedbackHighlightMeta}>{sessionMeta}</Text>
+                )}
               </View>
             );
           })}
@@ -511,6 +679,17 @@ export default function ExpertAppointmentsScreen() {
               const isUpdating = updatingId === appointment._id;
               const prescriptionUrl = buildAbsoluteUrl(appointment.prescription?.url);
               const prescriptionUploadedText = formatTimestamp(appointment.prescription?.uploadedAt);
+              const appointmentFeedbackEntries = feedbackEntriesByAppointment[appointment._id] || [];
+              const feedbackCount = appointmentFeedbackEntries.length;
+              const isFeedbackExpanded = !!expandedFeedbackAppointments[appointment._id];
+              const visibleFeedbackEntries =
+                !isFeedbackExpanded && feedbackCount > FEEDBACK_PREVIEW_LIMIT
+                  ? appointmentFeedbackEntries.slice(0, FEEDBACK_PREVIEW_LIMIT)
+                  : appointmentFeedbackEntries;
+              const averageFeedbackRating =
+                feedbackCount > 0
+                  ? appointmentFeedbackEntries.reduce((sum, entry) => sum + entry.rating, 0) / feedbackCount
+                  : 0;
 
               return (
                 <View
@@ -602,18 +781,57 @@ export default function ExpertAppointmentsScreen() {
                         </View>
                       )}
 
-                      {typeof appointment.feedbackRating === 'number' && (
+                      {feedbackCount > 0 && (
                         <View style={styles.appointmentFeedback}>
                           <View style={styles.appointmentFeedbackHeader}>
-                            <Text style={styles.appointmentFeedbackTitle}>Client feedback</Text>
-                            {renderRatingStars(appointment.feedbackRating)}
-                          </View>
-                          {appointment.feedbackComment ? (
-                            <Text style={styles.appointmentFeedbackComment}>{appointment.feedbackComment}</Text>
-                          ) : (
-                            <Text style={styles.appointmentFeedbackPlaceholder}>
-                              Client rated this session {appointment.feedbackRating}/5
+                            <Text style={styles.appointmentFeedbackTitle}>
+                              Client feedback{feedbackCount > 1 ? ` (${feedbackCount})` : ''}
                             </Text>
+                            {renderRatingStars(averageFeedbackRating)}
+                          </View>
+                          {visibleFeedbackEntries.map((entry, index) => {
+                            const cardMeta = formatFeedbackMeta(entry.sessionDate, entry.startTime, entry.endTime);
+                            const timestampLabel = formatFeedbackDateLabel(entry.createdAt || entry.sessionDate);
+
+                            return (
+                              <View
+                                key={entry.id}
+                                style={[
+                                  styles.feedbackEntry,
+                                  index === 0 && styles.feedbackEntryFirst,
+                                ]}
+                              >
+                                <View style={styles.feedbackEntryHeader}>
+                                  <Text style={styles.feedbackEntryName}>{entry.userName}</Text>
+                                  {!!timestampLabel && (
+                                    <Text style={styles.feedbackEntryTimestamp}>{timestampLabel}</Text>
+                                  )}
+                                </View>
+                                {renderRatingStars(entry.rating)}
+                                {entry.comment ? (
+                                  <Text style={styles.appointmentFeedbackComment} numberOfLines={3}>
+                                    {entry.comment}
+                                  </Text>
+                                ) : (
+                                  <Text style={styles.appointmentFeedbackPlaceholder}>
+                                    Client rated this session {entry.rating}/5
+                                  </Text>
+                                )}
+                                {!!cardMeta && (
+                                  <Text style={styles.feedbackEntryMeta}>{cardMeta}</Text>
+                                )}
+                              </View>
+                            );
+                          })}
+                          {feedbackCount > FEEDBACK_PREVIEW_LIMIT && (
+                            <Pressable
+                              style={styles.feedbackToggleButton}
+                              onPress={() => toggleFeedbackExpansion(appointment._id)}
+                            >
+                              <Text style={styles.feedbackToggleText}>
+                                {isFeedbackExpanded ? 'Show less feedback' : 'View more feedback'}
+                              </Text>
+                            </Pressable>
                           )}
                         </View>
                       )}
@@ -844,6 +1062,9 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveBorderRadius(12),
     padding: getResponsivePadding(12),
     marginBottom: getResponsiveMargin(12),
+  },
+  feedbackHighlightCardLast: {
+    marginBottom: 0,
   },
   feedbackHighlightHeader: {
     flexDirection: 'row',
@@ -1083,6 +1304,49 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(12),
     color: '#6B7280',
     fontStyle: 'italic',
+  },
+  feedbackEntry: {
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    paddingTop: getResponsiveHeight(8),
+    marginTop: getResponsiveHeight(8),
+  },
+  feedbackEntryFirst: {
+    borderTopWidth: 0,
+    paddingTop: 0,
+    marginTop: 0,
+  },
+  feedbackEntryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: getResponsiveHeight(4),
+  },
+  feedbackEntryName: {
+    fontSize: getResponsiveFontSize(12),
+    fontWeight: '600',
+    color: '#111827',
+    flex: 1,
+    marginRight: getResponsiveWidth(8),
+  },
+  feedbackEntryTimestamp: {
+    fontSize: getResponsiveFontSize(11),
+    color: '#6B7280',
+  },
+  feedbackEntryMeta: {
+    fontSize: getResponsiveFontSize(11),
+    color: '#6B7280',
+    marginTop: getResponsiveHeight(4),
+  },
+  feedbackToggleButton: {
+    marginTop: getResponsiveHeight(8),
+    alignSelf: 'flex-start',
+    paddingVertical: getResponsiveHeight(4),
+  },
+  feedbackToggleText: {
+    fontSize: getResponsiveFontSize(12),
+    color: '#2563EB',
+    fontWeight: '600',
   },
   appointmentFooter: {
     flexDirection: 'row',

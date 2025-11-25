@@ -30,6 +30,7 @@ export type UserRoute =
   | '/(user)/payment-methods'
   | '/(user)/contact-info'
   | '/(user)/health-preferences'
+  | '/(user)/health-vitals'
   | '/(user)/connected-accounts'
   | '/(user)/subscription-details'
   | '/(user)/notifications'

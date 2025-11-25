@@ -234,6 +234,13 @@ export default function ProfileScreen() {
           action: () => router.push('/(user)/health-preferences')
         },
         { 
+          icon: '🩺', 
+          iconColor: '#2DD4BF',
+          title: 'Health Details', 
+          subtitle: 'Blood group, weight & BP', 
+          action: () => router.push('/(user)/health-vitals')
+        },
+        { 
           icon: '💳', 
           iconColor: '#2DD4BF',
           title: 'Payment Methods', 

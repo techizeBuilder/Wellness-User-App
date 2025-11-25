@@ -61,9 +61,6 @@ export default function BookingScreen() {
   const params = useLocalSearchParams();
   
   const [expertId, setExpertId] = useState<string>('');
-  const [appointmentId, setAppointmentId] = useState<string | undefined>(undefined);
-  const [mode, setMode] = useState<string | undefined>(undefined);
-  const [isReschedule, setIsReschedule] = useState(false);
   const [paramsExtracted, setParamsExtracted] = useState(false);
   const [planId, setPlanId] = useState<string | undefined>(undefined);
   const [planDetails, setPlanDetails] = useState<PlanDetails | null>(null);
@@ -71,7 +68,6 @@ export default function BookingScreen() {
   const [planSessions, setPlanSessions] = useState<PlanSessionSelection[]>([]);
 
   const [expert, setExpert] = useState<Expert | null>(null);
-  const [existingAppointment, setExistingAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
   
@@ -101,11 +97,10 @@ export default function BookingScreen() {
       };
       
       const extractedExpertId = getParam('expertId') || '';
-      const extractedAppointmentId = getParam('appointmentId');
       const extractedMode = getParam('mode');
       const extractedPlanId = getParam('planId');
       
-      console.log('Extracted params:', { extractedExpertId, extractedAppointmentId, extractedMode });
+      console.log('Extracted params:', { extractedExpertId, extractedMode });
       
       // Validate expertId before setting state
       if (!extractedExpertId || extractedExpertId.trim() === '') {
@@ -114,12 +109,18 @@ export default function BookingScreen() {
         router.back();
         return;
       }
-      
+
+      const isRescheduleAttempt = extractedMode === 'reschedule';
+
+      if (isRescheduleAttempt) {
+        Alert.alert(
+          'Rescheduling Unavailable',
+          'Sessions can no longer be rescheduled. Please cancel your booking and create a new one instead.'
+        );
+      }
+
       setExpertId(extractedExpertId);
-      setAppointmentId(extractedAppointmentId);
-      setMode(extractedMode);
       setPlanId(extractedPlanId);
-      setIsReschedule(extractedMode === 'reschedule' && !!extractedAppointmentId);
       setParamsExtracted(true);
     } catch (error) {
       console.error('Error extracting params:', error);
@@ -210,12 +211,6 @@ export default function BookingScreen() {
   }, [planId]);
 
   useEffect(() => {
-    if (isReschedule && appointmentId) {
-      fetchExistingAppointment();
-    }
-  }, [isReschedule, appointmentId]);
-
-  useEffect(() => {
     if (expert && selectedDate) {
       fetchAvailableSlots();
     }
@@ -298,41 +293,6 @@ export default function BookingScreen() {
     setPlanSessions((prev) => prev.filter((_, idx) => idx !== index));
   };
 
-  const fetchExistingAppointment = async () => {
-    if (!appointmentId) return;
-    
-    try {
-      const response = await apiService.getUserBookings();
-      const appointments = response?.data?.appointments || response?.appointments || [];
-      
-      // Compare IDs as strings to handle both string and object IDs
-      const appointment = appointments.find((apt: any) => {
-        const aptId = typeof apt._id === 'string' ? apt._id : String(apt._id);
-        return aptId === appointmentId;
-      });
-      
-      if (appointment) {
-        setExistingAppointment(appointment);
-        // Pre-fill form with existing appointment data
-        const date = new Date(appointment.sessionDate);
-        const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-        setSelectedDate(dateString);
-        setSelectedTime(appointment.startTime);
-        setSelectedDuration(appointment.duration);
-        setSelectedConsultationMethod(appointment.consultationMethod);
-        setSelectedSessionType(appointment.sessionType);
-        setNotes(appointment.notes || '');
-      } else {
-        Alert.alert('Error', 'Appointment not found. Please try again.');
-        router.back();
-      }
-    } catch (error) {
-      console.error('Error fetching existing appointment:', error);
-      Alert.alert('Error', handleApiError(error));
-      router.back();
-    }
-  };
-
   const fetchAvailableSlots = async () => {
     if (!expertId || !selectedDate) return;
     
@@ -362,9 +322,8 @@ export default function BookingScreen() {
       
       setAvailableSlots(slots);
       
-      // If rescheduling and the current time slot is still available, keep it selected
-      // Otherwise, reset selected time when date changes
-      if (!isReschedule || !slots.includes(selectedTime)) {
+      // Reset selected time when the available slots refresh
+      if (!slots.includes(selectedTime)) {
         setSelectedTime('');
       }
     } catch (error) {
@@ -400,18 +359,14 @@ export default function BookingScreen() {
     !!selectedTime &&
     !!selectedConsultationMethod &&
     !!selectedSessionType;
-  const rescheduleReady = !!selectedDate && !!selectedTime;
   const planReady = planDetails
     ? planDetails.type === "monthly"
       ? planSessions.length === planSessionsRequired
       : !!selectedDate && !!selectedTime
     : baseSlotReady;
-  const isBookDisabled = booking || (isReschedule ? !rescheduleReady : !planReady);
+  const isBookDisabled = booking || !planReady;
 
   const bookingCtaLabel = () => {
-    if (isReschedule) {
-      return "Reschedule Session";
-    }
     if (planDetails) {
       if (planDetails.type === "monthly") {
         return `Start Plan • ₹${calculatePrice().toLocaleString()}`;
@@ -463,31 +418,7 @@ export default function BookingScreen() {
     try {
       setBooking(true);
       
-      if (isReschedule && appointmentId) {
-        // Reschedule existing booking
-        const response = await apiService.rescheduleBooking(appointmentId, {
-          sessionDate: selectedDate,
-          startTime: selectedTime,
-          duration: selectedDuration
-        });
-
-        Alert.alert(
-          'Reschedule Successful!',
-          'Your appointment has been rescheduled successfully. Waiting for expert confirmation.',
-          [
-            { 
-              text: 'View Bookings', 
-              onPress: () => {
-                router.push('/sessions');
-              }
-            },
-            { 
-              text: 'OK', 
-              onPress: () => router.back()
-            }
-          ]
-        );
-      } else if (planDetails && planId) {
+      if (planDetails && planId) {
         if (planDetails.type === "monthly") {
           await apiService.createBooking({
             expertId,
@@ -567,7 +498,7 @@ export default function BookingScreen() {
         );
       }
     } catch (error) {
-      Alert.alert(isReschedule ? 'Reschedule Failed' : 'Booking Failed', handleApiError(error));
+      Alert.alert('Booking Failed', handleApiError(error));
     } finally {
       setBooking(false);
     }
@@ -620,7 +551,7 @@ export default function BookingScreen() {
           <Pressable style={styles.backButton} onPress={handleBackPress}>
             <Text style={styles.backArrow}>←</Text>
           </Pressable>
-          <Text style={styles.headerTitle}>{isReschedule ? 'Reschedule Session' : 'Book Session'}</Text>
+          <Text style={styles.headerTitle}>Book Session</Text>
           <View style={styles.headerSpacer} />
         </View>
 
@@ -666,7 +597,7 @@ export default function BookingScreen() {
         {/* Consultation Method Selection - Session Format */}
         {expert.consultationMethods && expert.consultationMethods.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Session Format {isReschedule && '(Cannot be changed)'}</Text>
+            <Text style={styles.sectionTitle}>Session Format</Text>
             <View style={styles.optionsContainer}>
               {expert.consultationMethods.map((method) => {
                 const methodLabels: Record<string, string> = {
@@ -681,16 +612,13 @@ export default function BookingScreen() {
                     key={method}
                     style={[
                       styles.optionCard,
-                      selectedConsultationMethod === method && styles.optionCardSelected,
-                      isReschedule && styles.optionCardDisabled
+                      selectedConsultationMethod === method && styles.optionCardSelected
                     ]}
-                    onPress={() => !isReschedule && setSelectedConsultationMethod(method)}
-                    disabled={isReschedule}
+                    onPress={() => setSelectedConsultationMethod(method)}
                   >
                     <Text style={[
                       styles.optionLabel,
-                      selectedConsultationMethod === method && styles.optionLabelSelected,
-                      isReschedule && styles.optionLabelDisabled
+                      selectedConsultationMethod === method && styles.optionLabelSelected
                     ]}>
                       {displayLabel}
                     </Text>
@@ -704,14 +632,14 @@ export default function BookingScreen() {
         {/* Session Type Selection */}
         {expert.sessionType && expert.sessionType.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Session Type {isReschedule && '(Cannot be changed)'}</Text>
+            <Text style={styles.sectionTitle}>Session Type</Text>
             <View style={styles.optionsContainer}>
               {expert.sessionType.map((type) => {
                 const typeLabels: Record<string, string> = {
                   'one-on-one': 'One-on-One',
                   'one-to-many': 'Group Session'
                 };
-                const typeDisabled = isReschedule || (lockedSessionType && type !== lockedSessionType);
+                const typeDisabled = !!lockedSessionType && type !== lockedSessionType;
                 return (
                   <Pressable
                     key={type}
