@@ -44,20 +44,26 @@ type ExpertPlan = {
   duration?: number;
 };
 
+const WEEK_DAYS = [
+  { label: "Sunday", key: "sunday" },
+  { label: "Monday", key: "monday" },
+  { label: "Tuesday", key: "tuesday" },
+  { label: "Wednesday", key: "wednesday" },
+  { label: "Thursday", key: "thursday" },
+  { label: "Friday", key: "friday" },
+  { label: "Saturday", key: "saturday" },
+];
+
 export default function ExpertDetailScreen() {
   const { id } = useLocalSearchParams();
   const expertId = Array.isArray(id) ? id[0] : id;
   const [expertData, setExpertData] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState("");
-  const [selectedTime, setSelectedTime] = useState("");
   const [showMoreInfo, setShowMoreInfo] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [bookSessionAnim] = useState(new Animated.Value(1));
   const [plans, setPlans] = useState<ExpertPlan[]>([]);
   const [plansLoading, setPlansLoading] = useState(false);
-  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const fetchExpertDetails = useCallback(async () => {
     if (!expertId) {
       setExpertData(null);
@@ -92,7 +98,6 @@ export default function ExpertDetailScreen() {
   const fetchExpertPlans = useCallback(async () => {
     if (!expertId) {
       setPlans([]);
-      setSelectedPlanId(null);
       return;
     }
 
@@ -106,19 +111,9 @@ export default function ExpertDetailScreen() {
         response?.data ||
         [];
       setPlans(planResponse);
-      if (planResponse.length === 0) {
-        setSelectedPlanId(null);
-      } else {
-        setSelectedPlanId((prev) =>
-          prev && planResponse.some((plan: ExpertPlan) => plan._id === prev)
-            ? prev
-            : planResponse[0]._id
-        );
-      }
     } catch (error) {
       console.error("Error loading expert plans:", error);
       setPlans([]);
-      setSelectedPlanId(null);
     } finally {
       setPlansLoading(false);
     }
@@ -132,93 +127,6 @@ export default function ExpertDetailScreen() {
   const suggestedExpertsScrollRef = useRef(null);
   const [currentScrollIndex, setCurrentScrollIndex] = useState(0);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
-
-  // Calendar state
-  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const [selectedFullDate, setSelectedFullDate] = useState(null);
-
-  // Calendar utility functions
-  const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-
-  const getDaysInMonth = (month, year) => {
-    return new Date(year, month + 1, 0).getDate();
-  };
-
-  const getFirstDayOfMonth = (month, year) => {
-    return new Date(year, month, 1).getDay();
-  };
-
-  const generateCalendarDays = () => {
-    const daysInMonth = getDaysInMonth(currentMonth, currentYear);
-    const firstDay = getFirstDayOfMonth(currentMonth, currentYear);
-    const today = new Date();
-
-    const days = [];
-
-    // Add empty cells for days before the first day of month
-    for (let i = 0; i < firstDay; i++) {
-      days.push({ day: "", isEmpty: true });
-    }
-
-    // Add days of the month
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(currentYear, currentMonth, day);
-      const isToday = date.toDateString() === today.toDateString();
-      const isPast = date < today && !isToday;
-
-      days.push({
-        day: day,
-        date: date,
-        isToday: isToday,
-        isPast: isPast,
-        isEmpty: false,
-        available: !isPast, // Only future dates and today are available
-      });
-    }
-
-    return days;
-  };
-
-  const navigateMonth = (direction) => {
-    if (direction === "prev") {
-      if (currentMonth === 0) {
-        setCurrentMonth(11);
-        setCurrentYear(currentYear - 1);
-      } else {
-        setCurrentMonth(currentMonth - 1);
-      }
-    } else {
-      if (currentMonth === 11) {
-        setCurrentMonth(0);
-        setCurrentYear(currentYear + 1);
-      } else {
-        setCurrentMonth(currentMonth + 1);
-      }
-    }
-  };
-
-  const handleDateSelect = (dateItem) => {
-    if (dateItem.available && !dateItem.isEmpty) {
-      setSelectedFullDate(dateItem.date);
-      const formattedDate = dateItem.day.toString().padStart(2, "0");
-      setSelectedDate(formattedDate);
-      setShowDatePicker(false);
-    }
-  };
 
   const expert = useMemo(() => {
     const fallbackText = "Not available";
@@ -356,12 +264,88 @@ export default function ExpertDetailScreen() {
     };
   }, [expertData, expertId]);
 
-  const selectedPlan = useMemo(() => {
-    if (!selectedPlanId) {
-      return null;
+  const formatTimeLabel = useCallback((value?: string) => {
+    if (!value || typeof value !== "string") {
+      return "";
     }
-    return plans.find((plan) => plan._id === selectedPlanId) || null;
-  }, [plans, selectedPlanId]);
+    const [hourString, minuteString = "00"] = value.split(":");
+    const hours = parseInt(hourString, 10);
+    const minutes = parseInt(minuteString, 10);
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+      return value;
+    }
+    const period = hours >= 12 ? "PM" : "AM";
+    const displayHour = hours % 12 || 12;
+    return `${displayHour}:${String(minutes).padStart(2, "0")} ${period}`;
+  }, []);
+
+  const weeklyAvailability = useMemo(() => {
+    const availabilityData = expertData?.availability;
+
+    return WEEK_DAYS.map((day) => {
+      if (Array.isArray(availabilityData)) {
+        const dayEntry = availabilityData.find(
+          (entry: any) =>
+            (entry?.day || "").toLowerCase() === day.label.toLowerCase()
+        );
+
+        if (!dayEntry || !dayEntry.isOpen) {
+          return { ...day, isOpen: false, timeRanges: [] as string[] };
+        }
+
+        const timeRanges =
+          dayEntry.timeRanges
+            ?.map((range: any) => {
+              if (!range?.startTime || !range?.endTime) {
+                return null;
+              }
+              return `${formatTimeLabel(range.startTime)} - ${formatTimeLabel(
+                range.endTime
+              )}`;
+            })
+            .filter(Boolean) ?? [];
+
+        return {
+          ...day,
+          isOpen: dayEntry.isOpen,
+          timeRanges,
+        };
+      }
+
+      if (availabilityData && typeof availabilityData === "object") {
+        const keyMatch =
+          availabilityData[day.key] ||
+          availabilityData[day.label] ||
+          availabilityData[day.label.toLowerCase()];
+
+        if (!keyMatch || keyMatch.available === false) {
+          return { ...day, isOpen: false, timeRanges: [] as string[] };
+        }
+
+        const startLabel = formatTimeLabel(keyMatch.start);
+        const endLabel = formatTimeLabel(keyMatch.end);
+        const timeRanges =
+          startLabel && endLabel ? [`${startLabel} - ${endLabel}`] : [];
+
+        return {
+          ...day,
+          isOpen: true,
+          timeRanges,
+        };
+      }
+
+      return { ...day, isOpen: false, timeRanges: [] as string[] };
+    });
+  }, [expertData?.availability, formatTimeLabel]);
+
+  const hasSharedAvailability = useMemo(
+    () =>
+      weeklyAvailability.some(
+        (day) =>
+          day.isOpen && Array.isArray(day.timeRanges) && day.timeRanges.length > 0
+      ),
+    [weeklyAvailability]
+  );
 
   const ratingDisplay = expert.ratingAvailable
     ? expert.rating.toFixed(1)
@@ -379,34 +363,6 @@ export default function ExpertDetailScreen() {
     primaryNameText = expert.name;
     secondaryNameText = "";
   }
-
-  const timeSlots = [
-    "09:00 AM",
-    "10:30 AM",
-    "12:00 PM",
-    "02:00 PM",
-    "03:30 PM",
-    "05:00 PM",
-  ];
-
-  const dates = [
-    { date: "27", day: "Today", available: true },
-    { date: "28", day: "Tomorrow", available: true },
-    { date: "29", day: "Sun", available: true },
-    { date: "30", day: "Mon", available: true },
-    { date: "01", day: "Tue", available: true },
-    { date: "02", day: "Wed", available: true },
-    { date: "03", day: "Thu", available: true },
-    { date: "04", day: "Fri", available: true },
-    { date: "05", day: "Sat", available: true },
-    { date: "06", day: "Sun", available: true },
-    { date: "07", day: "Mon", available: true },
-    { date: "08", day: "Tue", available: true },
-    { date: "09", day: "Wed", available: true },
-    { date: "10", day: "Thu", available: true },
-    { date: "11", day: "Fri", available: true },
-    { date: "12", day: "Sat", available: true },
-  ];
 
   const rawFeedback =
     Array.isArray((expertData as any)?.recentFeedback) &&
@@ -540,14 +496,9 @@ export default function ExpertDetailScreen() {
       return;
     }
 
-    if (!selectedPlanId) {
-      Alert.alert("Select a plan", "Please choose a plan to continue.");
-      return;
-    }
-
     router.push({
       pathname: "/booking",
-      params: { expertId: expertId, planId: selectedPlanId },
+      params: { expertId },
     });
   };
 
@@ -791,7 +742,7 @@ export default function ExpertDetailScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Choose a Plan</Text>
           <Text style={styles.planSectionHint}>
-            Select a yoga plan to lock pricing and session format before booking.
+            Review the available plans here; you can choose one during booking.
           </Text>
           {plansLoading ? (
             <View style={styles.planLoadingState}>
@@ -806,9 +757,13 @@ export default function ExpertDetailScreen() {
               </Text>
             </View>
           ) : (
-            <View style={styles.planOptionsContainer}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.planOptionsScroll}
+              contentContainerStyle={styles.planOptionsContainer}
+            >
               {plans.map((plan) => {
-                const isSelected = plan._id === selectedPlanId;
                 const planPrice =
                   plan.type === "monthly"
                     ? `₹${(plan.monthlyPrice || plan.price).toLocaleString()}/month`
@@ -818,23 +773,9 @@ export default function ExpertDetailScreen() {
                     ? `${plan.classesPerMonth || 0} classes/month`
                     : `${plan.duration || 60} min session`;
                 return (
-                  <Pressable
-                    key={plan._id}
-                    style={[
-                      styles.planOptionCard,
-                      isSelected && styles.planOptionCardActive,
-                    ]}
-                    onPress={() => setSelectedPlanId(plan._id)}
-                  >
+                  <View key={plan._id} style={styles.planOptionCard}>
                     <View style={styles.planOptionHeader}>
-                      <Text
-                        style={[
-                          styles.planOptionTitle,
-                          isSelected && styles.planOptionTitleActive,
-                        ]}
-                      >
-                        {plan.name}
-                      </Text>
+                      <Text style={styles.planOptionTitle}>{plan.name}</Text>
                       <Text
                         style={[
                           styles.planTypePill,
@@ -846,163 +787,98 @@ export default function ExpertDetailScreen() {
                         {plan.type === "monthly" ? "Monthly" : "Single"}
                       </Text>
                     </View>
-                    <Text
-                      style={[
-                        styles.planOptionPrice,
-                        isSelected && styles.planOptionTitleActive,
-                      ]}
-                    >
-                      {planPrice}
-                    </Text>
+                    <Text style={styles.planOptionPrice}>{planPrice}</Text>
                     <Text style={styles.planOptionMeta}>{planMeta}</Text>
                     {plan.sessionClassType && (
                       <Text style={styles.planOptionSubtext}>
                         Focus: {plan.sessionClassType}
                       </Text>
                     )}
-                  </Pressable>
+                  </View>
                 );
               })}
-            </View>
+            </ScrollView>
           )}
         </View>
 
         {/* Availability Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Availability</Text>
+          <Text style={styles.sectionTitle}>Weekly Availability</Text>
+          <Text style={styles.planSectionHint}>
+            {hasSharedAvailability
+              ? "Shared schedule from the expert. Exact slots are finalized on the booking screen."
+              : "This expert hasn’t shared weekly timings yet. You can still request a slot on the booking screen."}
+          </Text>
 
-          {/* Date Selection */}
-          <Text style={styles.subTitle}>Select Date</Text>
-
-          {/* Date Picker Button */}
-          <Pressable
-            style={styles.datePickerButton}
-            onPress={() => setShowDatePicker(true)}
-          >
-            <View style={styles.datePickerButtonContent}>
-              <Text style={styles.datePickerIcon}>📅</Text>
-              <Text style={styles.datePickerText}>
-                {selectedFullDate
-                  ? `${selectedFullDate.getDate()} ${
-                      monthNames[selectedFullDate.getMonth()]
-                    } ${selectedFullDate.getFullYear()}`
-                  : `Choose Date - ${monthNames[currentMonth]} ${currentYear}`}
-              </Text>
-              <Text style={styles.datePickerArrow}>▼</Text>
-            </View>
-          </Pressable>
-
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.datesContainer}
-          >
-            {dates.map((dateItem, index) => (
-              <Pressable
-                key={index}
-                style={[
-                  styles.dateCard,
-                  !dateItem.available && styles.dateCardDisabled,
-                  selectedDate === dateItem.date && styles.dateCardSelected,
-                ]}
-                disabled={!dateItem.available}
-                onPress={() => setSelectedDate(dateItem.date)}
-              >
-                <Text
+          {hasSharedAvailability ? (
+            <View style={styles.weeklyAvailabilityGrid}>
+              {weeklyAvailability.map((day) => (
+                <View
+                  key={day.label}
                   style={[
-                    styles.dateNumber,
-                    !dateItem.available && styles.dateTextDisabled,
-                    selectedDate === dateItem.date && styles.dateTextSelected,
+                    styles.weeklyDayCard,
+                    !day.isOpen && styles.weeklyDayCardClosed,
                   ]}
                 >
-                  {dateItem.date}
-                </Text>
-                <Text
-                  style={[
-                    styles.dateDay,
-                    !dateItem.available && styles.dateTextDisabled,
-                    selectedDate === dateItem.date && styles.dateTextSelected,
-                  ]}
-                >
-                  {dateItem.day}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-
-          {/* Time Selection */}
-          <Text style={styles.subTitle}>Select Time</Text>
-          <View style={styles.timeSlotsContainer}>
-            {timeSlots.map((time) => (
-              <Pressable
-                key={time}
-                style={[
-                  styles.timeSlot,
-                  selectedTime === time && styles.timeSlotSelected,
-                ]}
-                onPress={() => setSelectedTime(time)}
-              >
-                <Text
-                  style={[
-                    styles.timeSlotText,
-                    selectedTime === time && styles.timeSlotTextSelected,
-                  ]}
-                >
-                  {time}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-
-          {/* Booking Confirmation CTA */}
-          {selectedFullDate && selectedTime && (
-            <View style={styles.bookingConfirmation}>
-              <View style={styles.selectionSummary}>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryIcon}>📅</Text>
-                  <Text style={styles.summaryLabel}>Selected Date:</Text>
-                  <Text style={styles.summaryValue}>
-                    {selectedFullDate.getDate()}{" "}
-                    {monthNames[selectedFullDate.getMonth()]}{" "}
-                    {selectedFullDate.getFullYear()}
-                  </Text>
-                </View>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryIcon}>⏰</Text>
-                  <Text style={styles.summaryLabel}>Selected Time:</Text>
-                  <Text style={styles.summaryValue}>{selectedTime}</Text>
-                </View>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryIcon}>💰</Text>
-                  <Text style={styles.summaryLabel}>Session Fee:</Text>
-                  <Text style={styles.summaryValue}>
-                    {selectedPlan
-                      ? selectedPlan.type === "monthly"
-                        ? `₹${(selectedPlan.monthlyPrice || selectedPlan.price).toLocaleString()}`
-                        : `₹${selectedPlan.price.toLocaleString()}`
-                      : expert.sessionPrice}
-                  </Text>
-                </View>
-              </View>
-
-              <Animated.View
-                style={[
-                  styles.confirmButtonContainer,
-                  { transform: [{ scale: bookSessionAnim }] },
-                ]}
-              >
-                <Pressable
-                  style={styles.confirmButton}
-                  onPress={handleBookSession}
-                >
-                  <View style={styles.confirmButtonContent}>
-                    <Text style={styles.confirmButtonIcon}>✓</Text>
-                    <Text style={styles.confirmButtonText}>
-                      Confirm Session
-                    </Text>
+                  <View style={styles.weeklyDayHeader}>
+                    <View style={styles.weeklyDayBadge}>
+                      <Text
+                        style={[
+                          styles.weeklyDayBadgeText,
+                          day.isOpen && styles.weeklyDayBadgeTextOpen,
+                        ]}
+                      >
+                        {day.label.slice(0, 1)}
+                      </Text>
+                    </View>
+                    <View style={styles.weeklyDayInfo}>
+                      <Text
+                        style={[
+                          styles.weeklyDayName,
+                          !day.isOpen && styles.weeklyDayNameClosed,
+                        ]}
+                      >
+                        {day.label}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.weeklyDayStatus,
+                          day.isOpen
+                            ? styles.weeklyDayStatusOpen
+                            : styles.weeklyDayStatusClosed,
+                        ]}
+                      >
+                        {day.isOpen ? "Open" : "Closed"}
+                      </Text>
+                    </View>
                   </View>
-                </Pressable>
-              </Animated.View>
+                  {day.isOpen && day.timeRanges.length > 0 ? (
+                    <View style={styles.weeklySlotsContainer}>
+                      {day.timeRanges.map((slot, index) => (
+                        <View
+                          key={`${day.label}-${index}`}
+                          style={styles.weeklySlotPill}
+                        >
+                          <Text style={styles.weeklySlotText}>{slot}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <Text style={styles.weeklySlotTextMuted}>
+                      {day.isOpen
+                        ? "Timings not specified"
+                        : "Not taking sessions"}
+                    </Text>
+                  )}
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.planEmptyState}>
+              <Text style={styles.planEmptyTitle}>Availability not shared</Text>
+              <Text style={styles.planEmptySubtitle}>
+                Timings will be confirmed after you tap “Book Session”.
+              </Text>
             </View>
           )}
         </View>
@@ -1282,118 +1158,6 @@ export default function ExpertDetailScreen() {
         </View>
       </Modal>
 
-      {/* Calendar Date Picker Modal */}
-      <Modal
-        visible={showDatePicker}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowDatePicker(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <Pressable
-            style={styles.modalBackdrop}
-            onPress={() => setShowDatePicker(false)}
-          />
-          <View style={styles.calendarBottomSheet}>
-            <View style={styles.bottomSheetHeader}>
-              <View style={styles.bottomSheetHandle} />
-              <Text style={styles.bottomSheetTitle}>Select Date</Text>
-              <Pressable
-                style={styles.closeButton}
-                onPress={() => setShowDatePicker(false)}
-              >
-                <Text style={styles.closeButtonText}>✕</Text>
-              </Pressable>
-            </View>
-
-            <View style={styles.calendarContainer}>
-              {/* Month/Year Header with Navigation */}
-              <View style={styles.calendarHeader}>
-                <Pressable
-                  style={styles.monthNavButton}
-                  onPress={() => navigateMonth("prev")}
-                >
-                  <Text style={styles.monthNavIcon}>‹</Text>
-                </Pressable>
-
-                <View style={styles.monthYearContainer}>
-                  <Text style={styles.monthYearText}>
-                    {monthNames[currentMonth]} {currentYear}
-                  </Text>
-                  <Text style={styles.monthYearSubtext}>Select a date</Text>
-                </View>
-
-                <Pressable
-                  style={styles.monthNavButton}
-                  onPress={() => navigateMonth("next")}
-                >
-                  <Text style={styles.monthNavIcon}>›</Text>
-                </Pressable>
-              </View>
-
-              {/* Days of Week Header */}
-              <View style={styles.daysHeader}>
-                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
-                  (day) => (
-                    <Text key={day} style={styles.dayHeaderText}>
-                      {day}
-                    </Text>
-                  )
-                )}
-              </View>
-
-              {/* Calendar Grid */}
-              <ScrollView
-                style={styles.calendarScrollView}
-                showsVerticalScrollIndicator={false}
-              >
-                <View style={styles.calendarGrid}>
-                  {generateCalendarDays().map((dateItem, index) => (
-                    <Pressable
-                      key={index}
-                      style={[
-                        styles.calendarDay,
-                        dateItem.isEmpty && styles.calendarDayEmpty,
-                        !dateItem.available && styles.calendarDayDisabled,
-                        dateItem.isToday && styles.calendarDayToday,
-                        selectedFullDate &&
-                          dateItem.date &&
-                          selectedFullDate.toDateString() ===
-                            dateItem.date.toDateString() &&
-                          styles.calendarDaySelected,
-                      ]}
-                      disabled={dateItem.isEmpty || !dateItem.available}
-                      onPress={() => handleDateSelect(dateItem)}
-                    >
-                      {!dateItem.isEmpty && (
-                        <>
-                          <Text
-                            style={[
-                              styles.calendarDayText,
-                              !dateItem.available &&
-                                styles.calendarDayTextDisabled,
-                              dateItem.isToday && styles.calendarDayTextToday,
-                              selectedFullDate &&
-                                dateItem.date &&
-                                selectedFullDate.toDateString() ===
-                                  dateItem.date.toDateString() &&
-                                styles.calendarDayTextSelected,
-                            ]}
-                          >
-                            {dateItem.day}
-                          </Text>
-                        </>
-                      )}
-                    </Pressable>
-                  ))}
-                </View>
-
-                <View style={styles.bottomSheetSpacer} />
-              </ScrollView>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </LinearGradient>
   );
 }
@@ -1621,10 +1385,16 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.8)",
     textAlign: "center",
   },
+  planOptionsScroll: {
+    marginTop: getResponsiveMargin(12),
+  },
   planOptionsContainer: {
-    gap: getResponsivePadding(10),
+    flexDirection: "row",
+    gap: getResponsiveMargin(12),
+    paddingRight: getResponsivePadding(10),
   },
   planOptionCard: {
+    width: getResponsiveWidth(260),
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.2)",
     borderRadius: getResponsiveBorderRadius(16),
@@ -1684,6 +1454,90 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(11),
     color: "rgba(255,255,255,0.75)",
     marginTop: getResponsiveMargin(4),
+  },
+  weeklyAvailabilityGrid: {
+    gap: getResponsiveMargin(12),
+  },
+  weeklyDayCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: getResponsiveBorderRadius(16),
+    padding: getResponsivePadding(16),
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.25)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: getResponsiveHeight(3) },
+    shadowOpacity: 0.1,
+    shadowRadius: getResponsiveBorderRadius(6),
+    elevation: 3,
+  },
+  weeklyDayCardClosed: {
+    opacity: 0.8,
+  },
+  weeklyDayHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: getResponsiveMargin(10),
+  },
+  weeklyDayBadge: {
+    width: getResponsiveWidth(36),
+    height: getResponsiveHeight(36),
+    borderRadius: getResponsiveBorderRadius(18),
+    backgroundColor: "rgba(55, 185, 168, 0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: getResponsiveMargin(12),
+  },
+  weeklyDayBadgeText: {
+    fontSize: getResponsiveFontSize(16),
+    fontWeight: "700",
+    color: "#0f766e",
+  },
+  weeklyDayBadgeTextOpen: {
+    color: "#0f172a",
+  },
+  weeklyDayInfo: {
+    flex: 1,
+  },
+  weeklyDayName: {
+    fontSize: getResponsiveFontSize(16),
+    fontWeight: "700",
+    color: "#0f172a",
+  },
+  weeklyDayNameClosed: {
+    color: "#6b7280",
+  },
+  weeklyDayStatus: {
+    fontSize: getResponsiveFontSize(12),
+    fontWeight: "600",
+  },
+  weeklyDayStatusOpen: {
+    color: "#10b981",
+  },
+  weeklyDayStatusClosed: {
+    color: "#dc2626",
+  },
+  weeklySlotsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: getResponsiveMargin(8),
+  },
+  weeklySlotPill: {
+    backgroundColor: "rgba(16, 185, 129, 0.12)",
+    borderColor: "rgba(16, 185, 129, 0.4)",
+    borderWidth: 1,
+    borderRadius: getResponsiveBorderRadius(10),
+    paddingVertical: getResponsivePadding(6),
+    paddingHorizontal: getResponsivePadding(10),
+  },
+  weeklySlotText: {
+    fontSize: getResponsiveFontSize(12),
+    fontWeight: "600",
+    color: "#065f46",
+  },
+  weeklySlotTextMuted: {
+    fontSize: getResponsiveFontSize(12),
+    fontStyle: "italic",
+    color: "#6b7280",
   },
   loadingBanner: {
     flexDirection: "row",

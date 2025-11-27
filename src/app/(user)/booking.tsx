@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import {
     getResponsiveBorderRadius,
@@ -62,9 +62,10 @@ export default function BookingScreen() {
   
   const [expertId, setExpertId] = useState<string>('');
   const [paramsExtracted, setParamsExtracted] = useState(false);
-  const [planId, setPlanId] = useState<string | undefined>(undefined);
-  const [planDetails, setPlanDetails] = useState<PlanDetails | null>(null);
-  const [planLoading, setPlanLoading] = useState(false);
+  const [requestedPlanId, setRequestedPlanId] = useState<string | null>(null);
+  const [plans, setPlans] = useState<PlanDetails[]>([]);
+  const [plansLoading, setPlansLoading] = useState(false);
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [planSessions, setPlanSessions] = useState<PlanSessionSelection[]>([]);
 
   const [expert, setExpert] = useState<Expert | null>(null);
@@ -120,7 +121,8 @@ export default function BookingScreen() {
       }
 
       setExpertId(extractedExpertId);
-      setPlanId(extractedPlanId);
+      setRequestedPlanId(extractedPlanId || null);
+      setSelectedPlanId(extractedPlanId || null);
       setParamsExtracted(true);
     } catch (error) {
       console.error('Error extracting params:', error);
@@ -165,10 +167,15 @@ export default function BookingScreen() {
   };
 
   const dates = generateDates();
-  const isPlanBooking = !!planDetails;
-  const isMonthlyPlan = isPlanBooking && planDetails?.type === "monthly";
-  const lockedSessionType = planDetails?.sessionFormat;
-  const lockedDuration = planDetails?.duration;
+  const selectedPlan = useMemo(
+    () => plans.find((plan) => plan._id === selectedPlanId) || null,
+    [plans, selectedPlanId]
+  );
+
+  const isPlanBooking = !!selectedPlan;
+  const isMonthlyPlan = selectedPlan?.type === "monthly";
+  const lockedSessionType = selectedPlan?.sessionFormat;
+  const lockedDuration = selectedPlan?.duration;
 
   useEffect(() => {
     // Only fetch expert data after params are extracted and expertId is available
@@ -178,37 +185,77 @@ export default function BookingScreen() {
   }, [expertId, paramsExtracted]);
 
   useEffect(() => {
-    const fetchPlanDetails = async () => {
-      if (!planId) {
-        setPlanDetails(null);
-        setPlanSessions([]);
-        return;
-      }
+    if (!paramsExtracted || !expertId || expertId.trim() === '') {
+      setPlans([]);
+      return;
+    }
 
+    let isMounted = true;
+
+    const fetchPlans = async () => {
       try {
-        setPlanLoading(true);
-        const response = await apiService.getPlanById(planId);
-        const plan =
-          response?.data?.plan || response?.plan || response?.data || null;
-        setPlanDetails(plan);
-        setPlanSessions([]);
-
-        if (plan?.type === "single" && plan.duration) {
-          setSelectedDuration(plan.duration);
-        }
-        if (plan?.sessionFormat) {
-          setSelectedSessionType(plan.sessionFormat);
+        setPlansLoading(true);
+        const response = await apiService.getExpertPlans(expertId);
+        const planResponse =
+          response?.data?.plans || response?.plans || response?.data || [];
+        if (isMounted) {
+          setPlans(Array.isArray(planResponse) ? planResponse : []);
         }
       } catch (error) {
-        Alert.alert("Plan Error", handleApiError(error));
-        setPlanId(undefined);
+        console.error('Error fetching plans:', error);
+        if (isMounted) {
+          setPlans([]);
+        }
       } finally {
-        setPlanLoading(false);
+        if (isMounted) {
+          setPlansLoading(false);
+        }
       }
     };
 
-    fetchPlanDetails();
-  }, [planId]);
+    fetchPlans();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [expertId, paramsExtracted]);
+
+  useEffect(() => {
+    if (!plans.length) {
+      if (selectedPlanId !== null) {
+        setSelectedPlanId(null);
+      }
+      return;
+    }
+
+    if (selectedPlanId && !plans.some((plan) => plan._id === selectedPlanId)) {
+      setSelectedPlanId(null);
+      return;
+    }
+
+    if (!selectedPlanId && requestedPlanId) {
+      const exists = plans.some((plan) => plan._id === requestedPlanId);
+      if (exists) {
+        setSelectedPlanId(requestedPlanId);
+      }
+    }
+  }, [plans, requestedPlanId, selectedPlanId]);
+
+  useEffect(() => {
+    setPlanSessions([]);
+    if (!selectedPlan) {
+      setSelectedDuration(60);
+      return;
+    }
+
+    if (selectedPlan.duration) {
+      setSelectedDuration(selectedPlan.duration);
+    }
+
+    if (selectedPlan.sessionFormat) {
+      setSelectedSessionType(selectedPlan.sessionFormat);
+    }
+  }, [selectedPlanId, selectedPlan]);
 
   useEffect(() => {
     if (expert && selectedDate) {
@@ -225,7 +272,10 @@ export default function BookingScreen() {
       
       // Set default consultation method and session type
       if (expertData.consultationMethods && expertData.consultationMethods.length > 0) {
-        setSelectedConsultationMethod(expertData.consultationMethods[0]);
+        const allowedMethods = expertData.consultationMethods.filter(
+          (method: string) => method?.toLowerCase() !== 'chat'
+        );
+        setSelectedConsultationMethod(allowedMethods[0] || '');
       }
       if (expertData.sessionType && expertData.sessionType.length > 0) {
         setSelectedSessionType(expertData.sessionType[0]);
@@ -239,11 +289,11 @@ export default function BookingScreen() {
   };
 
   const handleAddPlanSession = () => {
-    if (!planDetails || planDetails.type !== "monthly") {
+    if (!selectedPlan || selectedPlan.type !== "monthly") {
       return;
     }
 
-    if (planSessions.length >= (planDetails.classesPerMonth || 0)) {
+    if (planSessions.length >= (selectedPlan.classesPerMonth || 0)) {
       Alert.alert(
         "Limit reached",
         "You have already scheduled all classes for this subscription."
@@ -279,9 +329,9 @@ export default function BookingScreen() {
     const newSession: PlanSessionSelection = {
       sessionDate: selectedDate,
       startTime: selectedTime,
-      duration: planDetails.duration || selectedDuration,
+      duration: selectedPlan.duration || selectedDuration,
       consultationMethod: selectedConsultationMethod,
-      sessionType: planDetails.sessionFormat || selectedSessionType,
+      sessionType: selectedPlan.sessionFormat || selectedSessionType,
     };
 
     setPlanSessions((prev) => [...prev, newSession]);
@@ -343,35 +393,43 @@ export default function BookingScreen() {
   };
 
   const calculatePrice = () => {
-    if (planDetails) {
-      if (planDetails.type === "monthly") {
-        return planDetails.monthlyPrice || planDetails.price || 0;
+    if (selectedPlan) {
+      if (selectedPlan.type === "monthly") {
+        return selectedPlan.monthlyPrice || selectedPlan.price || 0;
       }
-      return planDetails.price || 0;
+      return selectedPlan.price || 0;
     }
     if (!expert || !expert.hourlyRate) return 0;
     return Math.round((expert.hourlyRate * selectedDuration) / 60);
   };
 
-  const planSessionsRequired = planDetails?.classesPerMonth || 0;
+  const planSessionsRequired = selectedPlan?.classesPerMonth || 0;
   const baseSlotReady =
     !!selectedDate &&
     !!selectedTime &&
     !!selectedConsultationMethod &&
     !!selectedSessionType;
-  const planReady = planDetails
-    ? planDetails.type === "monthly"
-      ? planSessions.length === planSessionsRequired
+  const planReady = selectedPlan
+    ? selectedPlan.type === "monthly"
+      ? planSessionsRequired > 0 &&
+        planSessions.length === planSessionsRequired &&
+        planSessions.every(
+          (session) =>
+            session.sessionDate &&
+            session.startTime &&
+            session.consultationMethod &&
+            session.sessionType
+        )
       : !!selectedDate && !!selectedTime
     : baseSlotReady;
   const isBookDisabled = booking || !planReady;
 
   const bookingCtaLabel = () => {
-    if (planDetails) {
-      if (planDetails.type === "monthly") {
+    if (selectedPlan) {
+      if (selectedPlan.type === "monthly") {
         return `Start Plan • ₹${calculatePrice().toLocaleString()}`;
       }
-      return `Book ${planDetails.name}`;
+      return `Book ${selectedPlan.name}`;
     }
     return `Confirm Booking - ₹${calculatePrice()}`;
   };
@@ -381,21 +439,21 @@ export default function BookingScreen() {
   };
 
   const handleBooking = async () => {
-    if (!planDetails) {
+    if (!selectedPlan) {
       if (!selectedDate || !selectedTime || !selectedConsultationMethod || !selectedSessionType) {
         Alert.alert('Missing Information', 'Please fill in all required fields.');
         return;
       }
-    } else if (planDetails.type === "single") {
+    } else if (selectedPlan.type === "single") {
       if (!selectedDate || !selectedTime) {
         Alert.alert('Missing Information', 'Please select the date and time for this plan.');
         return;
       }
-    } else if (planDetails.type === "monthly") {
-      if (planSessions.length !== (planDetails.classesPerMonth || 0)) {
+    } else if (selectedPlan.type === "monthly") {
+      if (planSessions.length !== (selectedPlan.classesPerMonth || 0)) {
         Alert.alert(
           'Schedule Pending',
-          `Please schedule all ${planDetails.classesPerMonth} classes before confirming.`
+          `Please schedule all ${selectedPlan.classesPerMonth || 0} classes before confirming.`
         );
         return;
       }
@@ -418,19 +476,19 @@ export default function BookingScreen() {
     try {
       setBooking(true);
       
-      if (planDetails && planId) {
-        if (planDetails.type === "monthly") {
+      if (selectedPlan) {
+        if (selectedPlan.type === "monthly") {
           await apiService.createBooking({
             expertId,
-            planId,
-            planType: planDetails.type,
+            planId: selectedPlan._id,
+            planType: selectedPlan.type,
             planSessions: planSessions,
             notes: notes || undefined,
           });
 
           Alert.alert(
             'Plan Scheduled!',
-            `All ${planDetails.classesPerMonth} classes have been scheduled. Waiting for expert confirmation.`,
+            `All ${selectedPlan.classesPerMonth || 0} classes have been scheduled. Waiting for expert confirmation.`,
             [
               {
                 text: 'View Bookings',
@@ -442,13 +500,13 @@ export default function BookingScreen() {
         } else {
           await apiService.createBooking({
             expertId,
-            planId,
-            planType: planDetails.type,
+            planId: selectedPlan._id,
+            planType: selectedPlan.type,
             planSessions: [
               {
                 sessionDate: selectedDate,
                 startTime: selectedTime,
-                duration: planDetails.duration || selectedDuration,
+                duration: selectedPlan.duration || selectedDuration,
                 consultationMethod: selectedConsultationMethod,
                 sessionType: selectedSessionType,
               },
@@ -458,7 +516,7 @@ export default function BookingScreen() {
 
           Alert.alert(
             'Plan Booked!',
-            `${planDetails.name} has been scheduled successfully.`,
+            `${selectedPlan.name} has been scheduled successfully.`,
             [
               {
                 text: 'View Bookings',
@@ -537,6 +595,9 @@ export default function BookingScreen() {
   const expertName = [expert.firstName, expert.lastName].filter(Boolean).join(' ') || 'Expert';
   const expertImage = getProfileImageWithFallback(expert.profileImage, expertName) || `https://ui-avatars.com/api/?name=${encodeURIComponent(expertName)}&background=37b9a8&color=fff&size=128`;
   const rating = expert.rating?.average || 0;
+  const availableConsultationMethods = Array.isArray(expert.consultationMethods)
+    ? expert.consultationMethods.filter((method) => method.toLowerCase() !== 'chat')
+    : [];
 
   return (
     <LinearGradient
@@ -570,40 +631,127 @@ export default function BookingScreen() {
           </View>
         </View>
 
-        {planId && planLoading && (
-          <View style={styles.planSummaryCard}>
-            <ActivityIndicator size="small" color="#10b981" />
-            <Text style={styles.planSummaryLoadingText}>Loading plan details…</Text>
-          </View>
-        )}
-
-        {planDetails && !planLoading && (
-          <View style={styles.planSummaryCard}>
-            <Text style={styles.planSummaryLabel}>Selected Plan</Text>
-            <Text style={styles.planSummaryName}>{planDetails.name}</Text>
-            <Text style={styles.planSummaryMeta}>
-              {planDetails.type === "monthly"
-                ? `${planDetails.classesPerMonth || 0} classes / month`
-                : `${planDetails.duration || 60} minute session`}
-            </Text>
-            <Text style={styles.planSummaryPrice}>
-              {planDetails.type === "monthly"
-                ? `₹${(planDetails.monthlyPrice || planDetails.price).toLocaleString()} / month`
-                : `₹${planDetails.price.toLocaleString()} per class`}
-            </Text>
-          </View>
-        )}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Choose a Plan</Text>
+          <Text style={styles.planSectionHint}>
+            Pick one of the expert&apos;s plans or continue with a standard one-off session.
+          </Text>
+          {plansLoading ? (
+            <View style={styles.planSummaryCard}>
+              <ActivityIndicator size="small" color="#10b981" />
+              <Text style={styles.planSummaryLoadingText}>Loading plans…</Text>
+            </View>
+          ) : plans.length > 0 ? (
+            <>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.planChoiceScrollContent}
+                style={styles.planChoiceScroll}
+              >
+                <Pressable
+                  style={[
+                    styles.planChoiceCard,
+                    selectedPlanId === null && styles.planChoiceCardActive,
+                  ]}
+                  onPress={() => setSelectedPlanId(null)}
+                >
+                  <Text style={styles.planChoiceTitle}>No Plan</Text>
+                  <Text style={styles.planChoiceMeta}>Pay per session</Text>
+                  <Text style={styles.planChoicePrice}>
+                    {expert?.hourlyRate ? `₹${expert.hourlyRate}/hr` : "Use base rate"}
+                  </Text>
+                </Pressable>
+                {plans.map((plan) => {
+                  const active = selectedPlanId === plan._id;
+                  const priceLabel =
+                    plan.type === "monthly"
+                      ? `₹${(plan.monthlyPrice || plan.price).toLocaleString()}/month`
+                      : `₹${plan.price.toLocaleString()} per class`;
+                  const metaLabel =
+                    plan.type === "monthly"
+                      ? `${plan.classesPerMonth || 0} classes per month`
+                      : `${plan.duration || 60} minute session`;
+                  return (
+                    <Pressable
+                      key={plan._id}
+                      style={[styles.planChoiceCard, active && styles.planChoiceCardActive]}
+                      onPress={() => setSelectedPlanId(plan._id)}
+                    >
+                      <View
+                        style={[
+                          styles.planChoiceTypePill,
+                          plan.type === "monthly"
+                            ? styles.planChoiceTypeMonthly
+                            : styles.planChoiceTypeSingle,
+                        ]}
+                      >
+                        <Text style={styles.planChoiceTypeText}>
+                          {plan.type === "monthly" ? "Monthly" : "Single"}
+                        </Text>
+                      </View>
+                      <Text
+                        style={[
+                          styles.planChoiceTitle,
+                          active && styles.planChoiceTitleActive,
+                        ]}
+                      >
+                        {plan.name}
+                      </Text>
+                      <Text style={styles.planChoiceMeta}>{metaLabel}</Text>
+                      <Text
+                        style={[
+                          styles.planChoicePrice,
+                          active && styles.planChoiceTitleActive,
+                        ]}
+                      >
+                        {priceLabel}
+                      </Text>
+                      {plan.sessionClassType && (
+                        <Text style={styles.planChoiceDescription}>
+                          Focus: {plan.sessionClassType}
+                        </Text>
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+              {selectedPlan && (
+                <View style={styles.planSummaryCard}>
+                  <Text style={styles.planSummaryLabel}>Selected Plan</Text>
+                  <Text style={styles.planSummaryName}>{selectedPlan.name}</Text>
+                  <Text style={styles.planSummaryMeta}>
+                    {selectedPlan.type === "monthly"
+                      ? `${selectedPlan.classesPerMonth || 0} classes / month`
+                      : `${selectedPlan.duration || 60} minute session`}
+                  </Text>
+                  <Text style={styles.planSummaryPrice}>
+                    {selectedPlan.type === "monthly"
+                      ? `₹${(selectedPlan.monthlyPrice || selectedPlan.price).toLocaleString()} / month`
+                      : `₹${selectedPlan.price.toLocaleString()} per class`}
+                  </Text>
+                </View>
+              )}
+            </>
+          ) : (
+            <View style={styles.planSummaryCard}>
+              <Text style={styles.planSummaryLabel}>Plans</Text>
+              <Text style={styles.planSummaryEmptyText}>
+                This expert hasn’t published plans yet. You can still book a single session.
+              </Text>
+            </View>
+          )}
+        </View>
 
         {/* Consultation Method Selection - Session Format */}
-        {expert.consultationMethods && expert.consultationMethods.length > 0 && (
+        {availableConsultationMethods.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Session Format</Text>
             <View style={styles.optionsContainer}>
-              {expert.consultationMethods.map((method) => {
+              {availableConsultationMethods.map((method) => {
                 const methodLabels: Record<string, string> = {
                   'video': 'Video Call',
                   'audio': 'Audio Call',
-                  'chat': 'Chat',
                   'in-person': 'In-Person'
                 };
                 const displayLabel = methodLabels[method] || method.charAt(0).toUpperCase() + method.slice(1);
@@ -768,10 +916,10 @@ export default function BookingScreen() {
           </View>
         )}
 
-        {isMonthlyPlan && planDetails?.classesPerMonth ? (
+        {isMonthlyPlan && selectedPlan?.classesPerMonth ? (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
-              Scheduled Classes ({planSessions.length}/{planDetails.classesPerMonth})
+              Scheduled Classes ({planSessions.length}/{selectedPlan.classesPerMonth || 0})
             </Text>
             <Text style={styles.planSessionsHint}>
               Pick a date and time above, then tap "Add Class" to queue it.
@@ -804,13 +952,13 @@ export default function BookingScreen() {
             <Pressable
               style={[
                 styles.addSessionButton,
-                (planSessions.length >= planDetails.classesPerMonth ||
+                (planSessions.length >= (selectedPlan.classesPerMonth || 0) ||
                   !selectedDate ||
                   !selectedTime) && styles.addSessionButtonDisabled,
               ]}
               onPress={handleAddPlanSession}
               disabled={
-                planSessions.length >= planDetails.classesPerMonth ||
+                planSessions.length >= (selectedPlan.classesPerMonth || 0) ||
                 !selectedDate ||
                 !selectedTime
               }
@@ -840,10 +988,10 @@ export default function BookingScreen() {
           <View style={styles.priceCard}>
             <View style={styles.priceRow}>
               <Text style={styles.priceLabel}>
-                {planDetails
-                  ? planDetails.type === "monthly"
-                    ? `${planDetails.classesPerMonth || 0} classes plan`
-                    : planDetails.name
+                {selectedPlan
+                  ? selectedPlan.type === "monthly"
+                    ? `${selectedPlan.classesPerMonth || 0} classes plan`
+                    : selectedPlan.name
                   : `Session (${selectedDuration} min)`}
               </Text>
               <Text style={styles.priceValue}>₹{calculatePrice()}</Text>
@@ -1000,6 +1148,79 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     fontWeight: '700',
     marginTop: getResponsiveMargin(8),
+  },
+  planSummaryEmptyText: {
+    fontSize: getResponsiveFontSize(13),
+    color: '#065F46',
+    marginTop: getResponsiveMargin(4),
+    lineHeight: getResponsiveHeight(18),
+  },
+  planChoiceScroll: {
+    marginVertical: getResponsiveMargin(16),
+  },
+  planChoiceScrollContent: {
+    paddingRight: getResponsivePadding(10),
+  },
+  planChoiceCard: {
+    width: getResponsiveWidth(220),
+    marginRight: getResponsiveMargin(12),
+    backgroundColor: '#ffffff',
+    borderRadius: getResponsiveBorderRadius(16),
+    padding: getResponsivePadding(16),
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  planChoiceCardActive: {
+    borderColor: '#10b981',
+    shadowColor: '#10b981',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  planChoiceTitle: {
+    fontSize: getResponsiveFontSize(16),
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  planChoiceTitleActive: {
+    color: '#047857',
+  },
+  planChoiceMeta: {
+    fontSize: getResponsiveFontSize(12),
+    color: '#4b5563',
+    marginTop: getResponsiveMargin(4),
+  },
+  planChoicePrice: {
+    fontSize: getResponsiveFontSize(14),
+    fontWeight: '600',
+    color: '#0f172a',
+    marginTop: getResponsiveMargin(8),
+  },
+  planChoiceTypePill: {
+    alignSelf: 'flex-start',
+    borderRadius: getResponsiveBorderRadius(999),
+    paddingHorizontal: getResponsivePadding(10),
+    paddingVertical: getResponsivePadding(4),
+    marginBottom: getResponsiveMargin(8),
+  },
+  planChoiceTypeText: {
+    fontSize: getResponsiveFontSize(10),
+    fontWeight: '700',
+    color: '#0f172a',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  planChoiceTypeMonthly: {
+    backgroundColor: 'rgba(59,130,246,0.15)',
+  },
+  planChoiceTypeSingle: {
+    backgroundColor: 'rgba(16,185,129,0.15)',
+  },
+  planChoiceDescription: {
+    fontSize: getResponsiveFontSize(11),
+    color: '#6b7280',
+    marginTop: getResponsiveMargin(6),
   },
   expertImage: {
     width: getResponsiveWidth(60),

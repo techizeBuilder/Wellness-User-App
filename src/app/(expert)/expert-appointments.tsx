@@ -429,8 +429,20 @@ export default function ExpertAppointmentsScreen() {
     return { startDateTime, endDateTime };
   };
 
-  const canJoinVideoCall = (appointment: Appointment) => {
-    if (appointment.consultationMethod !== 'video' || appointment.status !== 'confirmed') {
+  const isRealtimeConsultation = (method?: string) => {
+    if (!method) return false;
+    return method === 'video' || method === 'audio';
+  };
+
+  const getJoinCtaLabel = (method?: string) => {
+    if (method === 'audio') {
+      return 'Join Audio Call';
+    }
+    return 'Join Video Call';
+  };
+
+  const canJoinRealtimeSession = (appointment: Appointment) => {
+    if (!isRealtimeConsultation(appointment.consultationMethod) || appointment.status !== 'confirmed') {
       return false;
     }
     const { startDateTime, endDateTime } = getAppointmentDateTimes(appointment);
@@ -506,7 +518,7 @@ export default function ExpertAppointmentsScreen() {
       const agoraData = payload?.data || payload;
 
       if (!agoraData?.token || !agoraData?.channelName || !agoraData?.appId) {
-        throw new Error('Unable to start video session. Please try again.');
+        throw new Error('Unable to start session. Please try again.');
       }
 
       router.push({
@@ -517,7 +529,10 @@ export default function ExpertAppointmentsScreen() {
           token: encodeURIComponent(String(agoraData.token)),
           uid: encodeURIComponent(String(agoraData.uid ?? '')),
           role: encodeURIComponent(String(agoraData.role || 'host')),
-          displayName: encodeURIComponent('Expert')
+          displayName: encodeURIComponent('Expert'),
+          mediaType: encodeURIComponent(
+            String(agoraData.mediaType || appointment.consultationMethod || 'video')
+          )
         }
       });
     } catch (error) {
@@ -866,25 +881,25 @@ export default function ExpertAppointmentsScreen() {
                           )}
                           {appointment.status === 'confirmed' && (
                             <View style={styles.confirmedActions}>
-                              {appointment.consultationMethod === 'video' && (
+                              {isRealtimeConsultation(appointment.consultationMethod) && (
                                 <>
                                   <Pressable
                                     style={[
                                       styles.joinButton,
-                                      (!canJoinVideoCall(appointment) || joiningId === appointment._id) && styles.buttonDisabled
+                                      (!canJoinRealtimeSession(appointment) || joiningId === appointment._id) && styles.buttonDisabled
                                     ]}
                                     onPress={() => handleJoinSession(appointment)}
-                                    disabled={!canJoinVideoCall(appointment) || joiningId === appointment._id}
+                                    disabled={!canJoinRealtimeSession(appointment) || joiningId === appointment._id}
                                   >
                                     {joiningId === appointment._id ? (
                                       <ActivityIndicator size="small" color="#FFFFFF" />
                                     ) : (
                                       <Text style={styles.joinButtonText}>
-                                        {canJoinVideoCall(appointment) ? 'Join Video Call' : 'Join Opens Soon'}
+                                        {canJoinRealtimeSession(appointment) ? getJoinCtaLabel(appointment.consultationMethod) : 'Join Opens Soon'}
                                       </Text>
                                     )}
                                   </Pressable>
-                                  {!canJoinVideoCall(appointment) && (
+                                  {!canJoinRealtimeSession(appointment) && (
                                     <Text style={styles.waitingText}>Join link unlocks 5 min before start</Text>
                                   )}
                                 </>

@@ -99,12 +99,17 @@ export default function DashboardScreen() {
     router.push("/(user)/profile");
   };
 
-  const handleCategorySelect = (categoryName: string) => {
-    router.push({
-      pathname: "/(user)/experts",
-      params: { specialization: categoryName },
-    });
-  };
+const handleCategorySelect = (categoryName: string) => {
+  if (categoryName === "All") {
+    router.push("/(user)/experts");
+    return;
+  }
+
+  router.push({
+    pathname: "/(user)/experts",
+    params: { specialization: categoryName },
+  });
+};
 
   const handleYogaExplore = () => {
     if (selectedYogaCategory === "All Yoga") {
@@ -195,13 +200,16 @@ export default function DashboardScreen() {
     return () => clearInterval(timer);
   }, []);
 
-  const categories = [
-    { name: "Yoga", icon: "🧘‍♀️", backgroundColor: "#edebf0ff" },
-    { name: "Ayurveda", icon: "🌿", backgroundColor: "#edebf0ff" },
-    { name: "Diet", icon: "🥗", backgroundColor: "#edebf0ff" },
-    { name: "Astro Health", icon: "🔮", backgroundColor: "#edebf0ff" },
-    { name: "Meditation", icon: "🕯️", backgroundColor: "#edebf0ff" },
-  ];
+const categoryCardBase = { backgroundColor: "#edebf0ff" };
+const categories = [
+  { name: "All", icon: "✨", ...categoryCardBase },
+  { name: "Yoga", icon: "🧘‍♀️", ...categoryCardBase },
+  { name: "Ayurveda", icon: "🌿", ...categoryCardBase },
+  { name: "Fitness", icon: "🏋️", ...categoryCardBase },
+  { name: "Mental Health", icon: "🧠", ...categoryCardBase },
+  { name: "Nutrition", icon: "🥗", ...categoryCardBase },
+  { name: "Meditation", icon: "🕯️", ...categoryCardBase },
+];
 
   const yogaCategories = [
     { name: "All Yoga", description: "Browse every style", icon: "✨" },

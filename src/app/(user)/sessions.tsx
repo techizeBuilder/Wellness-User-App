@@ -283,6 +283,18 @@ export default function SessionsScreen() {
     return labels[method] || method.charAt(0).toUpperCase() + method.slice(1);
   };
 
+  const isRealtimeConsultation = (method?: string) => {
+    if (!method) return false;
+    return method === 'video' || method === 'audio';
+  };
+
+  const getJoinCtaLabel = (method?: string) => {
+    if (method === 'audio') {
+      return 'Join Audio Call';
+    }
+    return 'Join Video Call';
+  };
+
   const getAppointmentDateTimes = (appointment: Appointment) => {
     const sessionDate = new Date(appointment.sessionDate);
     const [startHour, startMin] = appointment.startTime.split(':').map(Number);
@@ -297,8 +309,8 @@ export default function SessionsScreen() {
     return { startDateTime, endDateTime };
   };
 
-  const canJoinVideoCall = (appointment: Appointment) => {
-    if (appointment.consultationMethod !== 'video' || appointment.status !== 'confirmed') {
+  const canJoinRealtimeSession = (appointment: Appointment) => {
+    if (!isRealtimeConsultation(appointment.consultationMethod) || appointment.status !== 'confirmed') {
       return false;
     }
     const { startDateTime, endDateTime } = getAppointmentDateTimes(appointment);
@@ -343,7 +355,7 @@ export default function SessionsScreen() {
       const agoraData = payload?.data || payload;
 
       if (!agoraData?.token || !agoraData?.channelName || !agoraData?.appId) {
-        throw new Error('Unable to start video session. Please try again.');
+        throw new Error('Unable to start session. Please try again.');
       }
 
       router.push({
@@ -354,7 +366,10 @@ export default function SessionsScreen() {
           token: encodeURIComponent(String(agoraData.token)),
           uid: encodeURIComponent(String(agoraData.uid ?? '')),
           role: encodeURIComponent(String(agoraData.role || 'audience')),
-          displayName: encodeURIComponent('You')
+          displayName: encodeURIComponent('You'),
+          mediaType: encodeURIComponent(
+            String(agoraData.mediaType || appointment.consultationMethod || 'video')
+          )
         }
       });
     } catch (error) {
@@ -589,25 +604,25 @@ export default function SessionsScreen() {
           <View style={styles.actionButtons}>
             {isUpcoming && (
               <>
-                {appointment.consultationMethod === 'video' && appointment.status === 'confirmed' && (
+                {isRealtimeConsultation(appointment.consultationMethod) && appointment.status === 'confirmed' && (
                   <View style={styles.joinSection}>
                     <Pressable 
                       style={[
                         styles.joinButton,
-                        (!canJoinVideoCall(appointment) || joiningId === appointment._id) && styles.joinButtonDisabled
+                        (!canJoinRealtimeSession(appointment) || joiningId === appointment._id) && styles.joinButtonDisabled
                       ]}
                       onPress={() => handleJoinSession(appointment)}
-                      disabled={!canJoinVideoCall(appointment) || joiningId === appointment._id}
+                      disabled={!canJoinRealtimeSession(appointment) || joiningId === appointment._id}
                     >
                       {joiningId === appointment._id ? (
                         <ActivityIndicator size="small" color="#FFFFFF" />
                       ) : (
                         <Text style={styles.joinButtonText}>
-                          {canJoinVideoCall(appointment) ? 'Join Video Call' : 'Join Opens Soon'}
+                          {canJoinRealtimeSession(appointment) ? getJoinCtaLabel(appointment.consultationMethod) : 'Join Opens Soon'}
                         </Text>
                       )}
                     </Pressable>
-                    {!canJoinVideoCall(appointment) && (
+                    {!canJoinRealtimeSession(appointment) && (
                       <Text style={styles.joinHint}>Join link unlocks 5 min before start</Text>
                     )}
                   </View>

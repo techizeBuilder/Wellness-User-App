@@ -52,7 +52,16 @@ const PRICE_FILTERS: { label: string; min: number; max: number }[] = [
 ];
 
 const RATING_FILTERS = ['All', '4.5+', '4.0+', '3.5+'];
-const RESULTS_PER_PAGE = 10;
+const STATIC_CATEGORIES = [
+  'All',
+  'Yoga',
+  'Ayurveda',
+  'Fitness',
+  'Mental Health',
+  'Nutrition',
+  'Meditation'
+];
+const RESULTS_PER_PAGE = 20;
 
 export default function ExpertsScreen() {
   const params = useLocalSearchParams();
@@ -73,42 +82,32 @@ export default function ExpertsScreen() {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(true);
 
-  const categories = useMemo(() => {
-    const unique = new Set<string>();
-    experts.forEach((expert) => {
-      if (expert.specialization) {
-        unique.add(expert.specialization);
-      }
-    });
-    if (
-      specializationParam &&
-      typeof specializationParam === 'string' &&
-      specializationParam.trim().length > 0
-    ) {
-      unique.add(specializationParam);
-    }
-    if (selectedCategory !== 'All' && selectedCategory.trim().length > 0) {
-      unique.add(selectedCategory);
-    }
-    const categoryList = Array.from(unique).sort((a, b) => a.localeCompare(b));
-    return ['All', ...categoryList];
-  }, [experts, specializationParam, selectedCategory]);
+const categories = STATIC_CATEGORIES;
 
-  useEffect(() => {
-    if (
-      specializationParam &&
-      typeof specializationParam === 'string' &&
-      categories.includes(specializationParam)
-    ) {
-      setSelectedCategory(specializationParam);
-    }
-  }, [specializationParam, categories]);
+useEffect(() => {
+  if (
+    typeof specializationParam !== 'string' ||
+    specializationParam.trim().length === 0
+  ) {
+    return;
+  }
 
-  const fetchExperts = useCallback(
+  const matchedCategory = categories.find(
+    (category) => category.toLowerCase() === specializationParam.toLowerCase()
+  );
+
+  if (matchedCategory) {
+    setSelectedCategory(matchedCategory);
+  }
+}, [specializationParam]);
+
+const fetchExperts = useCallback(
     async (options?: { refresh?: boolean; page?: number }) => {
       const targetPage = options?.page ?? 1;
       const isRefresh = options?.refresh ?? targetPage === 1;
       const isInitialLoad = targetPage === 1 && !isRefresh;
+      const specializationFilter =
+        selectedCategory && selectedCategory !== 'All' ? selectedCategory : undefined;
 
       if (isRefresh) {
         setRefreshing(true);
@@ -129,6 +128,7 @@ export default function ExpertsScreen() {
           page: targetPage,
           limit: RESULTS_PER_PAGE,
           sortBy: 'createdAt',
+          specialization: specializationFilter,
         });
 
         const data =
@@ -179,7 +179,7 @@ export default function ExpertsScreen() {
         }
       }
     },
-    []
+    [selectedCategory]
   );
 
   useEffect(() => {
