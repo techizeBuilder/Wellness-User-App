@@ -25,7 +25,7 @@ import {
 } from "@/utils/dimensions";
 import { UPLOADS_URL } from "@/config/apiConfig";
 
-const AVAILABLE_SESSION_TYPES = ["video", "chat", "audio"];
+const AVAILABLE_SESSION_TYPES = ["video", "audio"];
 const AVAILABLE_SESSION_FORMATS = ["one-on-one", "one-to-many"];
 
 export default function ProfessionalDetailsScreen() {

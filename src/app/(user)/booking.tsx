@@ -74,6 +74,10 @@ export default function BookingScreen() {
   
   // Safely extract params in useEffect to avoid bridge serialization issues
   useEffect(() => {
+    if (paramsExtracted) {
+      return;
+    }
+
     try {
       console.log('Booking screen params:', params);
       
@@ -129,7 +133,7 @@ export default function BookingScreen() {
       Alert.alert('Error', 'Failed to load booking screen. Please try again.');
       router.back();
     }
-  }, [params]);
+  }, [params, paramsExtracted]);
   
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
@@ -142,6 +146,29 @@ export default function BookingScreen() {
   const [bookingAnim] = useState(new Animated.Value(1));
 
   const sessionDurations = [30, 60, 90, 120];
+
+const getPlanId = (plan: PlanDetails | null | undefined): string => {
+  if (!plan) return '';
+  const rawId: any = (plan as any)._id ?? (plan as any).id ?? null;
+  if (typeof rawId === 'string') return rawId;
+  if (typeof rawId === 'number') return String(rawId);
+  if (rawId && typeof rawId === 'object') {
+    if (typeof rawId.$oid === 'string') {
+      return rawId.$oid;
+    }
+    if (typeof rawId.toHexString === 'function') {
+      const hex = rawId.toHexString();
+      if (hex && hex !== '[object Object]') return hex;
+    }
+    if (typeof rawId.toString === 'function') {
+      const str = rawId.toString();
+      if (str && str !== '[object Object]') {
+        return str;
+      }
+    }
+  }
+  return '';
+};
 
   // Generate dates for the next 14 days
   const generateDates = () => {
@@ -168,7 +195,7 @@ export default function BookingScreen() {
 
   const dates = generateDates();
   const selectedPlan = useMemo(
-    () => plans.find((plan) => plan._id === selectedPlanId) || null,
+    () => plans.find((plan) => getPlanId(plan) === selectedPlanId) || null,
     [plans, selectedPlanId]
   );
 
@@ -222,24 +249,22 @@ export default function BookingScreen() {
 
   useEffect(() => {
     if (!plans.length) {
-      if (selectedPlanId !== null) {
-        setSelectedPlanId(null);
-      }
-      return;
-    }
-
-    if (selectedPlanId && !plans.some((plan) => plan._id === selectedPlanId)) {
       setSelectedPlanId(null);
       return;
     }
 
-    if (!selectedPlanId && requestedPlanId) {
-      const exists = plans.some((plan) => plan._id === requestedPlanId);
-      if (exists) {
-        setSelectedPlanId(requestedPlanId);
+    setSelectedPlanId((current) => {
+      if (current && plans.some((plan) => getPlanId(plan) === current)) {
+        return current;
       }
-    }
-  }, [plans, requestedPlanId, selectedPlanId]);
+
+      if (requestedPlanId && plans.some((plan) => getPlanId(plan) === requestedPlanId)) {
+        return requestedPlanId;
+      }
+
+      return null;
+    });
+  }, [plans, requestedPlanId]);
 
   useEffect(() => {
     setPlanSessions([]);
@@ -649,21 +674,9 @@ export default function BookingScreen() {
                 contentContainerStyle={styles.planChoiceScrollContent}
                 style={styles.planChoiceScroll}
               >
-                <Pressable
-                  style={[
-                    styles.planChoiceCard,
-                    selectedPlanId === null && styles.planChoiceCardActive,
-                  ]}
-                  onPress={() => setSelectedPlanId(null)}
-                >
-                  <Text style={styles.planChoiceTitle}>No Plan</Text>
-                  <Text style={styles.planChoiceMeta}>Pay per session</Text>
-                  <Text style={styles.planChoicePrice}>
-                    {expert?.hourlyRate ? `₹${expert.hourlyRate}/hr` : "Use base rate"}
-                  </Text>
-                </Pressable>
                 {plans.map((plan) => {
-                  const active = selectedPlanId === plan._id;
+                  const planId = getPlanId(plan);
+                  const active = planId !== '' && selectedPlanId === planId;
                   const priceLabel =
                     plan.type === "monthly"
                       ? `₹${(plan.monthlyPrice || plan.price).toLocaleString()}/month`
@@ -674,9 +687,10 @@ export default function BookingScreen() {
                       : `${plan.duration || 60} minute session`;
                   return (
                     <Pressable
-                      key={plan._id}
+                      key={planId || plan.name}
                       style={[styles.planChoiceCard, active && styles.planChoiceCardActive]}
-                      onPress={() => setSelectedPlanId(plan._id)}
+                      onPress={() => planId && setSelectedPlanId(planId)}
+                      disabled={!planId}
                     >
                       <View
                         style={[

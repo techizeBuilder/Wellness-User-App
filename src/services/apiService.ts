@@ -434,6 +434,13 @@ class ApiService {
     return this.request(ENDPOINTS.AUTH.GET_USER);
   }
 
+  async getUserById(userId: string) {
+    // This endpoint needs to be created on the backend
+    // For now, we'll try to use a booking-related endpoint or create a new one
+    // Try: GET /api/bookings/user/:userId/details or similar
+    return this.request(`/bookings/user/${userId}/details`);
+  }
+
   async updateUserProfile(userData: any) {
     return this.request(ENDPOINTS.AUTH.PROFILE, {
       method: "PUT",

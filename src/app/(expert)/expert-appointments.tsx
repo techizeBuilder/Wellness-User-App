@@ -171,14 +171,14 @@ const deriveFeedbackEntries = (appointment: Appointment): DerivedFeedbackEntry[]
         appointmentId: appointment._id,
         userName,
         rating: ratingValue,
-        comment: entry.comment ?? appointment.feedbackComment,
+        comment: entry.comment ?? appointment.feedbackComment ?? undefined,
         createdAt,
         sessionDate: entry.sessionDate || appointment.sessionDate,
         startTime: entry.startTime || appointment.startTime,
         endTime: entry.endTime || appointment.endTime,
       };
     })
-    .filter((entry): entry is DerivedFeedbackEntry => Boolean(entry));
+    .filter((entry) => entry !== null) as DerivedFeedbackEntry[];
 };
 
 export default function ExpertAppointmentsScreen() {
@@ -195,6 +195,10 @@ export default function ExpertAppointmentsScreen() {
   const [joiningId, setJoiningId] = useState<string | null>(null);
   const [uploadingPrescriptionId, setUploadingPrescriptionId] = useState<string | null>(null);
   const [expandedFeedbackAppointments, setExpandedFeedbackAppointments] = useState<Record<string, boolean>>({});
+  const [showPatientDetailsModal, setShowPatientDetailsModal] = useState(false);
+  const [selectedAppointmentForDetails, setSelectedAppointmentForDetails] = useState<Appointment | null>(null);
+  const [patientDetails, setPatientDetails] = useState<any>(null);
+  const [loadingPatientDetails, setLoadingPatientDetails] = useState(false);
 
   const statusFilters = ['All', 'Confirmed', 'Pending', 'Completed', 'Cancelled'];
 
@@ -543,8 +547,48 @@ export default function ExpertAppointmentsScreen() {
   };
 
   const handleAppointmentPress = (appointment: Appointment) => {
-    // Could navigate to appointment detail screen
-    console.log('Appointment pressed:', appointment._id);
+    console.log('Opening patient details for appointment:', appointment._id);
+    console.log('Patient user data:', appointment.user);
+    setSelectedAppointmentForDetails(appointment);
+    setShowPatientDetailsModal(true);
+    if (appointment.user?._id) {
+      fetchPatientDetails(appointment.user._id);
+    } else {
+      setLoadingPatientDetails(false);
+    }
+  };
+
+  const fetchPatientDetails = async (userId: string) => {
+    try {
+      setLoadingPatientDetails(true);
+      console.log('Fetching patient details for userId:', userId);
+      
+      // Try to fetch full user details including health information
+      try {
+        const response = await apiService.getUserById(userId);
+        console.log('Patient details response:', response);
+        
+        // Extract user data from response
+        const userData = response?.data?.user || response?.user || response?.data || null;
+        if (userData) {
+          setPatientDetails(userData);
+          console.log('Patient details set:', userData);
+        } else {
+          console.log('No user data in response, using appointment data');
+          setPatientDetails(null);
+        }
+      } catch (apiError) {
+        console.log('API endpoint not available, using appointment data:', apiError);
+        // If the endpoint doesn't exist, we'll use appointment data
+        setPatientDetails(null);
+      }
+    } catch (error) {
+      console.error('Error fetching patient details:', error);
+      // Continue with appointment data
+      setPatientDetails(null);
+    } finally {
+      setLoadingPatientDetails(false);
+    }
   };
 
   const toggleFeedbackExpansion = (appointmentId: string) => {
@@ -555,8 +599,8 @@ export default function ExpertAppointmentsScreen() {
   };
 
   const filteredAppointments = appointments.filter(appointment => {
-    const user = appointment.user || {};
-    const userName = `${user.firstName || ''} ${user.lastName || ''}`.trim().toLowerCase();
+    const user = appointment.user;
+    const userName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim().toLowerCase();
     const matchesSearch = !searchQuery || 
       userName.includes(searchQuery.toLowerCase()) ||
       (appointment.notes || '').toLowerCase().includes(searchQuery.toLowerCase());
@@ -617,7 +661,7 @@ export default function ExpertAppointmentsScreen() {
         </ScrollView>
       </View>
 
-      {recentFeedbackEntries.length > 0 && (
+      {/* {recentFeedbackEntries.length > 0 && (
         <View style={styles.feedbackHighlightsContainer}>
           <Text style={styles.feedbackHighlightsTitle}>Recent Feedback</Text>
           {recentFeedbackEntries.map((entry, index) => {
@@ -655,7 +699,7 @@ export default function ExpertAppointmentsScreen() {
             );
           })}
         </View>
-      )}
+      )} */}
 
       {/* Appointments List */}
       {loading ? (
@@ -688,8 +732,8 @@ export default function ExpertAppointmentsScreen() {
             </View>
           ) : (
             filteredAppointments.map((appointment) => {
-              const user = appointment.user || {};
-              const userName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User';
+              const user = appointment.user;
+              const userName = buildUserDisplayName(user);
               const userImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=37b9a8&color=fff&size=128`;
               const isUpdating = updatingId === appointment._id;
               const prescriptionUrl = buildAbsoluteUrl(appointment.prescription?.url);
@@ -851,6 +895,13 @@ export default function ExpertAppointmentsScreen() {
                         </View>
                       )}
                       
+                      <Pressable
+                        style={styles.showPatientDetailsButton}
+                        onPress={() => handleAppointmentPress(appointment)}
+                      >
+                        <Text style={styles.showPatientDetailsButtonText}>Show Patient Details</Text>
+                      </Pressable>
+
                       <View style={styles.appointmentFooter}>
                         <View style={styles.appointmentActions}>
                           {appointment.status === 'pending' && (
@@ -945,6 +996,248 @@ export default function ExpertAppointmentsScreen() {
           <View style={styles.bottomSpacer} />
         </ScrollView>
       )}
+
+      {/* Patient Details Modal */}
+      <Modal
+        visible={showPatientDetailsModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => {
+          setShowPatientDetailsModal(false);
+          setSelectedAppointmentForDetails(null);
+          setPatientDetails(null);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.patientDetailsModalContent}>
+            <View style={styles.patientDetailsModalHeader}>
+              <Text style={styles.patientDetailsModalTitle}>Patient Details</Text>
+              <Pressable
+                style={styles.closeModalButton}
+                onPress={() => {
+                  setShowPatientDetailsModal(false);
+                  setSelectedAppointmentForDetails(null);
+                  setPatientDetails(null);
+                }}
+              >
+                <Text style={styles.closeModalButtonText}>✕</Text>
+              </Pressable>
+            </View>
+            
+            <View style={styles.patientDetailsModalBody}>
+              {loadingPatientDetails ? (
+                <View style={styles.patientDetailsLoadingContainer}>
+                  <ActivityIndicator size="large" color="#2da898ff" />
+                  <Text style={styles.patientDetailsLoadingText}>Loading patient details...</Text>
+                </View>
+              ) : selectedAppointmentForDetails ? (
+                <ScrollView 
+                  style={styles.patientDetailsScrollView}
+                  contentContainerStyle={styles.patientDetailsScrollViewContent}
+                  showsVerticalScrollIndicator={false}
+                >
+                {(() => {
+                  // Use fetched patient details if available, otherwise use appointment user data
+                  const user = patientDetails || selectedAppointmentForDetails.user;
+                  console.log('Rendering modal with user:', user);
+                  console.log('Patient details state:', patientDetails);
+                  console.log('Appointment user:', selectedAppointmentForDetails.user);
+                  
+                  const userName = buildUserDisplayName(user);
+                  const userImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=37b9a8&color=fff&size=128`;
+                  
+                  if (!user) {
+                    return (
+                      <View style={styles.patientDetailsLoadingContainer}>
+                        <Text style={styles.patientDetailsLoadingText}>No patient information available</Text>
+                      </View>
+                    );
+                  }
+                  
+                  // Extract health information
+                  const bloodGroup = user.bloodGroup || null;
+                  const weight = user.weightKg ? `${user.weightKg} kg` : null;
+                  const bloodPressure = user.bloodPressure || null;
+                  const gender = user.gender || null;
+                  const dateOfBirth = user.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString() : null;
+                  const phone = user.phone || null;
+                  const healthProfileUpdatedAt = user.healthProfileUpdatedAt 
+                    ? formatTimestamp(user.healthProfileUpdatedAt) 
+                    : null;
+                  
+                  return (
+                    <>
+                      {/* Patient Header */}
+                      <View style={styles.patientDetailsHeader}>
+                        <Image source={{ uri: userImage }} style={styles.patientDetailsImage} />
+                        <Text style={styles.patientDetailsName}>{userName || 'Patient'}</Text>
+                        {user?.email && (
+                          <Text style={styles.patientDetailsEmail}>{user.email}</Text>
+                        )}
+                      </View>
+
+                      {/* Basic Information */}
+                      <View style={styles.patientDetailsSection}>
+                        <Text style={styles.patientDetailsSectionTitle}>Basic Information</Text>
+                        <View style={styles.patientDetailsCard}>
+                          <View style={styles.patientDetailsRow}>
+                            <Text style={styles.patientDetailsLabel}>Name:</Text>
+                            <Text style={styles.patientDetailsValue}>{userName}</Text>
+                          </View>
+                          {user?.email && (
+                            <View style={styles.patientDetailsRow}>
+                              <Text style={styles.patientDetailsLabel}>Email:</Text>
+                              <Text style={styles.patientDetailsValue}>{user.email}</Text>
+                            </View>
+                          )}
+                          {user?.phone && (
+                            <View style={styles.patientDetailsRow}>
+                              <Text style={styles.patientDetailsLabel}>Phone:</Text>
+                              <Text style={styles.patientDetailsValue}>{user.phone}</Text>
+                            </View>
+                          )}
+                          <View style={styles.patientDetailsRow}>
+                            <Text style={styles.patientDetailsLabel}>Appointment Date:</Text>
+                            <Text style={styles.patientDetailsValue}>
+                              {formatDate(selectedAppointmentForDetails.sessionDate)}
+                            </Text>
+                          </View>
+                          <View style={styles.patientDetailsRow}>
+                            <Text style={styles.patientDetailsLabel}>Time:</Text>
+                            <Text style={styles.patientDetailsValue}>
+                              {formatTimeRange(selectedAppointmentForDetails.startTime, selectedAppointmentForDetails.endTime)}
+                            </Text>
+                          </View>
+                          <View style={styles.patientDetailsRow}>
+                            <Text style={styles.patientDetailsLabel}>Consultation Method:</Text>
+                            <Text style={styles.patientDetailsValue}>
+                              {formatConsultationMethod(selectedAppointmentForDetails.consultationMethod)}
+                            </Text>
+                          </View>
+                          <View style={styles.patientDetailsRow}>
+                            <Text style={styles.patientDetailsLabel}>Session Type:</Text>
+                            <Text style={styles.patientDetailsValue}>
+                              {selectedAppointmentForDetails.sessionType === 'one-on-one' ? 'One-on-One' : 'Group'}
+                            </Text>
+                          </View>
+                          <View style={styles.patientDetailsRow}>
+                            <Text style={styles.patientDetailsLabel}>Status:</Text>
+                            <Text style={styles.patientDetailsValue}>
+                              {selectedAppointmentForDetails.status.charAt(0).toUpperCase() + selectedAppointmentForDetails.status.slice(1)}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+
+                      {/* Appointment Notes */}
+                      {selectedAppointmentForDetails.notes && (
+                        <View style={styles.patientDetailsSection}>
+                          <Text style={styles.patientDetailsSectionTitle}>Appointment Notes</Text>
+                          <View style={styles.patientDetailsCard}>
+                            <Text style={styles.patientDetailsNotesText}>
+                              {selectedAppointmentForDetails.notes}
+                            </Text>
+                          </View>
+                        </View>
+                      )}
+
+                      {/* Health Information */}
+                      <View style={styles.patientDetailsSection}>
+                        <Text style={styles.patientDetailsSectionTitle}>Health Information</Text>
+                        <View style={styles.patientDetailsCard}>
+                          {bloodGroup || weight || bloodPressure || gender || dateOfBirth ? (
+                            <>
+                              {bloodGroup && (
+                                <View style={styles.patientDetailsRow}>
+                                  <Text style={styles.patientDetailsLabel}>Blood Group:</Text>
+                                  <Text style={styles.patientDetailsValue}>{bloodGroup}</Text>
+                                </View>
+                              )}
+                              {weight && (
+                                <View style={styles.patientDetailsRow}>
+                                  <Text style={styles.patientDetailsLabel}>Weight:</Text>
+                                  <Text style={styles.patientDetailsValue}>{weight}</Text>
+                                </View>
+                              )}
+                              {bloodPressure && (
+                                <View style={styles.patientDetailsRow}>
+                                  <Text style={styles.patientDetailsLabel}>Blood Pressure:</Text>
+                                  <Text style={styles.patientDetailsValue}>{bloodPressure} mmHg</Text>
+                                </View>
+                              )}
+                              {gender && (
+                                <View style={styles.patientDetailsRow}>
+                                  <Text style={styles.patientDetailsLabel}>Gender:</Text>
+                                  <Text style={styles.patientDetailsValue}>
+                                    {gender.charAt(0).toUpperCase() + gender.slice(1)}
+                                  </Text>
+                                </View>
+                              )}
+                              {dateOfBirth && (
+                                <View style={styles.patientDetailsRow}>
+                                  <Text style={styles.patientDetailsLabel}>Date of Birth:</Text>
+                                  <Text style={styles.patientDetailsValue}>{dateOfBirth}</Text>
+                                </View>
+                              )}
+                              {phone && (
+                                <View style={styles.patientDetailsRow}>
+                                  <Text style={styles.patientDetailsLabel}>Phone:</Text>
+                                  <Text style={styles.patientDetailsValue}>{phone}</Text>
+                                </View>
+                              )}
+                              {healthProfileUpdatedAt && (
+                                <View style={styles.patientDetailsRow}>
+                                  <Text style={styles.patientDetailsLabel}>Last Updated:</Text>
+                                  <Text style={styles.patientDetailsValue}>{healthProfileUpdatedAt}</Text>
+                                </View>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <Text style={styles.patientDetailsPlaceholderText}>
+                                No health information available. Patient has not updated their health profile yet.
+                              </Text>
+                            </>
+                          )}
+                        </View>
+                      </View>
+
+                      {/* Feedback Section */}
+                      {feedbackEntriesByAppointment[selectedAppointmentForDetails._id]?.length > 0 && (
+                        <View style={styles.patientDetailsSection}>
+                          <Text style={styles.patientDetailsSectionTitle}>Patient Feedback</Text>
+                          <View style={styles.patientDetailsCard}>
+                            {feedbackEntriesByAppointment[selectedAppointmentForDetails._id].map((entry) => (
+                              <View key={entry.id} style={styles.patientDetailsFeedbackEntry}>
+                                <View style={styles.patientDetailsFeedbackHeader}>
+                                  <Text style={styles.patientDetailsFeedbackDate}>
+                                    {formatFeedbackDateLabel(entry.createdAt || entry.sessionDate)}
+                                  </Text>
+                                  {renderRatingStars(entry.rating)}
+                                </View>
+                                {entry.comment && (
+                                  <Text style={styles.patientDetailsFeedbackComment}>
+                                    {entry.comment}
+                                  </Text>
+                                )}
+                              </View>
+                            ))}
+                          </View>
+                        </View>
+                      )}
+                    </>
+                  );
+                })()}
+                </ScrollView>
+              ) : (
+                <View style={styles.patientDetailsLoadingContainer}>
+                  <Text style={styles.patientDetailsLoadingText}>No appointment selected</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Cancel Appointment Modal */}
       <Modal
@@ -1550,5 +1843,180 @@ const styles = StyleSheet.create({
   },
   modalButtonDisabled: {
     opacity: 0.5,
+  },
+  showPatientDetailsButton: {
+    backgroundColor: '#2da898ff',
+    paddingVertical: getResponsiveHeight(10),
+    paddingHorizontal: getResponsiveWidth(16),
+    borderRadius: getResponsiveBorderRadius(10),
+    alignItems: 'center',
+    marginBottom: getResponsiveHeight(12),
+    marginTop: getResponsiveHeight(8),
+  },
+  showPatientDetailsButtonText: {
+    color: '#FFFFFF',
+    fontSize: getResponsiveFontSize(13),
+    fontWeight: '600',
+  },
+  patientDetailsModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: getResponsiveBorderRadius(20),
+    width: '100%',
+    maxWidth: 500,
+    height: '75%',
+    maxHeight: 600,
+    overflow: 'hidden',
+    flexDirection: 'column',
+  },
+  patientDetailsModalBody: {
+    flex: 1,
+    minHeight: 400,
+    maxHeight: 500,
+  },
+  patientDetailsModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: getResponsiveWidth(20),
+    paddingTop: getResponsiveHeight(20),
+    paddingBottom: getResponsiveHeight(16),
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  patientDetailsModalTitle: {
+    fontSize: getResponsiveFontSize(20),
+    fontWeight: 'bold',
+    color: '#1F2937',
+  },
+  closeModalButton: {
+    width: getResponsiveWidth(32),
+    height: getResponsiveWidth(32),
+    borderRadius: getResponsiveWidth(16),
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeModalButtonText: {
+    fontSize: getResponsiveFontSize(18),
+    color: '#6B7280',
+    fontWeight: 'bold',
+  },
+  patientDetailsScrollView: {
+    flex: 1,
+  },
+  patientDetailsScrollViewContent: {
+    paddingHorizontal: getResponsiveWidth(20),
+    paddingTop: getResponsiveHeight(16),
+    paddingBottom: getResponsiveHeight(40),
+    flexGrow: 1,
+  },
+  patientDetailsLoadingContainer: {
+    padding: getResponsivePadding(40),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  patientDetailsLoadingText: {
+    marginTop: getResponsiveHeight(12),
+    fontSize: getResponsiveFontSize(14),
+    color: '#6B7280',
+  },
+  patientDetailsHeader: {
+    alignItems: 'center',
+    paddingVertical: getResponsiveHeight(24),
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    marginBottom: getResponsiveHeight(16),
+  },
+  patientDetailsImage: {
+    width: getResponsiveWidth(100),
+    height: getResponsiveWidth(100),
+    borderRadius: getResponsiveWidth(50),
+    marginBottom: getResponsiveHeight(12),
+    borderWidth: 3,
+    borderColor: '#2da898ff',
+  },
+  patientDetailsName: {
+    fontSize: getResponsiveFontSize(22),
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: getResponsiveHeight(4),
+  },
+  patientDetailsEmail: {
+    fontSize: getResponsiveFontSize(14),
+    color: '#6B7280',
+  },
+  patientDetailsSection: {
+    marginBottom: getResponsiveHeight(20),
+    width: '100%',
+  },
+  patientDetailsSectionTitle: {
+    fontSize: getResponsiveFontSize(16),
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: getResponsiveHeight(12),
+  },
+  patientDetailsCard: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: getResponsiveBorderRadius(12),
+    padding: getResponsivePadding(16),
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    width: '100%',
+  },
+  patientDetailsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: getResponsiveHeight(12),
+  },
+  patientDetailsLabel: {
+    fontSize: getResponsiveFontSize(14),
+    fontWeight: '600',
+    color: '#6B7280',
+    flex: 1,
+  },
+  patientDetailsValue: {
+    fontSize: getResponsiveFontSize(14),
+    color: '#1F2937',
+    flex: 1,
+    textAlign: 'right',
+  },
+  patientDetailsNotesText: {
+    fontSize: getResponsiveFontSize(14),
+    color: '#374151',
+    lineHeight: getResponsiveFontSize(20),
+  },
+  patientDetailsPlaceholderText: {
+    fontSize: getResponsiveFontSize(14),
+    color: '#6B7280',
+    lineHeight: getResponsiveFontSize(20),
+    fontStyle: 'italic',
+    marginBottom: getResponsiveHeight(8),
+  },
+  patientDetailsPlaceholderSubtext: {
+    fontSize: getResponsiveFontSize(12),
+    color: '#9CA3AF',
+    fontStyle: 'italic',
+  },
+  patientDetailsFeedbackEntry: {
+    marginBottom: getResponsiveHeight(16),
+    paddingBottom: getResponsiveHeight(16),
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  patientDetailsFeedbackHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: getResponsiveHeight(8),
+  },
+  patientDetailsFeedbackDate: {
+    fontSize: getResponsiveFontSize(12),
+    color: '#6B7280',
+  },
+  patientDetailsFeedbackComment: {
+    fontSize: getResponsiveFontSize(14),
+    color: '#374151',
+    lineHeight: getResponsiveFontSize(20),
   },
 });
