@@ -247,6 +247,13 @@ export default function ProfileScreen() {
           subtitle: 'Cards and billing info', 
           action: () => router.push('/(user)/payment-methods')
         },
+        { 
+          icon: '📜', 
+          iconColor: '#2DD4BF',
+          title: 'Payment History', 
+          subtitle: 'View all your payments', 
+          action: () => router.push('/(user)/payment-history')
+        },
       ]
     },
     {
