@@ -38,6 +38,13 @@ export default function ExpertDashboardScreen() {
     specialization?: string;
   } | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [subscriptionStats, setSubscriptionStats] = useState<{
+    category: string;
+    subscribers: number;
+    sessionsLeft: number;
+    renewalDate: string;
+  } | null>(null);
+  const [isLoadingSubscriptions, setIsLoadingSubscriptions] = useState(true);
 
   // Check account type and fetch expert profile on component mount
   useEffect(() => {
@@ -70,6 +77,23 @@ export default function ExpertDashboardScreen() {
           console.error("Error fetching expert profile:", error);
         } finally {
           setIsLoadingProfile(false);
+        }
+
+        // Fetch subscription stats
+        try {
+          const subResponse = await apiService.getExpertSubscriptionStats();
+          if (subResponse.success && subResponse.data) {
+            setSubscriptionStats({
+              category: subResponse.data.category || 'General',
+              subscribers: subResponse.data.subscribers || 0,
+              sessionsLeft: subResponse.data.sessionsLeft || 0,
+              renewalDate: subResponse.data.renewalDate || 'N/A',
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching subscription stats:", error);
+        } finally {
+          setIsLoadingSubscriptions(false);
         }
       } catch (error) {
         console.error("Error checking account type:", error);
@@ -138,32 +162,17 @@ export default function ExpertDashboardScreen() {
     { id: 4, icon: "📦", text: "1 Subscription Upgrade" },
   ];
 
-  const activeSubscriptions = [
-    {
-      category: "Yoga",
-      subscribers: 12,
-      sessionsLeft: 3,
-      renewalDate: "04 Nov",
-    },
-    {
-      category: "Ayurveda",
-      subscribers: 8,
-      sessionsLeft: 1,
-      renewalDate: "03 Nov",
-    },
-    {
-      category: "Diet",
-      subscribers: 9,
-      sessionsLeft: 2,
-      renewalDate: "06 Nov",
-    },
-    {
-      category: "Mental Wellness",
-      subscribers: 5,
-      sessionsLeft: 4,
-      renewalDate: "07 Nov",
-    },
-  ];
+  // Use real subscription stats if available, otherwise show empty state
+  const activeSubscriptions = subscriptionStats
+    ? [
+        {
+          category: subscriptionStats.category,
+          subscribers: subscriptionStats.subscribers,
+          sessionsLeft: subscriptionStats.sessionsLeft,
+          renewalDate: subscriptionStats.renewalDate,
+        },
+      ]
+    : [];
 
   const [earningsTimeframe, setEarningsTimeframe] = useState<
     "Daily" | "Weekly" | "Monthly" | "Total"
@@ -442,28 +451,40 @@ export default function ExpertDashboardScreen() {
           {/* Active Subscriptions */}
           <View style={styles.subscriptionsContainer}>
             <Text style={styles.sectionTitle}>📈 Active Subscriptions</Text>
-            <View style={styles.subscriptionsTable}>
-              <View style={styles.tableHeader}>
-                <Text style={styles.tableHeaderText}>Category</Text>
-                <Text style={styles.tableHeaderText}>Subscribers</Text>
-                <Text style={styles.tableHeaderText}>Sessions Left</Text>
-                <Text style={styles.tableHeaderText}>Renewal Date</Text>
+            {isLoadingSubscriptions ? (
+              <View style={styles.loadingContainer}>
+                <Text style={styles.loadingText}>Loading subscription data...</Text>
               </View>
-              {activeSubscriptions.map((subscription, index) => (
-                <View key={index} style={styles.tableRow}>
-                  <Text style={styles.tableCell}>{subscription.category}</Text>
-                  <Text style={styles.tableCell}>
-                    {subscription.subscribers}
-                  </Text>
-                  <Text style={styles.tableCell}>
-                    {subscription.sessionsLeft}
-                  </Text>
-                  <Text style={styles.tableCell}>
-                    {subscription.renewalDate}
-                  </Text>
+            ) : activeSubscriptions.length > 0 ? (
+              <View style={styles.subscriptionsTable}>
+                <View style={styles.tableHeader}>
+                  <Text style={styles.tableHeaderText}>Category</Text>
+                  <Text style={styles.tableHeaderText}>Subscribers</Text>
+                  <Text style={styles.tableHeaderText}>Sessions Left</Text>
+                  <Text style={styles.tableHeaderText}>Renewal Date</Text>
                 </View>
-              ))}
-            </View>
+                {activeSubscriptions.map((subscription, index) => (
+                  <View key={index} style={styles.tableRow}>
+                    <Text style={styles.tableCell}>{subscription.category}</Text>
+                    <Text style={styles.tableCell}>
+                      {subscription.subscribers}
+                    </Text>
+                    <Text style={styles.tableCell}>
+                      {subscription.sessionsLeft}
+                    </Text>
+                    <Text style={styles.tableCell}>
+                      {subscription.renewalDate}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptySubscriptionsContainer}>
+                <Text style={styles.emptySubscriptionsText}>
+                  No active subscriptions yet
+                </Text>
+              </View>
+            )}
             <View style={styles.sectionDivider} />
           </View>
 
@@ -794,6 +815,29 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveBorderRadius(12),
     overflow: "hidden",
     marginTop: getResponsiveHeight(12),
+  },
+  loadingContainer: {
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    borderRadius: getResponsiveBorderRadius(12),
+    padding: getResponsivePadding(20),
+    marginTop: getResponsiveHeight(12),
+    alignItems: "center",
+  },
+  loadingText: {
+    fontSize: getResponsiveFontSize(14),
+    color: "#6B7280",
+  },
+  emptySubscriptionsContainer: {
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    borderRadius: getResponsiveBorderRadius(12),
+    padding: getResponsivePadding(20),
+    marginTop: getResponsiveHeight(12),
+    alignItems: "center",
+  },
+  emptySubscriptionsText: {
+    fontSize: getResponsiveFontSize(14),
+    color: "#6B7280",
+    fontStyle: "italic",
   },
   performanceContainer: {
     marginBottom: getResponsiveHeight(24),

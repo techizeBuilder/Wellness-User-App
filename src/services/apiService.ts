@@ -640,6 +640,69 @@ class ApiService {
       method: "DELETE",
     });
   }
+
+  // Subscription APIs
+  async getMySubscriptions() {
+    return this.request(ENDPOINTS.SUBSCRIPTIONS.MY_SUBSCRIPTIONS);
+  }
+
+  async getExpertSubscriptionStats() {
+    return this.request(ENDPOINTS.SUBSCRIPTIONS.EXPERT_STATS);
+  }
+
+  async getSubscriptionById(subscriptionId: string) {
+    return this.request(`${ENDPOINTS.SUBSCRIPTIONS.DETAIL}/${subscriptionId}`);
+  }
+
+  async cancelSubscription(subscriptionId: string, reason?: string) {
+    return this.request(`${ENDPOINTS.SUBSCRIPTIONS.CANCEL}/${subscriptionId}/cancel`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    });
+  }
+
+  // Payment APIs
+  async createPaymentOrder(data: {
+    amount: number;
+    currency?: string;
+    appointmentId?: string;
+    subscriptionId?: string;
+    planId?: string;
+    description?: string;
+  }) {
+    return this.request(ENDPOINTS.PAYMENTS.CREATE_ORDER, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async verifyPayment(data: {
+    paymentId: string;
+    orderId: string;
+    signature: string;
+    razorpayPaymentId: string;
+  }) {
+    return this.request(ENDPOINTS.PAYMENTS.VERIFY, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getPaymentHistory(params?: { page?: number; limit?: number }) {
+    let endpoint = ENDPOINTS.PAYMENTS.HISTORY;
+    if (params && Object.keys(params).length > 0) {
+      const query = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          query.append(key, String(value));
+        }
+      });
+      if (Array.from(query.keys()).length > 0) {
+        endpoint = `${endpoint}?${query.toString()}`;
+      }
+    }
+    return this.request(endpoint);
+  }
 }
 
 // Create and export a singleton instance

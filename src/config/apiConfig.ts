@@ -51,6 +51,17 @@ export const ENDPOINTS = {
     AGORA_TOKEN: '/bookings',
     FEEDBACK: '/bookings',
     PRESCRIPTION: '/bookings',
+  },
+  SUBSCRIPTIONS: {
+    MY_SUBSCRIPTIONS: '/subscriptions/my-subscriptions',
+    EXPERT_STATS: '/subscriptions/expert/stats',
+    DETAIL: '/subscriptions',
+    CANCEL: '/subscriptions',
+  },
+  PAYMENTS: {
+    CREATE_ORDER: '/payments/create-order',
+    VERIFY: '/payments/verify',
+    HISTORY: '/payments/history',
   }
 };
 

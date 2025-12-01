@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useEffect, useState, useCallback } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, Text, TextInput, View, Linking } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -162,6 +162,13 @@ export default function SessionsScreen() {
     fetchAllBookings();
   }, []);
 
+  // Refresh bookings when screen comes into focus (e.g., after payment)
+  useFocusEffect(
+    useCallback(() => {
+      fetchAllBookings();
+    }, [])
+  );
+
   const fetchAllBookings = async (isRefresh = false) => {
     try {
       if (isRefresh) {
@@ -170,8 +177,8 @@ export default function SessionsScreen() {
         setLoading(true);
       }
 
-      // Fetch all bookings without status filter
-      const response = await apiService.getUserBookings();
+      // Fetch all bookings without status filter (use high limit to get all bookings)
+      const response = await apiService.getUserBookings({ limit: 1000 });
       const bookings = response?.data?.appointments || response?.appointments || [];
 
       // Sort all bookings by date

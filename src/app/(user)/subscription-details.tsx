@@ -1,8 +1,11 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
-import { Modal, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Image, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { colors } from '@/utils/colors';
+import apiService from '@/services/apiService';
+import { handleApiError } from '@/utils/errorHandler';
+import { resolveProfileImageUrl } from '@/utils/imageHelpers';
 import {
     getResponsiveBorderRadius,
     getResponsiveFontSize,
@@ -12,93 +15,117 @@ import {
     getResponsiveWidth
 } from '@/utils/dimensions';
 
+type Subscription = {
+  _id: string;
+  planName: string;
+  planType: 'single' | 'monthly';
+  expert: {
+    _id: string;
+    name: string;
+    specialization: string;
+    profileImage?: string;
+  };
+  startDate: string;
+  expiryDate: string;
+  nextBillingDate?: string;
+  totalSessions: number;
+  sessionsUsed: number;
+  sessionsRemaining: number;
+  monthlyPrice?: number;
+  autoRenewal: boolean;
+  planInstanceId: string;
+};
+
 export default function SubscriptionDetailsScreen() {
-  const [showPlansModal, setShowPlansModal] = useState(false);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
-  const currentSubscription = {
-    plan: 'Premium Annual',
-    price: '$99.99',
-    billing: 'yearly',
-    status: 'Active',
-    nextBilling: 'Nov 14, 2025',
-    startDate: 'Nov 14, 2024',
-    features: [
-      'Unlimited expert sessions',
-      'Priority booking',
-      'Exclusive content',
-      'Personal wellness tracker',
-      'Advanced analytics',
-      '24/7 support'
-    ]
-  };
-
-  const subscriptionHistory = [
-    {
-      id: 1,
-      plan: 'Premium Annual',
-      amount: '$99.99',
-      date: 'Nov 14, 2024',
-      status: 'Active',
-      duration: '1 Year'
-    },
-    {
-      id: 2,
-      plan: 'Premium Monthly',
-      amount: '$12.99',
-      date: 'Sep 10, 2024',
-      status: 'Cancelled',
-      duration: '2 Months'
-    },
-    {
-      id: 3,
-      plan: 'Basic Monthly',
-      amount: '$7.99',
-      date: 'Jun 15, 2024',
-      status: 'Completed',
-      duration: '3 Months'
+  const fetchSubscriptions = async () => {
+    try {
+      setLoading(true);
+      const response = await apiService.getMySubscriptions();
+      if (response.success && response.data?.subscriptions) {
+        setSubscriptions(response.data.subscriptions);
+      }
+    } catch (error) {
+      console.error('Error fetching subscriptions:', error);
+      Alert.alert('Error', handleApiError(error));
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-  ];
-
-  const availablePlans = [
-    {
-      id: 1,
-      name: 'Basic Monthly',
-      price: '$7.99',
-      billing: '/month',
-      features: ['5 expert sessions', 'Basic content access', 'Email support'],
-      color: ['#6B7280', '#4B5563'],
-      recommended: false
-    },
-    {
-      id: 2,
-      name: 'Premium Monthly',
-      price: '$12.99',
-      billing: '/month',
-      features: ['Unlimited sessions', 'All content', 'Priority support', 'Analytics'],
-      color: ['#2DD4BF', '#14B8A6'],
-      recommended: false
-    },
-    {
-      id: 3,
-      name: 'Premium Annual',
-      price: '$99.99',
-      billing: '/year',
-      originalPrice: '$155.88',
-      features: ['Everything in Premium', '2 months free', 'VIP support', 'Early access'],
-      color: ['#FFD700', '#F59E0B'],
-      recommended: true
-    }
-  ];
-
-  const handleUpdateSubscription = () => {
-    setShowPlansModal(true);
   };
 
-  const handleSelectPlan = (plan) => {
-    setShowPlansModal(false);
-    // Handle plan selection logic here
-    console.log('Selected plan:', plan.name);
+  useEffect(() => {
+    fetchSubscriptions();
+  }, []);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchSubscriptions();
   };
+
+  const handleCancelSubscription = (subscription: Subscription) => {
+    Alert.alert(
+      'Cancel Subscription',
+      `Are you sure you want to cancel "${subscription.planName}"? This action cannot be undone.`,
+      [
+        {
+          text: 'Keep Subscription',
+          style: 'cancel',
+        },
+        {
+          text: 'Cancel Subscription',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setCancellingId(subscription._id);
+              await apiService.cancelSubscription(subscription._id);
+              Alert.alert('Success', 'Subscription cancelled successfully');
+              fetchSubscriptions();
+            } catch (error) {
+              Alert.alert('Error', handleApiError(error));
+            } finally {
+              setCancellingId(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const formatCurrency = (amount?: number) => {
+    if (!amount) return 'N/A';
+    return `₹${amount.toLocaleString('en-IN')}`;
+  };
+
+  if (loading) {
+    return (
+      <LinearGradient
+        colors={['#2DD4BF', '#14B8A6', '#0D9488']}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.container}
+      >
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="white" />
+          <Text style={styles.loadingText}>Loading subscriptions...</Text>
+        </View>
+      </LinearGradient>
+    );
+  }
 
   return (
     <LinearGradient
@@ -113,163 +140,109 @@ export default function SubscriptionDetailsScreen() {
         <Pressable style={styles.backButton} onPress={() => router.back()}>
           <Text style={styles.backArrow}>←</Text>
         </Pressable>
-        <Text style={styles.headerTitle}>Subscription</Text>
+        <Text style={styles.headerTitle}>My Subscriptions</Text>
         <View style={styles.headerRight} />
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Current Subscription */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Current Plan</Text>
-          <LinearGradient
-            colors={['rgba(255, 255, 255, 0.95)', 'rgba(255, 255, 255, 0.9)']}
-            style={styles.currentPlanCard}
-          >
-            <View style={styles.planHeader}>
-              <View style={styles.planInfo}>
-                <Text style={styles.planName}>{currentSubscription.plan}</Text>
-                <Text style={styles.planPrice}>{currentSubscription.price}<Text style={styles.planBilling}>/{currentSubscription.billing}</Text></Text>
-              </View>
-              <View style={styles.statusBadge}>
-                <Text style={styles.statusText}>{currentSubscription.status}</Text>
-              </View>
-            </View>
-            
-            <View style={styles.planDetails}>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Started:</Text>
-                <Text style={styles.detailValue}>{currentSubscription.startDate}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Next billing:</Text>
-                <Text style={styles.detailValue}>{currentSubscription.nextBilling}</Text>
-              </View>
-            </View>
-
-            <View style={styles.featuresSection}>
-              <Text style={styles.featuresTitle}>Included Features</Text>
-              {currentSubscription.features.map((feature, index) => (
-                <Text key={index} style={styles.featureItem}>✅ {feature}</Text>
-              ))}
-            </View>
-
-            <Pressable style={styles.updateButton} onPress={handleUpdateSubscription}>
-              <LinearGradient
-                colors={['#2DD4BF', '#14B8A6']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.updateButtonGradient}
-              >
-                <Text style={styles.updateButtonText}>Update Plan</Text>
-              </LinearGradient>
-            </Pressable>
-          </LinearGradient>
-        </View>
-
-        {/* Subscription History */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Subscription History</Text>
-          {subscriptionHistory.map((subscription, index) => (
-            <View key={subscription.id} style={styles.historyCard}>
-              <View style={styles.historyHeader}>
-                <View style={styles.historyInfo}>
-                  <Text style={styles.historyPlan}>{subscription.plan}</Text>
-                  <Text style={styles.historyDate}>{subscription.date}</Text>
-                </View>
-                <View style={styles.historyRight}>
-                  <Text style={styles.historyAmount}>{subscription.amount}</Text>
-                  <View style={[
-                    styles.historyStatusBadge,
-                    subscription.status === 'Active' && styles.statusActive,
-                    subscription.status === 'Cancelled' && styles.statusCancelled,
-                    subscription.status === 'Completed' && styles.statusCompleted
-                  ]}>
-                    <Text style={[
-                      styles.historyStatusText,
-                      subscription.status === 'Active' && styles.statusActiveText,
-                      subscription.status === 'Cancelled' && styles.statusCancelledText,
-                      subscription.status === 'Completed' && styles.statusCompletedText
-                    ]}>
-                      {subscription.status}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-              <Text style={styles.historyDuration}>Duration: {subscription.duration}</Text>
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.bottomSpacer} />
-      </ScrollView>
-
-      {/* Plans Modal */}
-      <Modal
-        visible={showPlansModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowPlansModal(false)}
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="white" />
+        }
       >
-        <View style={styles.modalOverlay}>
-          <Pressable 
-            style={styles.modalBackdrop}
-            onPress={() => setShowPlansModal(false)}
-          />
-          <View style={styles.plansModal}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Choose Your Plan</Text>
-              <Pressable
-                style={styles.closeButton}
-                onPress={() => setShowPlansModal(false)}
-              >
-                <Text style={styles.closeButtonText}>✕</Text>
-              </Pressable>
-            </View>
-            
-            <ScrollView style={styles.plansContainer} showsVerticalScrollIndicator={false}>
-              {availablePlans.map((plan) => (
-                <Pressable
-                  key={plan.id}
-                  style={[styles.planOption, plan.recommended && styles.recommendedPlan]}
-                  onPress={() => handleSelectPlan(plan)}
-                >
-                  <LinearGradient
-                    colors={plan.color}
-                    style={styles.planOptionGradient}
-                  >
-                    {plan.recommended && (
-                      <View style={styles.recommendedBadge}>
-                        <Text style={styles.recommendedText}>RECOMMENDED</Text>
+        {subscriptions.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyIcon}>📋</Text>
+            <Text style={styles.emptyTitle}>No Active Subscriptions</Text>
+            <Text style={styles.emptyText}>
+              You don't have any active subscriptions yet.{'\n'}
+              Browse experts and subscribe to their plans to get started.
+            </Text>
+            <Pressable
+              style={styles.browseButton}
+              onPress={() => router.push('/(user)/experts')}
+            >
+              <Text style={styles.browseButtonText}>Browse Experts</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Active Subscriptions ({subscriptions.length})</Text>
+              {subscriptions.map((subscription) => (
+                <View key={subscription._id} style={styles.subscriptionCard}>
+                  <View style={styles.cardHeader}>
+                    <View style={styles.expertInfo}>
+                      {subscription.expert.profileImage && (
+                        <Image
+                          source={{ uri: resolveProfileImageUrl(subscription.expert.profileImage) }}
+                          style={styles.expertImage}
+                        />
+                      )}
+                      <View style={styles.expertDetails}>
+                        <Text style={styles.planName}>{subscription.planName}</Text>
+                        <Text style={styles.expertName}>{subscription.expert.name}</Text>
+                        <Text style={styles.expertSpecialty}>{subscription.expert.specialization}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.statusBadge}>
+                      <Text style={styles.statusText}>Active</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.cardBody}>
+                    <View style={styles.infoRow}>
+                      <Text style={styles.infoLabel}>Sessions Remaining:</Text>
+                      <Text style={styles.infoValue}>
+                        {subscription.sessionsRemaining} / {subscription.totalSessions}
+                      </Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                      <Text style={styles.infoLabel}>Expiry Date:</Text>
+                      <Text style={styles.infoValue}>{formatDate(subscription.expiryDate)}</Text>
+                    </View>
+                    {subscription.nextBillingDate && (
+                      <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Next Billing:</Text>
+                        <Text style={styles.infoValue}>{formatDate(subscription.nextBillingDate)}</Text>
                       </View>
                     )}
-                    
-                    <View style={styles.planOptionHeader}>
-                      <Text style={styles.planOptionName}>{plan.name}</Text>
-                      <View style={styles.planOptionPricing}>
-                        <Text style={styles.planOptionPrice}>{plan.price}</Text>
-                        <Text style={styles.planOptionBilling}>{plan.billing}</Text>
+                    {subscription.monthlyPrice && (
+                      <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Monthly Price:</Text>
+                        <Text style={styles.infoValue}>{formatCurrency(subscription.monthlyPrice)}</Text>
                       </View>
-                      {plan.originalPrice && (
-                        <Text style={styles.originalPrice}>Save from {plan.originalPrice}</Text>
-                      )}
+                    )}
+                    <View style={styles.infoRow}>
+                      <Text style={styles.infoLabel}>Auto Renewal:</Text>
+                      <Text style={styles.infoValue}>
+                        {subscription.autoRenewal ? '✅ Enabled' : '❌ Disabled'}
+                      </Text>
                     </View>
+                  </View>
 
-                    <View style={styles.planOptionFeatures}>
-                      {plan.features.map((feature, index) => (
-                        <Text key={index} style={styles.planFeature}>• {feature}</Text>
-                      ))}
-                    </View>
-
-                    <View style={styles.selectButton}>
-                      <Text style={styles.selectButtonText}>Select Plan</Text>
-                    </View>
-                  </LinearGradient>
-                </Pressable>
+                  <Pressable
+                    style={[
+                      styles.cancelButton,
+                      cancellingId === subscription._id && styles.cancelButtonDisabled
+                    ]}
+                    onPress={() => handleCancelSubscription(subscription)}
+                    disabled={cancellingId === subscription._id}
+                  >
+                    {cancellingId === subscription._id ? (
+                      <ActivityIndicator size="small" color="white" />
+                    ) : (
+                      <Text style={styles.cancelButtonText}>Cancel Subscription</Text>
+                    )}
+                  </Pressable>
+                </View>
               ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+            </View>
+            <View style={styles.bottomSpacer} />
+          </>
+        )}
+      </ScrollView>
     </LinearGradient>
   );
 }
@@ -278,6 +251,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.lightMistTeal,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: getResponsiveMargin(16),
+    fontSize: getResponsiveFontSize(16),
+    color: 'white',
   },
   header: {
     flexDirection: 'row',
@@ -299,17 +282,11 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(18),
     color: 'white',
     fontWeight: 'bold',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
   headerTitle: {
     fontSize: getResponsiveFontSize(20),
     fontWeight: 'bold',
     color: 'white',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
   headerRight: {
     width: getResponsiveWidth(40),
@@ -326,44 +303,51 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
     marginBottom: getResponsiveMargin(16),
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
-  
-  // Current Plan Styles
-  currentPlanCard: {
+  subscriptionCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: getResponsiveBorderRadius(16),
     padding: getResponsivePadding(20),
+    marginBottom: getResponsiveMargin(16),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
   },
-  planHeader: {
+  cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: getResponsiveMargin(16),
   },
-  planInfo: {
+  expertInfo: {
+    flexDirection: 'row',
+    flex: 1,
+  },
+  expertImage: {
+    width: getResponsiveWidth(50),
+    height: getResponsiveHeight(50),
+    borderRadius: getResponsiveBorderRadius(25),
+    marginRight: getResponsiveMargin(12),
+  },
+  expertDetails: {
     flex: 1,
   },
   planName: {
-    fontSize: getResponsiveFontSize(22),
+    fontSize: getResponsiveFontSize(18),
     fontWeight: 'bold',
     color: '#1F2937',
     marginBottom: getResponsiveMargin(4),
   },
-  planPrice: {
-    fontSize: getResponsiveFontSize(28),
-    fontWeight: 'bold',
-    color: '#F59E0B',
+  expertName: {
+    fontSize: getResponsiveFontSize(14),
+    fontWeight: '600',
+    color: '#4B5563',
+    marginBottom: getResponsiveMargin(2),
   },
-  planBilling: {
-    fontSize: getResponsiveFontSize(16),
-    fontWeight: 'normal',
+  expertSpecialty: {
+    fontSize: getResponsiveFontSize(12),
     color: '#6B7280',
   },
   statusBadge: {
@@ -377,248 +361,75 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
   },
-  planDetails: {
+  cardBody: {
     borderTopWidth: 1,
     borderTopColor: 'rgba(107, 114, 128, 0.2)',
     paddingTop: getResponsivePadding(16),
     marginBottom: getResponsiveMargin(16),
   },
-  detailRow: {
+  infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: getResponsiveMargin(8),
+    marginBottom: getResponsiveMargin(10),
   },
-  detailLabel: {
+  infoLabel: {
     fontSize: getResponsiveFontSize(14),
     color: '#6B7280',
     fontWeight: '500',
   },
-  detailValue: {
+  infoValue: {
     fontSize: getResponsiveFontSize(14),
     color: '#1F2937',
     fontWeight: '600',
   },
-  featuresSection: {
-    marginBottom: getResponsiveMargin(20),
-  },
-  featuresTitle: {
-    fontSize: getResponsiveFontSize(16),
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: getResponsiveMargin(12),
-  },
-  featureItem: {
-    fontSize: getResponsiveFontSize(14),
-    color: '#4B5563',
-    marginBottom: getResponsiveMargin(6),
-    lineHeight: 20,
-  },
-  updateButton: {
-    borderRadius: getResponsiveBorderRadius(12),
-    overflow: 'hidden',
-  },
-  updateButtonGradient: {
-    paddingVertical: getResponsivePadding(14),
-    paddingHorizontal: getResponsivePadding(24),
-    alignItems: 'center',
-  },
-  updateButtonText: {
-    fontSize: getResponsiveFontSize(16),
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  
-  // History Styles
-  historyCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: getResponsiveBorderRadius(12),
-    padding: getResponsivePadding(16),
-    marginBottom: getResponsiveMargin(12),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  historyHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: getResponsiveMargin(8),
-  },
-  historyInfo: {
-    flex: 1,
-  },
-  historyPlan: {
-    fontSize: getResponsiveFontSize(16),
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: getResponsiveMargin(4),
-  },
-  historyDate: {
-    fontSize: getResponsiveFontSize(14),
-    color: '#6B7280',
-  },
-  historyRight: {
-    alignItems: 'flex-end',
-  },
-  historyAmount: {
-    fontSize: getResponsiveFontSize(16),
-    fontWeight: 'bold',
-    color: '#F59E0B',
-    marginBottom: getResponsiveMargin(6),
-  },
-  historyStatusBadge: {
-    paddingHorizontal: getResponsivePadding(8),
-    paddingVertical: getResponsivePadding(4),
-    borderRadius: getResponsiveBorderRadius(12),
-  },
-  statusActive: {
-    backgroundColor: '#2DD4BF',
-  },
-  statusCancelled: {
+  cancelButton: {
     backgroundColor: '#FF6F61',
-  },
-  statusCompleted: {
-    backgroundColor: '#6B7280',
-  },
-  historyStatusText: {
-    fontSize: getResponsiveFontSize(11),
-    fontWeight: 'bold',
-  },
-  statusActiveText: {
-    color: 'white',
-  },
-  statusCancelledText: {
-    color: 'white',
-  },
-  statusCompletedText: {
-    color: 'white',
-  },
-  historyDuration: {
-    fontSize: getResponsiveFontSize(12),
-    color: '#9CA3AF',
-    fontStyle: 'italic',
-  },
-  
-  // Modal Styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalBackdrop: {
-    flex: 1,
-  },
-  plansModal: {
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: getResponsiveBorderRadius(20),
-    borderTopRightRadius: getResponsiveBorderRadius(20),
-    maxHeight: '80%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
+    paddingVertical: getResponsivePadding(12),
+    paddingHorizontal: getResponsivePadding(24),
+    borderRadius: getResponsiveBorderRadius(12),
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: getResponsivePadding(20),
-    paddingHorizontal: getResponsivePadding(20),
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
   },
-  modalTitle: {
-    fontSize: getResponsiveFontSize(18),
+  cancelButtonDisabled: {
+    opacity: 0.6,
+  },
+  cancelButtonText: {
+    fontSize: getResponsiveFontSize(14),
     fontWeight: 'bold',
-    color: '#1a202c',
+    color: 'white',
   },
-  closeButton: {
-    padding: getResponsivePadding(4),
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: getResponsivePadding(100),
+    paddingHorizontal: getResponsivePadding(40),
   },
-  closeButtonText: {
-    fontSize: getResponsiveFontSize(18),
-    color: '#4a5568',
-  },
-  plansContainer: {
-    paddingHorizontal: getResponsivePadding(20),
-    paddingBottom: getResponsivePadding(20),
-  },
-  planOption: {
-    borderRadius: getResponsiveBorderRadius(16),
+  emptyIcon: {
+    fontSize: getResponsiveFontSize(64),
     marginBottom: getResponsiveMargin(16),
-    overflow: 'hidden',
   },
-  recommendedPlan: {
-    borderWidth: 2,
-    borderColor: '#FFD700',
-  },
-  planOptionGradient: {
-    padding: getResponsivePadding(20),
-    position: 'relative',
-  },
-  recommendedBadge: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    backgroundColor: '#FFD700',
-    paddingHorizontal: getResponsivePadding(12),
-    paddingVertical: getResponsivePadding(6),
-    borderBottomLeftRadius: getResponsiveBorderRadius(12),
-  },
-  recommendedText: {
-    fontSize: getResponsiveFontSize(10),
-    fontWeight: 'bold',
-    color: '#000',
-    letterSpacing: 0.5,
-  },
-  planOptionHeader: {
-    marginBottom: getResponsiveMargin(16),
-    marginTop: getResponsiveMargin(8),
-  },
-  planOptionName: {
+  emptyTitle: {
     fontSize: getResponsiveFontSize(20),
     fontWeight: 'bold',
     color: 'white',
     marginBottom: getResponsiveMargin(8),
+    textAlign: 'center',
   },
-  planOptionPricing: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: getResponsiveMargin(4),
-  },
-  planOptionPrice: {
-    fontSize: getResponsiveFontSize(28),
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  planOptionBilling: {
-    fontSize: getResponsiveFontSize(16),
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginLeft: getResponsiveMargin(4),
-  },
-  originalPrice: {
-    fontSize: getResponsiveFontSize(12),
-    color: 'rgba(255, 255, 255, 0.7)',
-    textDecorationLine: 'line-through',
-  },
-  planOptionFeatures: {
-    marginBottom: getResponsiveMargin(20),
-  },
-  planFeature: {
+  emptyText: {
     fontSize: getResponsiveFontSize(14),
     color: 'rgba(255, 255, 255, 0.9)',
-    marginBottom: getResponsiveMargin(6),
+    textAlign: 'center',
     lineHeight: 20,
+    marginBottom: getResponsiveMargin(24),
   },
-  selectButton: {
+  browseButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     paddingVertical: getResponsivePadding(12),
     paddingHorizontal: getResponsivePadding(24),
-    borderRadius: getResponsiveBorderRadius(8),
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: getResponsiveBorderRadius(12),
   },
-  selectButtonText: {
-    fontSize: getResponsiveFontSize(14),
+  browseButtonText: {
+    fontSize: getResponsiveFontSize(16),
     fontWeight: 'bold',
     color: 'white',
   },

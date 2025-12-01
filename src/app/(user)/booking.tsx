@@ -11,6 +11,7 @@ import {
     getResponsiveWidth
 } from '@/utils/dimensions';
 import { apiService, handleApiError } from '@/services/apiService';
+import { initiatePayment, formatAmount } from '@/services/paymentService';
 import { getProfileImageWithFallback } from '@/utils/imageHelpers';
 
 type Expert = {
@@ -501,9 +502,14 @@ const getPlanId = (plan: PlanDetails | null | undefined): string => {
     try {
       setBooking(true);
       
+      let bookingResponse: any;
+      let amount = 0;
+      let appointmentId: string | undefined;
+      let planId: string | undefined;
+      
       if (selectedPlan) {
         if (selectedPlan.type === "monthly") {
-          await apiService.createBooking({
+          bookingResponse = await apiService.createBooking({
             expertId,
             planId: selectedPlan._id,
             planType: selectedPlan.type,
@@ -511,19 +517,10 @@ const getPlanId = (plan: PlanDetails | null | undefined): string => {
             notes: notes || undefined,
           });
 
-          Alert.alert(
-            'Plan Scheduled!',
-            `All ${selectedPlan.classesPerMonth || 0} classes have been scheduled. Waiting for expert confirmation.`,
-            [
-              {
-                text: 'View Bookings',
-                onPress: () => router.push('/sessions'),
-              },
-              { text: 'OK', onPress: () => router.back() },
-            ]
-          );
+          amount = selectedPlan.monthlyPrice || 0;
+          planId = selectedPlan._id;
         } else {
-          await apiService.createBooking({
+          bookingResponse = await apiService.createBooking({
             expertId,
             planId: selectedPlan._id,
             planType: selectedPlan.type,
@@ -539,21 +536,19 @@ const getPlanId = (plan: PlanDetails | null | undefined): string => {
             notes: notes || undefined,
           });
 
-          Alert.alert(
-            'Plan Booked!',
-            `${selectedPlan.name} has been scheduled successfully.`,
-            [
-              {
-                text: 'View Bookings',
-                onPress: () => router.push('/sessions'),
-              },
-              { text: 'OK', onPress: () => router.back() },
-            ]
-          );
+          amount = selectedPlan.price || 0;
+          planId = selectedPlan._id;
+          
+          // Get appointment ID from response
+          if (bookingResponse.data?.appointment?._id) {
+            appointmentId = bookingResponse.data.appointment._id;
+          } else if (bookingResponse.data?.appointment?.[0]?._id) {
+            appointmentId = bookingResponse.data.appointment[0]._id;
+          }
         }
       } else {
         // Create new booking
-        const response = await apiService.createBooking({
+        bookingResponse = await apiService.createBooking({
           expertId,
           sessionDate: selectedDate,
           startTime: selectedTime,
@@ -563,22 +558,89 @@ const getPlanId = (plan: PlanDetails | null | undefined): string => {
           notes: notes || undefined
         });
 
+        // Calculate amount from hourly rate
+        const hourlyRate = expert?.hourlyRate || 0;
+        amount = Math.round((hourlyRate * selectedDuration) / 60);
+        
+        // Get appointment ID from response
+        if (bookingResponse.data?.appointment?._id) {
+          appointmentId = bookingResponse.data.appointment._id;
+        }
+      }
+
+      // If amount is 0 or no appointment/plan ID, skip payment
+      if (amount <= 0) {
         Alert.alert(
           'Booking Successful!',
-          `Your ${selectedDuration}-minute session has been booked successfully. Waiting for expert confirmation.`,
+          'Your booking has been created successfully. Waiting for expert confirmation.',
           [
-            { 
-              text: 'View Bookings', 
-              onPress: () => {
-                router.push('/sessions');
-              }
+            {
+              text: 'View Bookings',
+              onPress: () => router.push('/sessions'),
             },
-            { 
-              text: 'OK', 
-              onPress: () => router.back()
-            }
+            { text: 'OK', onPress: () => router.back() },
           ]
         );
+        return;
+      }
+
+      // Initiate payment
+      const paymentResult = await initiatePayment({
+        amount,
+        currency: 'INR',
+        appointmentId,
+        planId,
+        description: selectedPlan 
+          ? `Payment for ${selectedPlan.name}`
+          : `Payment for ${selectedDuration}-minute session with ${expert?.firstName} ${expert?.lastName}`
+      });
+
+      if (paymentResult.success) {
+        Alert.alert(
+          'Payment Successful!',
+          selectedPlan?.type === "monthly"
+            ? `All ${selectedPlan.classesPerMonth || 0} classes have been scheduled and payment completed. Waiting for expert confirmation.`
+            : selectedPlan
+            ? `${selectedPlan.name} has been booked and payment completed successfully.`
+            : `Your ${selectedDuration}-minute session has been booked and payment completed successfully. Waiting for expert confirmation.`,
+          [
+            {
+              text: 'View Bookings',
+              onPress: () => router.push('/sessions'),
+            },
+            { text: 'OK', onPress: () => router.back() },
+          ]
+        );
+      } else {
+        // Payment failed or cancelled
+        if (paymentResult.error === 'Payment cancelled') {
+          Alert.alert(
+            'Payment Cancelled',
+            'Your booking has been created but payment was cancelled. Please complete the payment to confirm your booking.',
+            [
+              {
+                text: 'Retry Payment',
+                onPress: () => {
+                  // You can implement retry payment logic here
+                  router.push('/sessions');
+                },
+              },
+              { text: 'OK', onPress: () => router.back() },
+            ]
+          );
+        } else {
+          Alert.alert(
+            'Payment Failed',
+            paymentResult.error || 'Payment could not be processed. Your booking has been created but is pending payment.',
+            [
+              {
+                text: 'View Bookings',
+                onPress: () => router.push('/sessions'),
+              },
+              { text: 'OK', onPress: () => router.back() },
+            ]
+          );
+        }
       }
     } catch (error) {
       Alert.alert('Booking Failed', handleApiError(error));

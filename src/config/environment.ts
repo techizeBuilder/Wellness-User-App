@@ -15,4 +15,7 @@ export const GOOGLE_IOS_CLIENT_ID =
 export const GOOGLE_WEB_CLIENT_ID =
   process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? "";
 
+export const RAZORPAY_KEY_ID =
+  process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID ?? "";
+
 console.log(`🔗 API Base URL: ${BASE_URL}`);
