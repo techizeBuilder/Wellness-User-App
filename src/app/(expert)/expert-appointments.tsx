@@ -4,7 +4,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
-    Dimensions,
     Image,
     Modal,
     Pressable,
@@ -29,7 +28,6 @@ import {
 import { apiService, handleApiError } from '@/services/apiService';
 import { UPLOADS_URL } from '@/config/apiConfig';
 
-const { width } = Dimensions.get('window');
 
 type AppointmentFeedbackItem = {
   _id?: string;
@@ -74,6 +72,20 @@ type Appointment = {
     originalName?: string;
     uploadedAt?: string;
   };
+};
+
+type Plan = {
+  _id: string;
+  name: string;
+  type: 'single' | 'monthly';
+  description?: string;
+  sessionClassType?: string;
+  sessionFormat?: 'one-on-one' | 'one-to-many';
+  price: number;
+  duration?: number;
+  classesPerMonth?: number;
+  monthlyPrice?: number;
+  isActive: boolean;
 };
 
 type DerivedFeedbackEntry = {
@@ -182,7 +194,7 @@ const deriveFeedbackEntries = (appointment: Appointment): DerivedFeedbackEntry[]
 };
 
 export default function ExpertAppointmentsScreen() {
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  // const [selectedDate, setSelectedDate] = useState(new Date());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('All');
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -199,6 +211,14 @@ export default function ExpertAppointmentsScreen() {
   const [selectedAppointmentForDetails, setSelectedAppointmentForDetails] = useState<Appointment | null>(null);
   const [patientDetails, setPatientDetails] = useState<any>(null);
   const [loadingPatientDetails, setLoadingPatientDetails] = useState(false);
+  const [showGroupSessionModal, setShowGroupSessionModal] = useState(false);
+  const [groupPlans, setGroupPlans] = useState<Plan[]>([]);
+  const [selectedGroupPlanId, setSelectedGroupPlanId] = useState<string | null>(null);
+  const [groupSessionDate, setGroupSessionDate] = useState('');
+  const [groupStartTime, setGroupStartTime] = useState('');
+  const [groupDuration, setGroupDuration] = useState('60');
+  const [groupConsultationMethod, setGroupConsultationMethod] = useState<'video' | 'audio' | 'chat' | 'in-person'>('video');
+  const [creatingGroupSession, setCreatingGroupSession] = useState(false);
 
   const statusFilters = ['All', 'Confirmed', 'Pending', 'Completed', 'Cancelled'];
 
@@ -225,22 +245,10 @@ export default function ExpertAppointmentsScreen() {
     }, {});
   }, [appointments]);
 
-  const allFlattenedFeedbackEntries = useMemo(
-    () => Object.values(feedbackEntriesByAppointment).flat(),
-    [feedbackEntriesByAppointment]
-  );
-
-  const recentFeedbackEntries = useMemo(() => {
-    if (allFlattenedFeedbackEntries.length === 0) {
-      return [];
-    }
-    return [...allFlattenedFeedbackEntries]
-      .sort(
-        (a, b) =>
-          getSafeTimestamp(b.createdAt || b.sessionDate) - getSafeTimestamp(a.createdAt || a.sessionDate)
-      )
-      .slice(0, FEEDBACK_PREVIEW_LIMIT);
-  }, [allFlattenedFeedbackEntries]);
+  // const allFlattenedFeedbackEntries = useMemo(
+  //   () => Object.values(feedbackEntriesByAppointment).flat(),
+  //   [feedbackEntriesByAppointment]
+  // );
 
   const buildAbsoluteUrl = (relative?: string | null) => {
     if (!relative) {
@@ -319,6 +327,7 @@ export default function ExpertAppointmentsScreen() {
 
   useEffect(() => {
     fetchAppointments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedStatus]);
 
   useEffect(() => {
@@ -360,6 +369,59 @@ export default function ExpertAppointmentsScreen() {
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  const openGroupSessionModal = async () => {
+    try {
+      setCreatingGroupSession(true);
+      const response = await apiService.getMyPlans();
+      const payload = response?.data || response;
+      const plans: Plan[] = payload?.plans || payload?.data?.plans || [];
+      const eligible = plans.filter(
+        (plan) => plan.type === 'monthly' && plan.sessionFormat === 'one-to-many' && plan.isActive
+      );
+      setGroupPlans(eligible);
+      if (eligible.length > 0 && !selectedGroupPlanId) {
+        setSelectedGroupPlanId(eligible[0]._id);
+      }
+      setShowGroupSessionModal(true);
+    } catch (error) {
+      Alert.alert('Error', handleApiError(error));
+    } finally {
+      setCreatingGroupSession(false);
+    }
+  };
+
+  const handleCreateGroupSession = async () => {
+    if (!selectedGroupPlanId || !groupSessionDate || !groupStartTime || !groupDuration) {
+      Alert.alert('Missing details', 'Please select a plan and fill all fields.');
+      return;
+    }
+    const durationNumber = parseInt(groupDuration, 10);
+    if (isNaN(durationNumber) || durationNumber <= 0) {
+      Alert.alert('Invalid duration', 'Please enter a valid duration in minutes.');
+      return;
+    }
+    try {
+      setCreatingGroupSession(true);
+      await apiService.createGroupSessionForPlan({
+        planId: selectedGroupPlanId,
+        sessionDate: groupSessionDate,
+        startTime: groupStartTime,
+        duration: durationNumber,
+        consultationMethod: groupConsultationMethod,
+      });
+      setShowGroupSessionModal(false);
+      setGroupSessionDate('');
+      setGroupStartTime('');
+      setGroupDuration('60');
+      await fetchAppointments(true);
+      Alert.alert('Scheduled', 'Group session scheduled for all active subscribers.');
+    } catch (error) {
+      Alert.alert('Error', handleApiError(error));
+    } finally {
+      setCreatingGroupSession(false);
     }
   };
 
@@ -609,13 +671,13 @@ export default function ExpertAppointmentsScreen() {
   });
 
   // Filter appointments for today
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayAppointments = filteredAppointments.filter(apt => {
-    const aptDate = new Date(apt.sessionDate);
-    aptDate.setHours(0, 0, 0, 0);
-    return aptDate.getTime() === today.getTime();
-  });
+  // const today = new Date();
+  // today.setHours(0, 0, 0, 0);
+  // const todayAppointments = filteredAppointments.filter(apt => {
+  //   const aptDate = new Date(apt.sessionDate);
+  //   aptDate.setHours(0, 0, 0, 0);
+  //   return aptDate.getTime() === today.getTime();
+  // });
 
   return (
     <View style={styles.container}>
@@ -625,6 +687,14 @@ export default function ExpertAppointmentsScreen() {
       <View style={styles.compactHeader}>
         <Text style={styles.headerTitle}>My Schedule</Text>
         <Text style={styles.headerSubtitle}>Manage your appointments and availability</Text>
+        <Pressable
+          style={styles.groupSessionButton}
+          onPress={openGroupSessionModal}
+        >
+          <Text style={styles.groupSessionButtonText}>
+            {creatingGroupSession ? 'Loading...' : 'Schedule Group Session'}
+          </Text>
+        </Pressable>
       </View>
 
       {/* Search Bar */}
@@ -1309,6 +1379,126 @@ export default function ExpertAppointmentsScreen() {
         </View>
       </Modal>
 
+      {/* Group Session Modal */}
+      <Modal
+        visible={showGroupSessionModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowGroupSessionModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Schedule Group Session</Text>
+            {groupPlans.length === 0 ? (
+              <Text style={styles.modalInfoText}>
+                You do not have any active monthly group plans yet.
+              </Text>
+            ) : (
+              <>
+                <Text style={styles.modalLabel}>Plan</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={{ marginBottom: getResponsiveHeight(16) }}
+                >
+                  {groupPlans.map((plan) => (
+                    <Pressable
+                      key={plan._id}
+                      style={[
+                        styles.filterChip,
+                        selectedGroupPlanId === plan._id && styles.filterChipActive,
+                      ]}
+                      onPress={() => setSelectedGroupPlanId(plan._id)}
+                    >
+                      <Text
+                        style={[
+                          styles.filterChipText,
+                          selectedGroupPlanId === plan._id && styles.filterChipTextActive,
+                        ]}
+                      >
+                        {plan.name}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+
+                <Text style={styles.modalLabel}>Session Date (YYYY-MM-DD)</Text>
+                <TextInput
+                  style={styles.modalTextInput}
+                  placeholder="2025-01-15"
+                  placeholderTextColor="#9CA3AF"
+                  value={groupSessionDate}
+                  onChangeText={setGroupSessionDate}
+                />
+
+                <Text style={styles.modalLabel}>Start Time (HH:MM, 24h)</Text>
+                <TextInput
+                  style={styles.modalTextInput}
+                  placeholder="18:30"
+                  placeholderTextColor="#9CA3AF"
+                  value={groupStartTime}
+                  onChangeText={setGroupStartTime}
+                />
+
+                <Text style={styles.modalLabel}>Duration (minutes)</Text>
+                <TextInput
+                  style={styles.modalTextInput}
+                  placeholder="60"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="numeric"
+                  value={groupDuration}
+                  onChangeText={setGroupDuration}
+                />
+
+                <Text style={styles.modalLabel}>Consultation Method</Text>
+                <View style={{ flexDirection: 'row', marginTop: getResponsiveHeight(8) }}>
+                  {['video', 'audio', 'chat', 'in-person'].map((method) => (
+                    <Pressable
+                      key={method}
+                      style={[
+                        styles.filterChip,
+                        groupConsultationMethod === method && styles.filterChipActive,
+                      ]}
+                      onPress={() => setGroupConsultationMethod(method as any)}
+                    >
+                      <Text
+                        style={[
+                          styles.filterChipText,
+                          groupConsultationMethod === method && styles.filterChipTextActive,
+                        ]}
+                      >
+                        {method}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+
+                <View style={styles.modalButtons}>
+                  <Pressable
+                    style={[styles.modalButton, styles.modalButtonCancel]}
+                    onPress={() => setShowGroupSessionModal(false)}
+                    disabled={creatingGroupSession}
+                  >
+                    <Text style={styles.modalButtonCancelText}>Close</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.modalButton, styles.modalButtonConfirm]}
+                    onPress={handleCreateGroupSession}
+                    disabled={creatingGroupSession}
+                  >
+                    {creatingGroupSession ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Text style={styles.modalButtonConfirmText}>Schedule</Text>
+                    )}
+                  </Pressable>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+
       <ExpertFooter activeRoute="appointments" />
     </View>
   );
@@ -1420,6 +1610,19 @@ const styles = StyleSheet.create({
   },
   feedbackStarEmpty: {
     color: '#D1D5DB',
+  },
+  groupSessionButton: {
+    marginTop: getResponsiveHeight(12),
+    paddingHorizontal: getResponsiveWidth(16),
+    paddingVertical: getResponsiveHeight(8),
+    backgroundColor: '#575623ff',
+    borderRadius: getResponsiveBorderRadius(20),
+    alignSelf: 'flex-start',
+  },
+  groupSessionButtonText: {
+    color: '#ffffff',
+    fontSize: getResponsiveFontSize(12),
+    fontWeight: '600',
   },
   filterChip: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',

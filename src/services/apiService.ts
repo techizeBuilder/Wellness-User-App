@@ -641,6 +641,21 @@ class ApiService {
     });
   }
 
+  // Group session APIs (expert)
+  async createGroupSessionForPlan(payload: {
+    planId: string;
+    sessionDate: string;
+    startTime: string;
+    duration: number;
+    consultationMethod: 'video' | 'audio' | 'chat' | 'in-person';
+    notes?: string;
+  }) {
+    return this.request(ENDPOINTS.BOOKINGS.EXPERT_GROUP_SESSION, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
   // Subscription APIs
   async getMySubscriptions() {
     return this.request(ENDPOINTS.SUBSCRIPTIONS.MY_SUBSCRIPTIONS);
