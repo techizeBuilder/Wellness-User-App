@@ -327,6 +327,25 @@ export default function SessionsScreen() {
     return now >= joinOpensAt && now <= joinClosesAt;
   };
 
+  // Helper to get join status for better UI messaging
+  const getJoinStatus = (appointment: Appointment): 'too-early' | 'available' | 'ended' | 'not-applicable' => {
+    if (!isRealtimeConsultation(appointment.consultationMethod) || appointment.status !== 'confirmed') {
+      return 'not-applicable';
+    }
+    const { startDateTime, endDateTime } = getAppointmentDateTimes(appointment);
+    const now = new Date();
+    const joinOpensAt = new Date(startDateTime.getTime() - 5 * 60 * 1000);
+    const joinClosesAt = new Date(endDateTime.getTime() + 15 * 60 * 1000);
+    
+    if (now < joinOpensAt) {
+      return 'too-early';
+    }
+    if (now > joinClosesAt) {
+      return 'ended';
+    }
+    return 'available';
+  };
+
   const handleCancel = async (appointmentId: string) => {
     Alert.alert(
       'Cancel Booking',
@@ -613,38 +632,54 @@ export default function SessionsScreen() {
               <>
                 {isRealtimeConsultation(appointment.consultationMethod) && appointment.status === 'confirmed' && (
                   <View style={styles.joinSection}>
-                    <Pressable 
-                      style={[
-                        styles.joinButton,
-                        (!canJoinRealtimeSession(appointment) || joiningId === appointment._id) && styles.joinButtonDisabled
-                      ]}
-                      onPress={() => handleJoinSession(appointment)}
-                      disabled={!canJoinRealtimeSession(appointment) || joiningId === appointment._id}
-                    >
-                      {joiningId === appointment._id ? (
-                        <ActivityIndicator size="small" color="#FFFFFF" />
-                      ) : (
-                        <Text style={styles.joinButtonText}>
-                          {canJoinRealtimeSession(appointment) ? getJoinCtaLabel(appointment.consultationMethod) : 'Join Opens Soon'}
-                        </Text>
-                      )}
-                    </Pressable>
-                    {!canJoinRealtimeSession(appointment) && (
-                      <Text style={styles.joinHint}>Join link unlocks 5 min before start</Text>
-                    )}
+                    {(() => {
+                      const joinStatus = getJoinStatus(appointment);
+                      if (joinStatus === 'ended') {
+                        return (
+                          <View style={[styles.joinButton, styles.joinButtonDisabled]}>
+                            <Text style={styles.joinButtonText}>Session Ended</Text>
+                          </View>
+                        );
+                      }
+                      return (
+                        <>
+                          <Pressable 
+                            style={[
+                              styles.joinButton,
+                              (joinStatus !== 'available' || joiningId === appointment._id) && styles.joinButtonDisabled
+                            ]}
+                            onPress={() => handleJoinSession(appointment)}
+                            disabled={joinStatus !== 'available' || joiningId === appointment._id}
+                          >
+                            {joiningId === appointment._id ? (
+                              <ActivityIndicator size="small" color="#FFFFFF" />
+                            ) : (
+                              <Text style={styles.joinButtonText}>
+                                {joinStatus === 'available' ? getJoinCtaLabel(appointment.consultationMethod) : 'Join Opens Soon'}
+                              </Text>
+                            )}
+                          </Pressable>
+                          {joinStatus === 'too-early' && (
+                            <Text style={styles.joinHint}>Join link unlocks 5 min before start</Text>
+                          )}
+                        </>
+                      );
+                    })()}
                   </View>
                 )}
-                <Pressable 
-                  style={[styles.cancelButton, cancellingId === appointment._id && styles.cancelButtonDisabled]}
-                  onPress={() => handleCancel(appointment._id)}
-                  disabled={cancellingId === appointment._id}
-                >
-                  {cancellingId === appointment._id ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <Text style={styles.cancelButtonText}>Cancel</Text>
-                  )}
-                </Pressable>
+                {getJoinStatus(appointment) !== 'ended' && (
+                  <Pressable 
+                    style={[styles.cancelButton, cancellingId === appointment._id && styles.cancelButtonDisabled]}
+                    onPress={() => handleCancel(appointment._id)}
+                    disabled={cancellingId === appointment._id}
+                  >
+                    {cancellingId === appointment._id ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Text style={styles.cancelButtonText}>Cancel</Text>
+                    )}
+                  </Pressable>
+                )}
               </>
             )}
             {isCompleted && (
