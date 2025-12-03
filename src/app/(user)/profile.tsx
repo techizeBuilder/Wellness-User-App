@@ -175,6 +175,13 @@ export default function ProfileScreen() {
           subtitle: 'Set your weekly session times',
           action: () => router.push('/(expert)/manage-availability')
         },
+        {
+          icon: '🔒',
+          iconColor: '#2DD4BF',
+          title: 'Reset Password',
+          subtitle: 'Change your account password',
+          action: () => router.push('/(user)/reset-password')
+        },
       ]
     },
     {
@@ -228,6 +235,13 @@ export default function ProfileScreen() {
           hasNotificationBadge: true,
           notificationCount: unreadNotifications,
           isEnabled: notificationsEnabled
+        },
+        {
+          icon: '🔒',
+          iconColor: '#2DD4BF',
+          title: 'Reset Password',
+          subtitle: 'Change your account password',
+          action: () => router.push('/(user)/reset-password')
         },
       ]
     },

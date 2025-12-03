@@ -37,6 +37,8 @@ type Appointment = {
   consultationMethod: string;
   sessionType: string;
   notes?: string;
+  planId?: string;
+  status?: string;
 };
 
 type PlanDetails = {
@@ -74,6 +76,7 @@ export default function BookingScreen() {
   const [expert, setExpert] = useState<Expert | null>(null);
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
+  const [userBookings, setUserBookings] = useState<Appointment[]>([]);
   
   // Safely extract params in useEffect to avoid bridge serialization issues
   useEffect(() => {
@@ -211,6 +214,7 @@ const getPlanId = (plan: PlanDetails | null | undefined): string => {
     // Only fetch expert data after params are extracted and expertId is available
     if (paramsExtracted && expertId && expertId.trim() !== '') {
       fetchExpertData();
+      fetchUserBookings();
     }
   }, [expertId, paramsExtracted]);
 
@@ -302,10 +306,11 @@ const getPlanId = (plan: PlanDetails | null | undefined): string => {
   }, [selectedPlanId, selectedPlan]);
 
   useEffect(() => {
-    if (expert && selectedDate) {
+    // Skip fetching slots for group sessions since date/time is already set by expert
+    if (expert && selectedDate && !(selectedPlan?.sessionFormat === "one-to-many")) {
       fetchAvailableSlots();
     }
-  }, [selectedDate, expert]);
+  }, [selectedDate, expert, selectedPlan]);
 
   const fetchExpertData = async () => {
     try {
@@ -330,6 +335,52 @@ const getPlanId = (plan: PlanDetails | null | undefined): string => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchUserBookings = async () => {
+    try {
+      const response = await apiService.getUserBookings({ limit: 1000 });
+      const bookings = response?.data?.appointments || response?.appointments || [];
+      setUserBookings(bookings);
+    } catch (error) {
+      console.error('Error fetching user bookings:', error);
+      // Don't show error to user, just log it
+    }
+  };
+
+  // Check if a group session plan is already booked
+  const isGroupSessionBooked = (plan: PlanDetails): boolean => {
+    if (plan.sessionFormat !== 'one-to-many' || !plan.scheduledDate || !plan.scheduledTime) {
+      return false;
+    }
+
+    const planId = getPlanId(plan);
+    if (!planId) return false;
+
+    // Check if user has a booking for this plan, date, and time
+    const sessionDate = new Date(plan.scheduledDate);
+    const startOfDay = new Date(sessionDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(sessionDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    return userBookings.some((booking: Appointment) => {
+      // Handle planId comparison - it might be a string or object
+      let bookingPlanId = booking.planId;
+      if (bookingPlanId && typeof bookingPlanId === 'object') {
+        bookingPlanId = (bookingPlanId as any)._id || (bookingPlanId as any).$oid || String(bookingPlanId);
+      }
+      bookingPlanId = String(bookingPlanId || '');
+
+      const bookingDate = new Date(booking.sessionDate);
+      return (
+        bookingPlanId === planId &&
+        bookingDate >= startOfDay &&
+        bookingDate <= endOfDay &&
+        booking.startTime === plan.scheduledTime &&
+        (booking.status === 'pending' || booking.status === 'confirmed')
+      );
+    });
   };
 
   const handleAddPlanSession = () => {
@@ -776,6 +827,7 @@ const getPlanId = (plan: PlanDetails | null | undefined): string => {
                 {plans.map((plan) => {
                   const planId = getPlanId(plan);
                   const active = planId !== '' && selectedPlanId === planId;
+                  const isBooked = isGroupSessionBooked(plan);
                   const priceLabel =
                     plan.type === "monthly"
                       ? `₹${(plan.monthlyPrice || plan.price).toLocaleString()}/month`
@@ -787,41 +839,56 @@ const getPlanId = (plan: PlanDetails | null | undefined): string => {
                   return (
                     <Pressable
                       key={planId || plan.name}
-                      style={[styles.planChoiceCard, active && styles.planChoiceCardActive]}
-                      onPress={() => planId && setSelectedPlanId(planId)}
-                      disabled={!planId}
+                      style={[
+                        styles.planChoiceCard, 
+                        active && styles.planChoiceCardActive,
+                        isBooked && styles.planChoiceCardDisabled
+                      ]}
+                      onPress={() => planId && !isBooked && setSelectedPlanId(planId)}
+                      disabled={!planId || isBooked}
                     >
-                      <View
-                        style={[
-                          styles.planChoiceTypePill,
-                          plan.type === "monthly"
-                            ? styles.planChoiceTypeMonthly
-                            : styles.planChoiceTypeSingle,
-                        ]}
-                      >
-                        <Text style={styles.planChoiceTypeText}>
-                          {plan.type === "monthly" ? "Monthly" : "Single"}
-                        </Text>
+                      <View style={styles.planChoiceHeader}>
+                        <View
+                          style={[
+                            styles.planChoiceTypePill,
+                            plan.type === "monthly"
+                              ? styles.planChoiceTypeMonthly
+                              : styles.planChoiceTypeSingle,
+                          ]}
+                        >
+                          <Text style={styles.planChoiceTypeText}>
+                            {plan.type === "monthly" ? "Monthly" : "Single"}
+                          </Text>
+                        </View>
+                        {isBooked && (
+                          <View style={styles.bookedBadge}>
+                            <Text style={styles.bookedBadgeText}>Booked</Text>
+                          </View>
+                        )}
                       </View>
                       <Text
                         style={[
                           styles.planChoiceTitle,
                           active && styles.planChoiceTitleActive,
+                          isBooked && styles.planChoiceTitleDisabled,
                         ]}
                       >
                         {plan.name}
                       </Text>
-                      <Text style={styles.planChoiceMeta}>{metaLabel}</Text>
+                      <Text style={[styles.planChoiceMeta, isBooked && styles.planChoiceMetaDisabled]}>
+                        {metaLabel}
+                      </Text>
                       <Text
                         style={[
                           styles.planChoicePrice,
                           active && styles.planChoiceTitleActive,
+                          isBooked && styles.planChoicePriceDisabled,
                         ]}
                       >
                         {priceLabel}
                       </Text>
                       {plan.sessionClassType && (
-                        <Text style={styles.planChoiceDescription}>
+                        <Text style={[styles.planChoiceDescription, isBooked && styles.planChoiceDescriptionDisabled]}>
                           Focus: {plan.sessionClassType}
                         </Text>
                       )}
@@ -1332,6 +1399,30 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 4,
   },
+  planChoiceCardDisabled: {
+    opacity: 0.6,
+    backgroundColor: '#f9fafb',
+    borderColor: '#d1d5db',
+  },
+  planChoiceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: getResponsiveMargin(8),
+  },
+  bookedBadge: {
+    backgroundColor: '#10b981',
+    borderRadius: getResponsiveBorderRadius(999),
+    paddingHorizontal: getResponsivePadding(8),
+    paddingVertical: getResponsivePadding(4),
+  },
+  bookedBadgeText: {
+    fontSize: getResponsiveFontSize(10),
+    fontWeight: '700',
+    color: '#ffffff',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   planChoiceTitle: {
     fontSize: getResponsiveFontSize(16),
     fontWeight: '700',
@@ -1340,16 +1431,28 @@ const styles = StyleSheet.create({
   planChoiceTitleActive: {
     color: '#047857',
   },
+  planChoiceTitleDisabled: {
+    color: '#6b7280',
+  },
   planChoiceMeta: {
     fontSize: getResponsiveFontSize(12),
     color: '#4b5563',
     marginTop: getResponsiveMargin(4),
+  },
+  planChoiceMetaDisabled: {
+    color: '#9ca3af',
   },
   planChoicePrice: {
     fontSize: getResponsiveFontSize(14),
     fontWeight: '600',
     color: '#0f172a',
     marginTop: getResponsiveMargin(8),
+  },
+  planChoicePriceDisabled: {
+    color: '#6b7280',
+  },
+  planChoiceDescriptionDisabled: {
+    color: '#9ca3af',
   },
   planChoiceTypePill: {
     alignSelf: 'flex-start',

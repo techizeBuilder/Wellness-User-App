@@ -24,7 +24,10 @@ import {
   getResponsiveWidth,
   screenData,
 } from "@/utils/dimensions";
-import { resolveProfileImageUrl, getProfileImageWithFallback } from "@/utils/imageHelpers";
+import {
+  resolveProfileImageUrl,
+  getProfileImageWithFallback,
+} from "@/utils/imageHelpers";
 
 const { width } = Dimensions.get("window");
 
@@ -97,7 +100,7 @@ export default function DashboardScreen() {
         const response = await apiService.getAllExperts({
           page: 1,
           limit: 3,
-          sortBy: 'rating',
+          sortBy: "rating",
         });
 
         const expertsData =
@@ -109,7 +112,8 @@ export default function DashboardScreen() {
         // Take only top 3 and ensure they have ratings
         const topExperts = (Array.isArray(expertsData) ? expertsData : [])
           .filter((expert: any) => {
-            const rating = expert.rating?.average ?? (expert as any).averageRating ?? 0;
+            const rating =
+              expert.rating?.average ?? (expert as any).averageRating ?? 0;
             return rating > 0;
           })
           .slice(0, 3);
@@ -138,17 +142,17 @@ export default function DashboardScreen() {
     router.push("/(user)/profile");
   };
 
-const handleCategorySelect = (categoryName: string) => {
-  if (categoryName === "All") {
-    router.push("/(user)/experts");
-    return;
-  }
+  const handleCategorySelect = (categoryName: string) => {
+    if (categoryName === "All") {
+      router.push("/(user)/experts");
+      return;
+    }
 
-  router.push({
-    pathname: "/(user)/experts",
-    params: { specialization: categoryName },
-  });
-};
+    router.push({
+      pathname: "/(user)/experts",
+      params: { specialization: categoryName },
+    });
+  };
 
   const handleYogaExplore = () => {
     if (selectedYogaCategory === "All Yoga") {
@@ -239,16 +243,16 @@ const handleCategorySelect = (categoryName: string) => {
     return () => clearInterval(timer);
   }, []);
 
-const categoryCardBase = { backgroundColor: "#edebf0ff" };
-const categories = [
-  { name: "All", icon: "✨", ...categoryCardBase },
-  { name: "Yoga", icon: "🧘‍♀️", ...categoryCardBase },
-  { name: "Ayurveda", icon: "🌿", ...categoryCardBase },
-  { name: "Fitness", icon: "🏋️", ...categoryCardBase },
-  { name: "Mental Health", icon: "🧠", ...categoryCardBase },
-  { name: "Nutrition", icon: "🥗", ...categoryCardBase },
-  { name: "Meditation", icon: "🕯️", ...categoryCardBase },
-];
+  const categoryCardBase = { backgroundColor: "#edebf0ff" };
+  const categories = [
+    { name: "All", icon: "✨", ...categoryCardBase },
+    { name: "Yoga", icon: "🧘‍♀️", ...categoryCardBase },
+    { name: "Ayurveda", icon: "🌿", ...categoryCardBase },
+    { name: "Fitness", icon: "🏋️", ...categoryCardBase },
+    { name: "Mental Health", icon: "🧠", ...categoryCardBase },
+    { name: "Nutrition", icon: "🥗", ...categoryCardBase },
+    { name: "Meditation", icon: "🕯️", ...categoryCardBase },
+  ];
 
   const yogaCategories = [
     { name: "All Yoga", description: "Browse every style", icon: "✨" },
@@ -416,7 +420,9 @@ const categories = [
                   styles.arrowButton,
                   {
                     opacity:
-                      currentExpertIndex === featuredExperts.length - 1 ? 0.5 : 1,
+                      currentExpertIndex === featuredExperts.length - 1
+                        ? 0.5
+                        : 1,
                   },
                 ]}
                 onPress={navigateExpertRight}
@@ -432,7 +438,9 @@ const categories = [
             </View>
           ) : featuredExperts.length === 0 ? (
             <View style={styles.expertsLoadingContainer}>
-              <Text style={styles.expertsLoadingText}>No featured experts available</Text>
+              <Text style={styles.expertsLoadingText}>
+                No featured experts available
+              </Text>
             </View>
           ) : (
             <ScrollView
@@ -450,18 +458,35 @@ const categories = [
                   ["rgba(247, 246, 250, 0.9)", "rgba(248, 248, 248, 0.9)"], // Pink gradient
                 ];
                 const expertId = expert._id || expert.id || `expert-${index}`;
-                const fullName = [expert.firstName, expert.lastName].filter(Boolean).join(' ').trim();
-                const displayName = fullName || expert.name || 'Expert';
-                const specialization = expert.specialization || 'Specialist';
-                const experienceYears = typeof expert.experience === 'number' ? expert.experience : 0;
-                const experienceText = experienceYears > 0 ? `${experienceYears} year${experienceYears > 1 ? 's' : ''}` : 'New';
-                const expertRating = expert.rating?.average ?? (expert as any).averageRating ?? 0;
-                const ratingDisplay = expertRating > 0 ? expertRating.toFixed(1) : 'New';
-                const hourlyRate = typeof expert.hourlyRate === 'number' ? expert.hourlyRate : 0;
-                const priceDisplay = hourlyRate > 0 ? `₹${hourlyRate}/hr` : 'Contact for price';
-                const bio = expert.bio || 'Bio coming soon';
-                const profileImage = getProfileImageWithFallback(expert.profileImage, displayName) || 
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=37b9a8&color=fff&size=128`;
+                const fullName = [expert.firstName, expert.lastName]
+                  .filter(Boolean)
+                  .join(" ")
+                  .trim();
+                const displayName = fullName || expert.name || "Expert";
+                const specialization = expert.specialization || "Specialist";
+                const experienceYears =
+                  typeof expert.experience === "number" ? expert.experience : 0;
+                const experienceText =
+                  experienceYears > 0
+                    ? `${experienceYears} year${experienceYears > 1 ? "s" : ""}`
+                    : "New";
+                const expertRating =
+                  expert.rating?.average ?? (expert as any).averageRating ?? 0;
+                const ratingDisplay =
+                  expertRating > 0 ? expertRating.toFixed(1) : "New";
+                const hourlyRate =
+                  typeof expert.hourlyRate === "number" ? expert.hourlyRate : 0;
+                const priceDisplay =
+                  hourlyRate > 0 ? `₹${hourlyRate}/hr` : "Contact for price";
+                const bio = expert.bio || "Bio coming soon";
+                const profileImage =
+                  getProfileImageWithFallback(
+                    expert.profileImage,
+                    displayName
+                  ) ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    displayName
+                  )}&background=37b9a8&color=fff&size=128`;
 
                 return (
                   <LinearGradient
@@ -487,9 +512,6 @@ const categories = [
                       <View style={styles.expertContent}>
                         <View style={styles.expertHeader}>
                           <Text style={styles.expertName}>{displayName}</Text>
-                        </View>
-
-                        <View style={styles.expertDescriptionContainer}>
                           <Text
                             style={styles.expertDescription}
                             numberOfLines={2}
@@ -499,15 +521,15 @@ const categories = [
                           </Text>
                         </View>
 
+                        {/* <View style={styles.expertDescriptionContainer}></View> */}
+
                         <View style={styles.expertMetaInfo}>
                           <View style={styles.expertRating}>
                             <Text style={styles.expertRatingText}>
                               ⭐ {ratingDisplay}
                             </Text>
                           </View>
-                          <Text style={styles.expertPrice}>
-                            {priceDisplay}
-                          </Text>
+                          <Text style={styles.expertPrice}>{priceDisplay}</Text>
                         </View>
 
                         <LinearGradient
@@ -1078,7 +1100,7 @@ const styles = StyleSheet.create({
   },
   expertCard: {
     width: getResponsiveWidth(screenData.isSmall ? 260 : 300),
-    height: getResponsiveHeight(screenData.isSmall ? 180 : 200),
+    // height: getResponsiveHeight(screenData.isSmall ? 180 : 200),
     marginRight: getResponsiveMargin(12),
     borderRadius: getResponsiveBorderRadius(16),
     borderWidth: 1.5,
@@ -1091,13 +1113,14 @@ const styles = StyleSheet.create({
   },
   expertPressable: {
     flexDirection: "row",
-    padding: getResponsivePadding(screenData.isSmall ? 10 : 14),
     flex: 1,
-    alignItems: "flex-start",
+    // alignItems: "flex-start",
+    padding: 12,
   },
   expertImageContainer: {
     marginRight: getResponsiveMargin(12),
     alignItems: "center",
+    justifyContent: "flex-start",
   },
   expertImage: {
     width: getResponsiveWidth(screenData.isSmall ? 64 : 74),
@@ -1105,7 +1128,7 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveBorderRadius(screenData.isSmall ? 32 : 37),
     borderWidth: 2,
     borderColor: "#F59E0B",
-    marginBottom: getResponsiveMargin(6),
+    marginBottom: getResponsiveMargin(8),
   },
   expertSpecialtyBadge: {
     fontSize: fontSizes.xs,
@@ -1121,8 +1144,7 @@ const styles = StyleSheet.create({
   expertContent: {
     flex: 1,
     justifyContent: "space-between",
-    height: getResponsiveHeight(screenData.isSmall ? 140 : 170),
-    paddingVertical: getResponsivePadding(6),
+    // minHeight: getResponsiveHeight(screenData.isSmall ? 140 : 170),
   },
   expertHeader: {
     marginBottom: getResponsiveMargin(8),
@@ -1131,7 +1153,7 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.lg,
     fontWeight: "bold",
     color: "#2C2C2C",
-    marginBottom: getResponsiveMargin(4),
+    marginBottom: 4,
     lineHeight: fontSizes.lg + 4,
   },
   expertSpecialty: {
@@ -1141,8 +1163,9 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveMargin(6),
   },
   expertDescriptionContainer: {
-    marginBottom: getResponsiveMargin(6),
-    paddingRight: getResponsivePadding(6),
+    marginBottom: getResponsiveMargin(8),
+    flex: 1,
+    justifyContent: "center",
   },
   expertDescription: {
     fontSize: fontSizes.xs,
@@ -1156,7 +1179,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: getResponsiveMargin(8),
-    paddingRight: getResponsivePadding(6),
+    marginTop: getResponsiveMargin(4),
   },
   expertRating: {
     backgroundColor: "#F59E0B",

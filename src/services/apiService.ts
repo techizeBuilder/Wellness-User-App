@@ -333,6 +333,27 @@ class ApiService {
     });
   }
 
+  // Password reset with OTP (for logged-in users)
+  async requestPasswordResetOTP() {
+    return this.request(ENDPOINTS.AUTH.REQUEST_PASSWORD_RESET_OTP, {
+      method: "POST",
+    });
+  }
+
+  async verifyPasswordResetOTP(otp: string) {
+    return this.request(ENDPOINTS.AUTH.VERIFY_PASSWORD_RESET_OTP, {
+      method: "POST",
+      body: JSON.stringify({ otp }),
+    });
+  }
+
+  async resetPasswordWithOTP(otp: string, password: string) {
+    return this.request(ENDPOINTS.AUTH.RESET_PASSWORD_WITH_OTP, {
+      method: "POST",
+      body: JSON.stringify({ otp, password }),
+    });
+  }
+
   async logout() {
     await this.removeToken();
     return { success: true, message: "Logged out successfully" };
