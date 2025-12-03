@@ -1474,28 +1474,6 @@ export default function ExpertAppointmentsScreen() {
                   onChangeText={setGroupDuration}
                 />
 
-                <Text style={styles.modalLabel}>Consultation Method</Text>
-                <View style={{ flexDirection: 'row', marginTop: getResponsiveHeight(8) }}>
-                  {['video', 'audio', 'chat', 'in-person'].map((method) => (
-                    <Pressable
-                      key={method}
-                      style={[
-                        styles.filterChip,
-                        groupConsultationMethod === method && styles.filterChipActive,
-                      ]}
-                      onPress={() => setGroupConsultationMethod(method as any)}
-                    >
-                      <Text
-                        style={[
-                          styles.filterChipText,
-                          groupConsultationMethod === method && styles.filterChipTextActive,
-                        ]}
-                      >
-                        {method}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
 
                 <View style={styles.modalButtons}>
                   <Pressable
@@ -1558,7 +1536,8 @@ const styles = StyleSheet.create({
   searchInput: {
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: getResponsiveBorderRadius(12),
-    padding: getResponsivePadding(16),
+    paddingHorizontal: getResponsivePadding(12),
+    paddingVertical: getResponsivePadding(8),
     fontSize: getResponsiveFontSize(16),
     color: '#1F2937',
   },

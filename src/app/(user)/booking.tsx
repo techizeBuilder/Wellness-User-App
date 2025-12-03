@@ -48,6 +48,8 @@ type PlanDetails = {
   classesPerMonth?: number;
   duration?: number;
   sessionFormat?: "one-on-one" | "one-to-many";
+  scheduledDate?: string;
+  scheduledTime?: string;
 };
 
 type PlanSessionSelection = {
@@ -271,6 +273,8 @@ const getPlanId = (plan: PlanDetails | null | undefined): string => {
     setPlanSessions([]);
     if (!selectedPlan) {
       setSelectedDuration(60);
+      setSelectedDate("");
+      setSelectedTime("");
       return;
     }
 
@@ -280,6 +284,20 @@ const getPlanId = (plan: PlanDetails | null | undefined): string => {
 
     if (selectedPlan.sessionFormat) {
       setSelectedSessionType(selectedPlan.sessionFormat);
+    }
+
+    // For group sessions, set the pre-scheduled date and time
+    if (selectedPlan.sessionFormat === "one-to-many") {
+      if (selectedPlan.scheduledDate) {
+        setSelectedDate(selectedPlan.scheduledDate);
+      }
+      if (selectedPlan.scheduledTime) {
+        setSelectedTime(selectedPlan.scheduledTime);
+      }
+    } else {
+      // Reset date/time for one-on-one plans
+      setSelectedDate("");
+      setSelectedTime("");
     }
   }, [selectedPlanId, selectedPlan]);
 
@@ -446,7 +464,9 @@ const getPlanId = (plan: PlanDetails | null | undefined): string => {
             session.consultationMethod &&
             session.sessionType
         )
-      : !!selectedDate && !!selectedTime
+      : selectedPlan.sessionFormat === "one-to-many"
+        ? !!selectedPlan.scheduledDate && !!selectedPlan.scheduledTime
+        : !!selectedDate && !!selectedTime
     : baseSlotReady;
   const isBookDisabled = booking || !planReady;
 
@@ -471,9 +491,18 @@ const getPlanId = (plan: PlanDetails | null | undefined): string => {
         return;
       }
     } else if (selectedPlan.type === "single") {
-      if (!selectedDate || !selectedTime) {
-        Alert.alert('Missing Information', 'Please select the date and time for this plan.');
-        return;
+      if (selectedPlan.sessionFormat === "one-to-many") {
+        // For group sessions, use the plan's scheduled date/time
+        if (!selectedPlan.scheduledDate || !selectedPlan.scheduledTime) {
+          Alert.alert('Missing Information', 'This group session plan is missing scheduled date/time.');
+          return;
+        }
+      } else {
+        // For one-on-one single plans, require date/time selection
+        if (!selectedDate || !selectedTime) {
+          Alert.alert('Missing Information', 'Please select the date and time for this plan.');
+          return;
+        }
       }
     } else if (selectedPlan.type === "monthly") {
       if (planSessions.length !== (selectedPlan.classesPerMonth || 0)) {
@@ -520,14 +549,22 @@ const getPlanId = (plan: PlanDetails | null | undefined): string => {
           amount = selectedPlan.monthlyPrice || 0;
           planId = selectedPlan._id;
         } else {
+          // For group sessions, use plan's scheduled date/time; otherwise use selected date/time
+          const sessionDate = selectedPlan.sessionFormat === "one-to-many" 
+            ? selectedPlan.scheduledDate! 
+            : selectedDate;
+          const sessionTime = selectedPlan.sessionFormat === "one-to-many" 
+            ? selectedPlan.scheduledTime! 
+            : selectedTime;
+          
           bookingResponse = await apiService.createBooking({
             expertId,
             planId: selectedPlan._id,
             planType: selectedPlan.type,
             planSessions: [
               {
-                sessionDate: selectedDate,
-                startTime: selectedTime,
+                sessionDate: sessionDate,
+                startTime: sessionTime,
                 duration: selectedPlan.duration || selectedDuration,
                 consultationMethod: selectedConsultationMethod,
                 sessionType: selectedSessionType,
@@ -927,38 +964,60 @@ const getPlanId = (plan: PlanDetails | null | undefined): string => {
           )}
         </View>
 
-        {/* Date Selection */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Select Date</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.datesContainer}>
-            {dates.map((dateItem, index) => (
-              <Pressable
-                key={index}
-                style={[
-                  styles.dateCard,
-                  selectedDate === dateItem.date && styles.dateCardSelected
-                ]}
-                onPress={() => setSelectedDate(dateItem.date)}
-              >
-                <Text style={[
-                  styles.dateNumber,
-                  selectedDate === dateItem.date && styles.dateTextSelected
-                ]}>
-                  {dateItem.day}
-                </Text>
-                <Text style={[
-                  styles.dateDay,
-                  selectedDate === dateItem.date && styles.dateTextSelected
-                ]}>
-                  {dateItem.dayName}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-        </View>
+        {/* Date Selection - Hidden for group sessions */}
+        {!(selectedPlan?.sessionFormat === "one-to-many") && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Select Date</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.datesContainer}>
+              {dates.map((dateItem, index) => (
+                <Pressable
+                  key={index}
+                  style={[
+                    styles.dateCard,
+                    selectedDate === dateItem.date && styles.dateCardSelected
+                  ]}
+                  onPress={() => setSelectedDate(dateItem.date)}
+                >
+                  <Text style={[
+                    styles.dateNumber,
+                    selectedDate === dateItem.date && styles.dateTextSelected
+                  ]}>
+                    {dateItem.day}
+                  </Text>
+                  <Text style={[
+                    styles.dateDay,
+                    selectedDate === dateItem.date && styles.dateTextSelected
+                  ]}>
+                    {dateItem.dayName}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
-        {/* Time Selection */}
-        {selectedDate && (
+        {/* Show scheduled date/time for group sessions */}
+        {selectedPlan?.sessionFormat === "one-to-many" && selectedPlan.scheduledDate && selectedPlan.scheduledTime && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Scheduled Session</Text>
+            <View style={styles.scheduledSessionCard}>
+              <Text style={styles.scheduledSessionDate}>
+                {new Date(selectedPlan.scheduledDate).toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </Text>
+              <Text style={styles.scheduledSessionTime}>
+                {formatTime(selectedPlan.scheduledTime)}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Time Selection - Hidden for group sessions */}
+        {selectedDate && !(selectedPlan?.sessionFormat === "one-to-many") && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Select Time</Text>
             {loadingSlots ? (
@@ -1230,6 +1289,25 @@ const styles = StyleSheet.create({
     color: '#065F46',
     marginTop: getResponsiveMargin(4),
     lineHeight: getResponsiveHeight(18),
+  },
+  scheduledSessionCard: {
+    backgroundColor: '#ECFDF5',
+    borderRadius: getResponsiveBorderRadius(12),
+    padding: getResponsivePadding(16),
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    marginTop: getResponsiveMargin(8),
+  },
+  scheduledSessionDate: {
+    fontSize: getResponsiveFontSize(16),
+    fontWeight: '600',
+    color: '#064E3B',
+    marginBottom: getResponsiveMargin(4),
+  },
+  scheduledSessionTime: {
+    fontSize: getResponsiveFontSize(14),
+    color: '#047857',
+    fontWeight: '500',
   },
   planChoiceScroll: {
     marginVertical: getResponsiveMargin(16),

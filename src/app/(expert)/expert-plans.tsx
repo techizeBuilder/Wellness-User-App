@@ -13,7 +13,10 @@ import {
   TextInput,
   View,
   Pressable,
+  Platform,
+  Modal,
 } from "react-native";
+import DateTimePicker from '@react-native-community/datetimepicker';
 import ExpertFooter from "@/components/ExpertFooter";
 import { apiService, handleApiError } from "@/services/apiService";
 import {
@@ -37,6 +40,8 @@ type Plan = {
   monthlyPrice?: number;
   isActive: boolean;
   createdAt?: string;
+  scheduledDate?: string;
+  scheduledTime?: string;
 };
 
 const PLAN_TYPES = [
@@ -61,6 +66,8 @@ export default function ExpertPlansScreen() {
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [formState, setFormState] = useState({
     name: "",
     description: "",
@@ -72,6 +79,8 @@ export default function ExpertPlansScreen() {
     classesPerMonth: "4",
     monthlyPrice: "",
     isActive: true,
+    scheduledDate: "",
+    scheduledTime: "",
   });
 
   const resetForm = () => {
@@ -86,6 +95,8 @@ export default function ExpertPlansScreen() {
       classesPerMonth: "4",
       monthlyPrice: "",
       isActive: true,
+      scheduledDate: "",
+      scheduledTime: "",
     });
     setEditingPlan(null);
   };
@@ -117,6 +128,10 @@ export default function ExpertPlansScreen() {
   const handleEditPlan = (plan: Plan) => {
     setEditingPlan(plan);
     setShowForm(true);
+    // Format scheduledDate if it exists
+    const formattedDate = plan.scheduledDate 
+      ? new Date(plan.scheduledDate).toISOString().split('T')[0]
+      : "";
     setFormState({
       name: plan.name,
       description: plan.description || "",
@@ -130,6 +145,8 @@ export default function ExpertPlansScreen() {
         : "4",
       monthlyPrice: plan.monthlyPrice ? String(plan.monthlyPrice) : "",
       isActive: plan.isActive,
+      scheduledDate: formattedDate,
+      scheduledTime: plan.scheduledTime || "",
     });
   };
 
@@ -157,6 +174,17 @@ export default function ExpertPlansScreen() {
           "Please select a valid duration (30-240 minutes)."
         );
         return false;
+      }
+      // For group sessions, date and time are required
+      if (formState.sessionFormat === "one-to-many") {
+        if (!formState.scheduledDate) {
+          Alert.alert("Validation Error", "Please select a date for the group session.");
+          return false;
+        }
+        if (!formState.scheduledTime) {
+          Alert.alert("Validation Error", "Please select a time for the group session.");
+          return false;
+        }
       }
     } else {
       const monthlyPriceValue = parseFloat(formState.monthlyPrice);
@@ -196,6 +224,11 @@ export default function ExpertPlansScreen() {
     if (formState.type === "single") {
       payload.price = parseFloat(formState.price);
       payload.duration = parseInt(formState.duration, 10);
+      // For group sessions, include scheduled date and time
+      if (formState.sessionFormat === "one-to-many") {
+        payload.scheduledDate = formState.scheduledDate;
+        payload.scheduledTime = formState.scheduledTime;
+      }
     } else {
       payload.price = parseFloat(formState.monthlyPrice);
       payload.monthlyPrice = parseFloat(formState.monthlyPrice);
@@ -475,6 +508,208 @@ export default function ExpertPlansScreen() {
                         setFormState((prev) => ({ ...prev, price: text }))
                       }
                     />
+
+                    {/* Date and Time Selection for Group Sessions */}
+                    {formState.sessionFormat === "one-to-many" && (
+                      <>
+                        <View style={styles.dateTimeSection}>
+                          <Text style={styles.label}>Session Schedule</Text>
+                          <Text style={styles.dateTimeHint}>
+                            Set the date and time for this group session
+                          </Text>
+                          
+                          <View style={styles.dateTimeColumn}>
+                            <Pressable
+                              style={[
+                                styles.dateTimeCard,
+                                formState.scheduledDate && styles.dateTimeCardSelected
+                              ]}
+                              onPress={() => setShowDatePicker(true)}
+                            >
+                              <View style={styles.dateTimeIconContainer}>
+                                <Text style={styles.dateTimeIcon}>📅</Text>
+                              </View>
+                              <View style={styles.dateTimeContent}>
+                                <Text style={styles.dateTimeLabel}>Date</Text>
+                                <Text style={[
+                                  styles.dateTimeValue,
+                                  !formState.scheduledDate && styles.dateTimePlaceholder
+                                ]}>
+                                  {formState.scheduledDate 
+                                    ? new Date(formState.scheduledDate).toLocaleDateString('en-US', {
+                                        weekday: 'short',
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric'
+                                      })
+                                    : 'Select date'}
+                                </Text>
+                              </View>
+                              <Text style={styles.dateTimeArrow}>›</Text>
+                            </Pressable>
+
+                            <Pressable
+                              style={[
+                                styles.dateTimeCard,
+                                formState.scheduledTime && styles.dateTimeCardSelected
+                              ]}
+                              onPress={() => setShowTimePicker(true)}
+                            >
+                              <View style={styles.dateTimeIconContainer}>
+                                <Text style={styles.dateTimeIcon}>🕐</Text>
+                              </View>
+                              <View style={styles.dateTimeContent}>
+                                <Text style={styles.dateTimeLabel}>Time</Text>
+                                <Text style={[
+                                  styles.dateTimeValue,
+                                  !formState.scheduledTime && styles.dateTimePlaceholder
+                                ]}>
+                                  {formState.scheduledTime 
+                                    ? (() => {
+                                        const [hours, minutes] = formState.scheduledTime.split(':').map(Number);
+                                        const period = hours >= 12 ? 'PM' : 'AM';
+                                        const displayHours = hours % 12 || 12;
+                                        return `${displayHours}:${String(minutes).padStart(2, '0')} ${period}`;
+                                      })()
+                                    : 'Select time'}
+                                </Text>
+                              </View>
+                              <Text style={styles.dateTimeArrow}>›</Text>
+                            </Pressable>
+                          </View>
+                        </View>
+
+                        {Platform.OS === 'ios' ? (
+                          <>
+                            <Modal
+                              visible={showDatePicker}
+                              transparent
+                              animationType="slide"
+                              onRequestClose={() => setShowDatePicker(false)}
+                            >
+                              <View style={styles.pickerModalContainer}>
+                                <View style={styles.pickerModalContent}>
+                                  <View style={styles.pickerModalHeader}>
+                                    <Pressable onPress={() => setShowDatePicker(false)}>
+                                      <Text style={styles.pickerModalCancel}>Cancel</Text>
+                                    </Pressable>
+                                    <Text style={styles.pickerModalTitle}>Select Date</Text>
+                                    <Pressable
+                                      onPress={() => setShowDatePicker(false)}
+                                    >
+                                      <Text style={styles.pickerModalDone}>
+                                        Done
+                                      </Text>
+                                    </Pressable>
+                                  </View>
+                                  <DateTimePicker
+                                    value={formState.scheduledDate ? new Date(formState.scheduledDate) : new Date()}
+                                    mode="date"
+                                    display="spinner"
+                                    minimumDate={new Date()}
+                                    onChange={(event, selectedDate) => {
+                                      if (selectedDate) {
+                                        const dateString = selectedDate.toISOString().split('T')[0];
+                                        setFormState((prev) => ({ ...prev, scheduledDate: dateString }));
+                                      }
+                                    }}
+                                    style={styles.pickerIOS}
+                                  />
+                                </View>
+                              </View>
+                            </Modal>
+
+                            <Modal
+                              visible={showTimePicker}
+                              transparent
+                              animationType="slide"
+                              onRequestClose={() => setShowTimePicker(false)}
+                            >
+                              <View style={styles.pickerModalContainer}>
+                                <View style={styles.pickerModalContent}>
+                                  <View style={styles.pickerModalHeader}>
+                                    <Pressable onPress={() => setShowTimePicker(false)}>
+                                      <Text style={styles.pickerModalCancel}>Cancel</Text>
+                                    </Pressable>
+                                    <Text style={styles.pickerModalTitle}>Select Time</Text>
+                                    <Pressable
+                                      onPress={() => setShowTimePicker(false)}
+                                    >
+                                      <Text style={styles.pickerModalDone}>
+                                        Done
+                                      </Text>
+                                    </Pressable>
+                                  </View>
+                                  <DateTimePicker
+                                    value={formState.scheduledTime 
+                                      ? (() => {
+                                          const [hours, minutes] = formState.scheduledTime.split(':').map(Number);
+                                          const date = new Date();
+                                          date.setHours(hours, minutes, 0, 0);
+                                          return date;
+                                        })()
+                                      : new Date()}
+                                    mode="time"
+                                    display="spinner"
+                                    is24Hour={false}
+                                    onChange={(event, selectedTime) => {
+                                      if (selectedTime) {
+                                        const hours = String(selectedTime.getHours()).padStart(2, '0');
+                                        const minutes = String(selectedTime.getMinutes()).padStart(2, '0');
+                                        setFormState((prev) => ({ ...prev, scheduledTime: `${hours}:${minutes}` }));
+                                      }
+                                    }}
+                                    style={styles.pickerIOS}
+                                  />
+                                </View>
+                              </View>
+                            </Modal>
+                          </>
+                        ) : (
+                          <>
+                            {showDatePicker && (
+                              <DateTimePicker
+                                value={formState.scheduledDate ? new Date(formState.scheduledDate) : new Date()}
+                                mode="date"
+                                display="default"
+                                minimumDate={new Date()}
+                                onChange={(event, selectedDate) => {
+                                  setShowDatePicker(false);
+                                  if (event.type === 'set' && selectedDate) {
+                                    const dateString = selectedDate.toISOString().split('T')[0];
+                                    setFormState((prev) => ({ ...prev, scheduledDate: dateString }));
+                                  }
+                                }}
+                              />
+                            )}
+
+                            {showTimePicker && (
+                              <DateTimePicker
+                                value={formState.scheduledTime 
+                                  ? (() => {
+                                      const [hours, minutes] = formState.scheduledTime.split(':').map(Number);
+                                      const date = new Date();
+                                      date.setHours(hours, minutes, 0, 0);
+                                      return date;
+                                    })()
+                                  : new Date()}
+                                mode="time"
+                                display="default"
+                                is24Hour={false}
+                                onChange={(event, selectedTime) => {
+                                  setShowTimePicker(false);
+                                  if (event.type === 'set' && selectedTime) {
+                                    const hours = String(selectedTime.getHours()).padStart(2, '0');
+                                    const minutes = String(selectedTime.getMinutes()).padStart(2, '0');
+                                    setFormState((prev) => ({ ...prev, scheduledTime: `${hours}:${minutes}` }));
+                                  }
+                                }}
+                              />
+                            )}
+                          </>
+                        )}
+                      </>
+                    )}
                   </>
                 ) : (
                   <>
@@ -887,6 +1122,110 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: "#0f766e",
     fontWeight: "600",
+  },
+  dateTimeSection: {
+    marginTop: getResponsiveHeight(8),
+    marginBottom: getResponsiveHeight(4),
+  },
+  dateTimeHint: {
+    fontSize: getResponsiveFontSize(12),
+    color: "#64748B",
+    marginBottom: getResponsiveHeight(12),
+    marginTop: getResponsiveHeight(-4),
+  },
+  dateTimeColumn: {
+    gap: getResponsiveHeight(12),
+  },
+  dateTimeCard: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+    borderRadius: getResponsiveBorderRadius(12),
+    padding: getResponsivePadding(12),
+    minHeight: getResponsiveHeight(70),
+  },
+  dateTimeCardSelected: {
+    borderColor: "#0f766e",
+    backgroundColor: "#F0FDFA",
+  },
+  dateTimeIconContainer: {
+    width: getResponsiveWidth(40),
+    height: getResponsiveHeight(40),
+    borderRadius: getResponsiveBorderRadius(20),
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: getResponsiveWidth(10),
+  },
+  dateTimeIcon: {
+    fontSize: getResponsiveFontSize(20),
+  },
+  dateTimeContent: {
+    flex: 1,
+  },
+  dateTimeLabel: {
+    fontSize: getResponsiveFontSize(11),
+    color: "#64748B",
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: getResponsiveHeight(2),
+  },
+  dateTimeValue: {
+    fontSize: getResponsiveFontSize(15),
+    color: "#0f172a",
+    fontWeight: "600",
+  },
+  dateTimePlaceholder: {
+    color: "#9CA3AF",
+    fontWeight: "400",
+  },
+  dateTimeArrow: {
+    fontSize: getResponsiveFontSize(20),
+    color: "#94A3B8",
+    marginLeft: getResponsiveWidth(4),
+  },
+  pickerModalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  pickerModalContent: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: getResponsiveBorderRadius(20),
+    borderTopRightRadius: getResponsiveBorderRadius(20),
+    paddingBottom: getResponsivePadding(20),
+  },
+  pickerModalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: getResponsivePadding(20),
+    paddingVertical: getResponsivePadding(16),
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+  },
+  pickerModalCancel: {
+    fontSize: getResponsiveFontSize(16),
+    color: "#64748B",
+    fontWeight: "500",
+  },
+  pickerModalTitle: {
+    fontSize: getResponsiveFontSize(18),
+    fontWeight: "600",
+    color: "#0f172a",
+  },
+  pickerModalDone: {
+    fontSize: getResponsiveFontSize(16),
+    color: "#0f766e",
+    fontWeight: "600",
+  },
+  pickerIOS: {
+    width: "100%",
+    height: getResponsiveHeight(200),
   },
   planCard: {
     borderWidth: 1,

@@ -64,16 +64,8 @@ export default function SessionsScreen() {
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
   const [downloadingPrescriptionId, setDownloadingPrescriptionId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [consultationFilter, setConsultationFilter] = useState<'all' | 'video' | 'audio' | 'chat' | 'in-person'>('all');
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
   const ratingScale = [1, 2, 3, 4, 5];
-  const consultationFilters = [
-    { label: 'All types', value: 'all' },
-    { label: 'Video', value: 'video' },
-    { label: 'Audio', value: 'audio' },
-    { label: 'Chat', value: 'chat' },
-    { label: 'In-Person', value: 'in-person' }
-  ] as const;
   const dateFilters = [
     { label: 'All dates', value: 'all' },
     { label: 'Today', value: 'today' },
@@ -485,13 +477,9 @@ export default function SessionsScreen() {
   };
 
   const getFilteredSessions = () => {
-    let sessions = getCurrentSessions();
-
-    if (consultationFilter !== 'all') {
-      sessions = sessions.filter((apt) => apt.consultationMethod === consultationFilter);
-    }
-
-    sessions = sessions.filter(matchesSearchQuery).filter(matchesDateFilter);
+    const sessions = getCurrentSessions()
+      .filter(matchesSearchQuery)
+      .filter(matchesDateFilter);
     return sessions;
   };
 
@@ -740,11 +728,6 @@ export default function SessionsScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Sessions</Text>
-        <View style={styles.headerStats}>
-          <Text style={styles.statsText}>
-            {upcomingCount} Upcoming • {completedCount} Completed
-          </Text>
-        </View>
       </View>
 
       {/* Tab Navigation */}
@@ -787,31 +770,6 @@ export default function SessionsScreen() {
             returnKeyType="search"
           />
         </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterChipRow}
-        >
-          {consultationFilters.map((filter) => (
-            <Pressable
-              key={filter.value}
-              style={[
-                styles.filterChip,
-                consultationFilter === filter.value && styles.filterChipActive
-              ]}
-              onPress={() => setConsultationFilter(filter.value)}
-            >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  consultationFilter === filter.value && styles.filterChipTextActive
-                ]}
-              >
-                {filter.label}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
         <View style={styles.dateFilterRow}>
           {dateFilters.map((filter) => (
             <Pressable
@@ -1006,7 +964,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: getResponsiveBorderRadius(16),
     paddingHorizontal: getResponsivePadding(16),
-    paddingVertical: getResponsivePadding(10),
+    paddingVertical: getResponsivePadding(6),
     borderWidth: 1,
     borderColor: 'rgba(15, 23, 42, 0.08)',
   },
@@ -1256,13 +1214,14 @@ const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
     gap: getResponsiveWidth(12),
   },
   joinSection: {
     flex: 1,
   },
   joinButton: {
-    flex: 1,
+    width: '100%',
     backgroundColor: '#14B8A6',
     paddingVertical: getResponsivePadding(12),
     borderRadius: getResponsiveBorderRadius(8),
@@ -1288,6 +1247,7 @@ const styles = StyleSheet.create({
     paddingVertical: getResponsivePadding(12),
     borderRadius: getResponsiveBorderRadius(8),
     alignItems: 'center',
+    alignSelf: 'flex-start',
   },
   cancelButtonDisabled: {
     opacity: 0.6,

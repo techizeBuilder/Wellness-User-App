@@ -13,15 +13,7 @@ import {
 } from '@/utils/dimensions';
 
 export default function NotificationsScreen() {
-  const [pushNotifications, setPushNotifications] = useState(true);
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [sessionReminders, setSessionReminders] = useState(true);
-  const [expertMessages, setExpertMessages] = useState(true);
-  const [contentUpdates, setContentUpdates] = useState(false);
-  const [promotionalEmails, setPromotionalEmails] = useState(false);
-  const [weeklyNewsletter, setWeeklyNewsletter] = useState(true);
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [vibrationEnabled, setVibrationEnabled] = useState(true);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
   return (
     <LinearGradient
@@ -42,199 +34,27 @@ export default function NotificationsScreen() {
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Push Notifications */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🔔 Push Notifications</Text>
-          
+          <Text style={styles.sectionTitle}>Notifications</Text>
+
           <LinearGradient
             colors={['rgba(255, 255, 255, 0.15)', 'rgba(255, 255, 255, 0.05)']}
             style={styles.settingCard}
           >
             <View style={styles.settingItem}>
               <View style={styles.settingInfo}>
-                <Text style={styles.settingTitle}>Push Notifications</Text>
-                <Text style={styles.settingDescription}>Receive notifications on your device</Text>
+                <Text style={styles.settingTitle}>Enable Notifications</Text>
+                <Text style={styles.settingDescription}>Turn all app notifications on or off</Text>
               </View>
               <Switch
-                value={pushNotifications}
-                onValueChange={setPushNotifications}
+                value={notificationsEnabled}
+                onValueChange={setNotificationsEnabled}
                 trackColor={{ false: '#E5E7EB', true: '#10B981' }}
-                thumbColor={pushNotifications ? '#FFFFFF' : '#FFFFFF'}
+                thumbColor="#FFFFFF"
                 ios_backgroundColor="#E5E7EB"
                 style={styles.switch}
               />
             </View>
-
-            <View style={styles.divider} />
-
-            <View style={styles.settingItem}>
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingTitle}>Session Reminders</Text>
-                <Text style={styles.settingDescription}>Get reminded about upcoming sessions</Text>
-              </View>
-              <Switch
-                value={sessionReminders}
-                onValueChange={setSessionReminders}
-                trackColor={{ false: '#E5E7EB', true: '#10B981' }}
-                thumbColor={sessionReminders ? '#FFFFFF' : '#FFFFFF'}
-                ios_backgroundColor="#E5E7EB"
-                style={styles.switch}
-              />
-            </View>
-
-            <View style={styles.divider} />
-
-            <View style={styles.settingItem}>
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingTitle}>Expert Messages</Text>
-                <Text style={styles.settingDescription}>Notifications from your wellness experts</Text>
-              </View>
-              <Switch
-                value={expertMessages}
-                onValueChange={setExpertMessages}
-                trackColor={{ false: '#E5E7EB', true: '#10B981' }}
-                thumbColor={expertMessages ? '#FFFFFF' : '#FFFFFF'}
-                ios_backgroundColor="#E5E7EB"
-                style={styles.switch}
-              />
-            </View>
-
-            <View style={styles.divider} />
-
-            <View style={styles.settingItem}>
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingTitle}>Content Updates</Text>
-                <Text style={styles.settingDescription}>New articles and wellness content</Text>
-              </View>
-              <Switch
-                value={contentUpdates}
-                onValueChange={setContentUpdates}
-                trackColor={{ false: '#E5E7EB', true: '#10B981' }}
-                thumbColor={contentUpdates ? '#FFFFFF' : '#FFFFFF'}
-                ios_backgroundColor="#E5E7EB"
-                style={styles.switch}
-              />
-            </View>
-          </LinearGradient>
-        </View>
-
-        {/* Email Notifications */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📧 Email Notifications</Text>
-          
-          <LinearGradient
-            colors={['rgba(255, 255, 255, 0.15)', 'rgba(255, 255, 255, 0.05)']}
-            style={styles.settingCard}
-          >
-            <View style={styles.settingItem}>
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingTitle}>Email Notifications</Text>
-                <Text style={styles.settingDescription}>Receive updates via email</Text>
-              </View>
-              <Switch
-                value={emailNotifications}
-                onValueChange={setEmailNotifications}
-                trackColor={{ false: '#E5E7EB', true: '#10B981' }}
-                thumbColor={emailNotifications ? '#FFFFFF' : '#FFFFFF'}
-                ios_backgroundColor="#E5E7EB"
-                style={styles.switch}
-              />
-            </View>
-
-            <View style={styles.divider} />
-
-            <View style={styles.settingItem}>
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingTitle}>Weekly Newsletter</Text>
-                <Text style={styles.settingDescription}>Weekly wellness tips and updates</Text>
-              </View>
-              <Switch
-                value={weeklyNewsletter}
-                onValueChange={setWeeklyNewsletter}
-                trackColor={{ false: '#E5E7EB', true: '#10B981' }}
-                thumbColor={weeklyNewsletter ? '#FFFFFF' : '#FFFFFF'}
-                ios_backgroundColor="#E5E7EB"
-                style={styles.switch}
-              />
-            </View>
-
-            <View style={styles.divider} />
-
-            <View style={styles.settingItem}>
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingTitle}>Promotional Emails</Text>
-                <Text style={styles.settingDescription}>Special offers and promotions</Text>
-              </View>
-              <Switch
-                value={promotionalEmails}
-                onValueChange={setPromotionalEmails}
-                trackColor={{ false: '#E5E7EB', true: '#10B981' }}
-                thumbColor={promotionalEmails ? '#FFFFFF' : '#FFFFFF'}
-                ios_backgroundColor="#E5E7EB"
-                style={styles.switch}
-              />
-            </View>
-          </LinearGradient>
-        </View>
-
-        {/* Sound & Vibration */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🔊 Sound & Vibration</Text>
-          
-          <LinearGradient
-            colors={['rgba(255, 255, 255, 0.15)', 'rgba(255, 255, 255, 0.05)']}
-            style={styles.settingCard}
-          >
-            <View style={styles.settingItem}>
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingTitle}>Sound</Text>
-                <Text style={styles.settingDescription}>Play sound for notifications</Text>
-              </View>
-              <Switch
-                value={soundEnabled}
-                onValueChange={setSoundEnabled}
-                trackColor={{ false: '#E5E7EB', true: '#10B981' }}
-                thumbColor={soundEnabled ? '#FFFFFF' : '#FFFFFF'}
-                ios_backgroundColor="#E5E7EB"
-                style={styles.switch}  
-              />
-            </View>
-
-            <View style={styles.divider} />
-
-            <View style={styles.settingItem}>
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingTitle}>Vibration</Text>
-                <Text style={styles.settingDescription}>Vibrate for notifications</Text>
-              </View>
-              <Switch
-                value={vibrationEnabled}
-                onValueChange={setVibrationEnabled}
-                trackColor={{ false: '#E5E7EB', true: '#10B981' }}
-                thumbColor={vibrationEnabled ? '#FFFFFF' : '#FFFFFF'}
-                ios_backgroundColor="#E5E7EB"
-                style={styles.switch}
-              />
-            </View>
-          </LinearGradient>
-        </View>
-
-        {/* Notification Schedule */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>⏰ Notification Schedule</Text>
-          
-          <LinearGradient
-            colors={['rgba(255, 255, 255, 0.15)', 'rgba(255, 255, 255, 0.05)']}
-            style={styles.scheduleCard}
-          >
-            <Pressable style={styles.scheduleItem}>
-              <Text style={styles.scheduleIcon}>🌅</Text>
-              <View style={styles.scheduleInfo}>
-                <Text style={styles.scheduleTitle}>Quiet Hours</Text>
-                <Text style={styles.scheduleTime}>10:00 PM - 7:00 AM</Text>
-              </View>
-              <Text style={styles.scheduleArrow}>→</Text>
-            </Pressable>
           </LinearGradient>
         </View>
 

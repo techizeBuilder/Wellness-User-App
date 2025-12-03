@@ -3,7 +3,6 @@ import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 import ExpertFooter from '@/components/ExpertFooter';
 import Footer, { FOOTER_HEIGHT } from '@/components/Footer';
 import authService from '@/services/authService';
@@ -22,12 +21,6 @@ import {
 } from '@/utils/dimensions';
 import { resolveProfileImageUrl } from '@/utils/imageHelpers';
 import { showErrorToast, showSuccessToast } from '@/utils/toastConfig';
-
-const StarIcon = ({ size = 24, color = "#F59E0B" }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
-    <Path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-  </Svg>
-);
 
 export default function ProfileScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -126,39 +119,39 @@ export default function ProfileScreen() {
     {
       title: 'PROFESSIONAL',
       items: [
-        { 
-          icon: '📧', 
+        {
+          icon: '📧',
           iconColor: '#2DD4BF',
-          title: 'Contact Info', 
-          subtitle: userData?.email || 'dr.sophia@wellness.com', 
+          title: 'Contact Info',
+          subtitle: userData?.email || 'dr.sophia@wellness.com',
           action: () => router.push('/(user)/contact-info')
         },
-        { 
-          icon: '🏥', 
+        {
+          icon: '🏥',
           iconColor: '#2DD4BF',
-          title: 'Professional Details', 
-          subtitle: 'Qualifications & certifications', 
+          title: 'Professional Details',
+          subtitle: 'Qualifications & certifications',
           action: () => router.push('/(expert)/professional-details')
         },
-        { 
-          icon: '🗂️', 
+        {
+          icon: '🗂️',
           iconColor: '#2DD4BF',
-          title: 'Plans', 
-          subtitle: 'Manage class packs & subscriptions', 
+          title: 'Plans',
+          subtitle: 'Manage class packs & subscriptions',
           action: () => router.push('/(expert)/expert-plans')
         },
-        { 
-          icon: '💰', 
+        {
+          icon: '💰',
           iconColor: '#2DD4BF',
-          title: 'Earnings & Payouts', 
-          subtitle: 'Payment settings', 
+          title: 'Earnings & Payouts',
+          subtitle: 'Payment settings',
           action: () => router.push('/(expert)/expert-earnings')
         },
-        { 
-          icon: '🏦', 
+        {
+          icon: '🏦',
           iconColor: '#2DD4BF',
-          title: 'Bank Account', 
-          subtitle: 'Manage bank account details', 
+          title: 'Bank Account',
+          subtitle: 'Manage bank account details',
           action: () => router.push('/(expert)/bank-account')
         },
       ]
@@ -166,32 +159,20 @@ export default function ProfileScreen() {
     {
       title: 'SETTINGS',
       items: [
-        { 
-          icon: '🔔', 
-          title: 'Notifications', 
+        {
+          icon: '🔔',
+          title: 'Notifications',
           subtitle: notificationsEnabled ? 'All notifications enabled' : 'Notifications disabled',
           action: () => router.push('/(user)/notifications'),
           hasNotificationBadge: true,
           notificationCount: unreadNotifications,
           isEnabled: notificationsEnabled
         },
-        { 
-          icon: '🌐', 
-          title: 'Language', 
-          subtitle: 'English', 
-          action: () => router.push('/(user)/language')
-        },
-        { 
-          icon: '📅', 
-          title: 'Availability Settings', 
-          subtitle: 'Manage your schedule', 
-          action: () => router.push('/(expert)/expert-appointments')
-        },
-        { 
-          icon: '⏰', 
+        {
+          icon: '⏰',
           iconColor: '#2DD4BF',
-          title: 'Manage Sessions', 
-          subtitle: 'Set your weekly session times', 
+          title: 'Manage Sessions',
+          subtitle: 'Set your weekly session times',
           action: () => router.push('/(expert)/manage-availability')
         },
       ]
@@ -199,16 +180,10 @@ export default function ProfileScreen() {
     {
       title: 'MORE',
       items: [
-        { 
-          icon: '❓', 
-          title: 'Help & Support', 
-          subtitle: 'Expert FAQs and support', 
-          action: () => router.push('/(user)/help-support')
-        },
-        { 
-          icon: '⚖️', 
-          title: 'Legal', 
-          subtitle: 'Terms and privacy policy', 
+        {
+          icon: '⚖️',
+          title: 'Legal',
+          subtitle: 'Terms and privacy policy',
           action: () => router.push('/(public)/legal')
         },
       ]
@@ -219,39 +194,25 @@ export default function ProfileScreen() {
     {
       title: 'ACCOUNT',
       items: [
-        { 
-          icon: '📧', 
+        {
+          icon: '📧',
           iconColor: '#2DD4BF',
-          title: 'Contact Info', 
-          subtitle: userData?.email || 'sophia.bennett@gmail.com', 
+          title: 'Contact Info',
+          subtitle: userData?.email || 'sophia.bennett@gmail.com',
           action: () => router.push('/(user)/contact-info')
         },
-        { 
-          icon: '💖', 
+        {
+          icon: '🩺',
           iconColor: '#2DD4BF',
-          title: 'Health Preferences', 
-          subtitle: 'Manage your wellness goals', 
-          action: () => router.push('/(user)/health-preferences')
-        },
-        { 
-          icon: '🩺', 
-          iconColor: '#2DD4BF',
-          title: 'Health Details', 
-          subtitle: 'Blood group, weight & BP', 
+          title: 'Health Details',
+          subtitle: 'Blood group, weight & BP',
           action: () => router.push('/(user)/health-vitals')
         },
-        { 
-          icon: '💳', 
+        {
+          icon: '📜',
           iconColor: '#2DD4BF',
-          title: 'Payment Methods', 
-          subtitle: 'Cards and billing info', 
-          action: () => router.push('/(user)/payment-methods')
-        },
-        { 
-          icon: '📜', 
-          iconColor: '#2DD4BF',
-          title: 'Payment History', 
-          subtitle: 'View all your payments', 
+          title: 'Payment History',
+          subtitle: 'View all your payments',
           action: () => router.push('/(user)/payment-history')
         },
       ]
@@ -259,48 +220,24 @@ export default function ProfileScreen() {
     {
       title: 'SETTINGS',
       items: [
-        { 
-          icon: '🔔', 
-          title: 'Notifications', 
+        {
+          icon: '🔔',
+          title: 'Notifications',
           subtitle: notificationsEnabled ? 'All notifications enabled' : 'Notifications disabled',
           action: () => router.push('/(user)/notifications'),
           hasNotificationBadge: true,
           notificationCount: unreadNotifications,
           isEnabled: notificationsEnabled
         },
-        { 
-          icon: '🌐', 
-          title: 'Language', 
-          subtitle: 'English', 
-          action: () => router.push('/(user)/language')
-        },
-        { 
-          icon: '🔗', 
-          title: 'Connected Accounts', 
-          subtitle: 'Google, Apple Health', 
-          action: () => router.push('/(user)/connected-accounts')
-        },
       ]
     },
     {
       title: 'MORE',
       items: [
-        { 
-          icon: '📋', 
-          title: 'Subscription Details', 
-          subtitle: 'Premium plan active', 
-          action: () => router.push('/(user)/subscription-details')
-        },
-        { 
-          icon: '❓', 
-          title: 'Help & Support', 
-          subtitle: 'FAQs and contact support', 
-          action: () => router.push('/(user)/help-support')
-        },
-        { 
-          icon: '⚖️', 
-          title: 'Legal', 
-          subtitle: 'Terms and privacy policy', 
+        {
+          icon: '⚖️',
+          title: 'Legal',
+          subtitle: 'Terms and privacy policy',
           action: () => router.push('/(public)/legal')
         },
       ]
@@ -581,104 +518,6 @@ export default function ProfileScreen() {
             </View>
           </View>
         ))}
-
-        {/* Premium Badge - Only show for regular users */}
-        {!isExpert && (
-          <View style={styles.premiumSection}>
-            <LinearGradient
-              colors={['rgba(255, 215, 0, 0.2)', 'rgba(255, 248, 220, 0.3)']}
-              style={styles.premiumCard}
-            >
-              <View style={styles.premiumHeader}>
-                <LinearGradient
-                  colors={['#FFD700', '#FFA500']}
-                  style={styles.premiumIconContainer}
-                >
-                  <Text style={styles.premiumIcon}>👑</Text>
-                </LinearGradient>
-                <View style={styles.premiumInfo}>
-                  <Text style={styles.premiumTitle}>Premium Member</Text>
-                  <Text style={styles.premiumSubtitle}>Unlimited access to all features</Text>
-                </View>
-              </View>
-
-              {/* Subscription Details */}
-              <View style={styles.subscriptionDetails}>
-                <View style={styles.subscriptionRow}>
-                  <Text style={styles.subscriptionLabel}>Plan:</Text>
-                  <Text style={styles.subscriptionValue}>Annual Premium</Text>
-                </View>
-                <View style={styles.subscriptionRow}>
-                  <Text style={styles.subscriptionLabel}>Next billing:</Text>
-                  <Text style={styles.subscriptionValue}>Nov 14, 2025</Text>
-                </View>
-                <View style={styles.subscriptionRow}>
-                  <Text style={styles.subscriptionLabel}>Amount:</Text>
-                  <Text style={styles.subscriptionValue}>$99.99/year</Text>
-                </View>
-              </View>
-
-              <View style={styles.premiumBenefits}>
-                <Text style={styles.benefitItem}>✅ Unlimited expert sessions</Text>
-                <Text style={styles.benefitItem}>✅ Priority booking</Text>
-                <Text style={styles.benefitItem}>✅ Exclusive content</Text>
-                <Text style={styles.benefitItem}>✅ Personal wellness tracker</Text>
-              </View>
-              <LinearGradient
-                colors={['#FFD700', '#FF8C00', '#FF6347']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.manageButton}
-              >
-                <Text style={styles.manageButtonText}>Manage Subscription</Text>
-              </LinearGradient>
-            </LinearGradient>
-          </View>
-        )}
-
-        {/* Expert Performance Section - Only show for experts */}
-        {isExpert && (
-          <View style={styles.premiumSection}>
-            <View style={styles.expertPerformanceWhiteCard}>
-              <View style={styles.premiumHeader}>
-                <View style={styles.expertPerformanceIconContainer}>
-                  <StarIcon size={24} color="#F59E0B" />
-                </View>
-                <View style={styles.premiumInfo}>
-                  <Text style={styles.premiumTitle}>Expert Performance</Text>
-                  <Text style={styles.premiumSubtitle}>Your professional metrics</Text>
-                </View>
-              </View>
-
-              {/* Performance Details */}
-              <View style={styles.subscriptionDetails}>
-                <View style={styles.subscriptionRow}>
-                  <Text style={styles.subscriptionLabel}>This Month:</Text>
-                  <Text style={styles.subscriptionValue}>32 Sessions</Text>
-                </View>
-                <View style={styles.subscriptionRow}>
-                  <Text style={styles.subscriptionLabel}>Earnings:</Text>
-                  <Text style={styles.subscriptionValue}>$2,480.00</Text>
-                </View>
-                <View style={styles.subscriptionRow}>
-                  <Text style={styles.subscriptionLabel}>Rating:</Text>
-                  <Text style={styles.subscriptionValue}>4.9/5.0 ⭐</Text>
-                </View>
-              </View>
-
-              <View style={styles.premiumBenefits}>
-                <Text style={styles.benefitItem}>📈 97% session completion rate</Text>
-                <Text style={styles.benefitItem}>💬 98% positive feedback</Text>
-                <Text style={styles.benefitItem}>🎯 Top 5% of experts</Text>
-                <Text style={styles.benefitItem}>🏆 Excellence badge earned</Text>
-              </View>
-              
-              <Pressable style={styles.expertPerformanceButton} onPress={() => router.push('/(expert)/expert-earnings')}>
-                <Text style={styles.expertPerformanceButtonText}>View Detailed Analytics</Text>
-              </Pressable>
-            </View>
-          </View>
-        )}
 
         {/* Logout Button */}
         <View style={styles.logoutSection}>

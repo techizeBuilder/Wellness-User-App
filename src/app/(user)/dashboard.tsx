@@ -24,7 +24,7 @@ import {
   getResponsiveWidth,
   screenData,
 } from "@/utils/dimensions";
-import { resolveProfileImageUrl } from "@/utils/imageHelpers";
+import { resolveProfileImageUrl, getProfileImageWithFallback } from "@/utils/imageHelpers";
 
 const { width } = Dimensions.get("window");
 
@@ -46,6 +46,8 @@ export default function DashboardScreen() {
     email?: string;
     profileImage?: string;
   } | null>(null);
+  const [featuredExperts, setFeaturedExperts] = useState<any[]>([]);
+  const [expertsLoading, setExpertsLoading] = useState(true);
   const scrollViewRef = useRef<ScrollView>(null);
   const expertsScrollRef = useRef<ScrollView>(null);
 
@@ -85,6 +87,43 @@ export default function DashboardScreen() {
     };
 
     checkAccountTypeAndFetchUser();
+  }, []);
+
+  // Fetch top 3 most rated experts
+  useEffect(() => {
+    const fetchFeaturedExperts = async () => {
+      try {
+        setExpertsLoading(true);
+        const response = await apiService.getAllExperts({
+          page: 1,
+          limit: 3,
+          sortBy: 'rating',
+        });
+
+        const expertsData =
+          response?.data?.experts ??
+          response?.data?.data?.experts ??
+          response?.experts ??
+          (Array.isArray(response) ? response : []);
+
+        // Take only top 3 and ensure they have ratings
+        const topExperts = (Array.isArray(expertsData) ? expertsData : [])
+          .filter((expert: any) => {
+            const rating = expert.rating?.average ?? (expert as any).averageRating ?? 0;
+            return rating > 0;
+          })
+          .slice(0, 3);
+
+        setFeaturedExperts(topExperts);
+      } catch (error) {
+        console.error("Error fetching featured experts:", error);
+        setFeaturedExperts([]);
+      } finally {
+        setExpertsLoading(false);
+      }
+    };
+
+    fetchFeaturedExperts();
   }, []);
 
   const handleExpertsPress = () => {
@@ -137,7 +176,7 @@ const handleCategorySelect = (categoryName: string) => {
   };
 
   const navigateExpertRight = () => {
-    if (currentExpertIndex < experts.length - 1) {
+    if (currentExpertIndex < featuredExperts.length - 1) {
       const newIndex = currentExpertIndex + 1;
       setCurrentExpertIndex(newIndex);
       const cardWidth = 280; // Approximate width of expert card + margin
@@ -155,7 +194,7 @@ const handleCategorySelect = (categoryName: string) => {
     if (
       newIndex !== currentExpertIndex &&
       newIndex >= 0 &&
-      newIndex < experts.length
+      newIndex < featuredExperts.length
     ) {
       setCurrentExpertIndex(newIndex);
     }
@@ -217,45 +256,6 @@ const categories = [
     { name: "Meditation Yoga", description: "Calming breath work", icon: "🧠" },
     { name: "Prenatal Yoga", description: "Gentle prenatal flow", icon: "🤰" },
     { name: "Restorative Yoga", description: "Deep relaxation", icon: "💤" },
-  ];
-
-  const experts = [
-    {
-      id: 1,
-      name: "Dr. Anya Sharma",
-      specialty: "Yoga",
-      experience: "5 years",
-      rating: 4.9,
-      image:
-        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face",
-      description:
-        "Certified yoga instructor specializing in Hatha and Vinyasa yoga with focus on mindfulness and breathing techniques.",
-      sessionPrice: "₹800/session",
-    },
-    {
-      id: 2,
-      name: "Dr. Rohan Verma",
-      specialty: "Ayurveda",
-      experience: "8 years",
-      rating: 4.8,
-      image:
-        "https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=150&h=150&fit=crop&crop=face",
-      description:
-        "Traditional Ayurvedic medicine practitioner with expertise in Panchakarma and holistic wellness solutions.",
-      sessionPrice: "₹1200/session",
-    },
-    {
-      id: 3,
-      name: "Dr. Priya Kapoor",
-      specialty: "Nutrition",
-      experience: "6 years",
-      rating: 5.0,
-      image:
-        "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face",
-      description:
-        "Certified nutritionist and dietitian focusing on plant-based nutrition and sustainable lifestyle changes.",
-      sessionPrice: "₹900/session",
-    },
   ];
 
   return (
@@ -416,89 +416,113 @@ const categories = [
                   styles.arrowButton,
                   {
                     opacity:
-                      currentExpertIndex === experts.length - 1 ? 0.5 : 1,
+                      currentExpertIndex === featuredExperts.length - 1 ? 0.5 : 1,
                   },
                 ]}
                 onPress={navigateExpertRight}
-                disabled={currentExpertIndex === experts.length - 1}
+                disabled={currentExpertIndex === featuredExperts.length - 1}
               >
                 <Text style={styles.arrowText}>→</Text>
               </Pressable>
             </View>
           </View>
-          <ScrollView
-            ref={expertsScrollRef}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.expertsScroll}
-            onScroll={handleExpertScroll}
-            scrollEventThrottle={16}
-          >
-            {experts.map((expert, index) => {
-              const gradients: [string, string][] = [
-                ["rgba(247, 246, 250, 0.9)", "rgba(248, 248, 248, 0.9)"], // Purple gradient
-                ["rgba(247, 246, 250, 0.9)", "rgba(248, 248, 248, 0.9)"], // Green gradient
-                ["rgba(247, 246, 250, 0.9)", "rgba(248, 248, 248, 0.9)"], // Pink gradient
-              ];
-              return (
-                <LinearGradient
-                  key={expert.id}
-                  colors={gradients[index % gradients.length]}
-                  style={styles.expertCard}
-                >
-                  <Pressable
-                    style={styles.expertPressable}
-                    onPress={() =>
-                      router.push(`/expert-detail?id=${expert.id}`)
-                    }
-                  >
-                    <View style={styles.expertImageContainer}>
-                      <Image
-                        source={{ uri: expert.image }}
-                        style={styles.expertImage}
-                      />
-                      <Text style={styles.expertSpecialtyBadge}>
-                        {expert.specialty}
-                      </Text>
-                    </View>
-                    <View style={styles.expertContent}>
-                      <View style={styles.expertHeader}>
-                        <Text style={styles.expertName}>{expert.name}</Text>
-                      </View>
+          {expertsLoading ? (
+            <View style={styles.expertsLoadingContainer}>
+              <Text style={styles.expertsLoadingText}>Loading experts...</Text>
+            </View>
+          ) : featuredExperts.length === 0 ? (
+            <View style={styles.expertsLoadingContainer}>
+              <Text style={styles.expertsLoadingText}>No featured experts available</Text>
+            </View>
+          ) : (
+            <ScrollView
+              ref={expertsScrollRef}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.expertsScroll}
+              onScroll={handleExpertScroll}
+              scrollEventThrottle={16}
+            >
+              {featuredExperts.map((expert, index) => {
+                const gradients: [string, string][] = [
+                  ["rgba(247, 246, 250, 0.9)", "rgba(248, 248, 248, 0.9)"], // Purple gradient
+                  ["rgba(247, 246, 250, 0.9)", "rgba(248, 248, 248, 0.9)"], // Green gradient
+                  ["rgba(247, 246, 250, 0.9)", "rgba(248, 248, 248, 0.9)"], // Pink gradient
+                ];
+                const expertId = expert._id || expert.id || `expert-${index}`;
+                const fullName = [expert.firstName, expert.lastName].filter(Boolean).join(' ').trim();
+                const displayName = fullName || expert.name || 'Expert';
+                const specialization = expert.specialization || 'Specialist';
+                const experienceYears = typeof expert.experience === 'number' ? expert.experience : 0;
+                const experienceText = experienceYears > 0 ? `${experienceYears} year${experienceYears > 1 ? 's' : ''}` : 'New';
+                const expertRating = expert.rating?.average ?? (expert as any).averageRating ?? 0;
+                const ratingDisplay = expertRating > 0 ? expertRating.toFixed(1) : 'New';
+                const hourlyRate = typeof expert.hourlyRate === 'number' ? expert.hourlyRate : 0;
+                const priceDisplay = hourlyRate > 0 ? `₹${hourlyRate}/hr` : 'Contact for price';
+                const bio = expert.bio || 'Bio coming soon';
+                const profileImage = getProfileImageWithFallback(expert.profileImage, displayName) || 
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=37b9a8&color=fff&size=128`;
 
-                      <View style={styles.expertDescriptionContainer}>
-                        <Text
-                          style={styles.expertDescription}
-                          numberOfLines={2}
-                          ellipsizeMode="tail"
-                        >
-                          {expert.description}
+                return (
+                  <LinearGradient
+                    key={expertId}
+                    colors={gradients[index % gradients.length]}
+                    style={styles.expertCard}
+                  >
+                    <Pressable
+                      style={styles.expertPressable}
+                      onPress={() =>
+                        router.push(`/expert-detail?id=${expertId}`)
+                      }
+                    >
+                      <View style={styles.expertImageContainer}>
+                        <Image
+                          source={{ uri: profileImage }}
+                          style={styles.expertImage}
+                        />
+                        <Text style={styles.expertSpecialtyBadge}>
+                          {specialization}
                         </Text>
                       </View>
+                      <View style={styles.expertContent}>
+                        <View style={styles.expertHeader}>
+                          <Text style={styles.expertName}>{displayName}</Text>
+                        </View>
 
-                      <View style={styles.expertMetaInfo}>
-                        <View style={styles.expertRating}>
-                          <Text style={styles.expertRatingText}>
-                            ⭐ {expert.rating}
+                        <View style={styles.expertDescriptionContainer}>
+                          <Text
+                            style={styles.expertDescription}
+                            numberOfLines={2}
+                            ellipsizeMode="tail"
+                          >
+                            {bio}
                           </Text>
                         </View>
-                        <Text style={styles.expertPrice}>
-                          {expert.sessionPrice}
-                        </Text>
-                      </View>
 
-                      <LinearGradient
-                        colors={["#14B8A6", "#0D9488"]}
-                        style={styles.bookButton}
-                      >
-                        <Text style={styles.bookButtonText}>Book Now</Text>
-                      </LinearGradient>
-                    </View>
-                  </Pressable>
-                </LinearGradient>
-              );
-            })}
-          </ScrollView>
+                        <View style={styles.expertMetaInfo}>
+                          <View style={styles.expertRating}>
+                            <Text style={styles.expertRatingText}>
+                              ⭐ {ratingDisplay}
+                            </Text>
+                          </View>
+                          <Text style={styles.expertPrice}>
+                            {priceDisplay}
+                          </Text>
+                        </View>
+
+                        <LinearGradient
+                          colors={["#14B8A6", "#0D9488"]}
+                          style={styles.bookButton}
+                        >
+                          <Text style={styles.bookButtonText}>Book Now</Text>
+                        </LinearGradient>
+                      </View>
+                    </Pressable>
+                  </LinearGradient>
+                );
+              })}
+            </ScrollView>
+          )}
         </View>
 
         {/* Upcoming Session */}
@@ -1439,5 +1463,15 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: FOOTER_HEIGHT + getResponsiveHeight(36),
+  },
+  expertsLoadingContainer: {
+    paddingVertical: getResponsivePadding(20),
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  expertsLoadingText: {
+    fontSize: fontSizes.md,
+    color: "#ffffff",
+    opacity: 0.8,
   },
 });
