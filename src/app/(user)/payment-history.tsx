@@ -36,6 +36,8 @@ type PaymentHistoryItem = {
   description?: string;
   paymentMethod?: string;
   createdAt: string;
+  razorpayPaymentId?: string;
+  razorpayOrderId?: string;
   appointment?: {
     _id: string;
     sessionDate: string;
@@ -131,6 +133,7 @@ export default function PaymentHistoryScreen() {
         })} • ${item.appointment.duration} min`
       : undefined;
 
+    const transactionId = item.razorpayPaymentId || item.razorpayOrderId;
     const statusStyles = getStatusStyles(item.status);
 
     return (
@@ -167,6 +170,12 @@ export default function PaymentHistoryScreen() {
           ) : null}
           {sessionSummary ? (
             <Text style={styles.sessionText}>{sessionSummary}</Text>
+          ) : null}
+          {transactionId ? (
+            <View style={styles.transactionContainer}>
+              <Text style={styles.transactionLabel}>Transaction ID:</Text>
+              <Text style={styles.transactionText}>{transactionId}</Text>
+            </View>
           ) : null}
         </View>
 
@@ -339,6 +348,24 @@ const styles = StyleSheet.create({
     marginTop: getResponsiveMargin(4),
     fontSize: getResponsiveFontSize(12),
     color: '#6B7280',
+  },
+  transactionContainer: {
+    marginTop: getResponsiveMargin(8),
+    paddingTop: getResponsivePadding(8),
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(107, 114, 128, 0.2)',
+  },
+  transactionLabel: {
+    fontSize: getResponsiveFontSize(11),
+    color: '#6B7280',
+    marginBottom: getResponsiveMargin(4),
+    fontWeight: '500',
+  },
+  transactionText: {
+    fontSize: getResponsiveFontSize(12),
+    color: '#0F172A',
+    fontFamily: 'monospace',
+    fontWeight: '600',
   },
   cardFooter: {
     flexDirection: 'row',
