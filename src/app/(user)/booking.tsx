@@ -298,12 +298,21 @@ const getPlanId = (plan: PlanDetails | null | undefined): string => {
       if (selectedPlan.scheduledTime) {
         setSelectedTime(selectedPlan.scheduledTime);
       }
+      // Set default consultation method for group sessions if not already set
+      if (!selectedConsultationMethod && expert?.consultationMethods && expert.consultationMethods.length > 0) {
+        const allowedMethods = expert.consultationMethods.filter(
+          (method: string) => method?.toLowerCase() !== 'chat'
+        );
+        if (allowedMethods.length > 0) {
+          setSelectedConsultationMethod(allowedMethods[0]);
+        }
+      }
     } else {
       // Reset date/time for one-on-one plans
       setSelectedDate("");
       setSelectedTime("");
     }
-  }, [selectedPlanId, selectedPlan]);
+  }, [selectedPlanId, selectedPlan, expert]);
 
   useEffect(() => {
     // Skip fetching slots for group sessions since date/time is already set by expert
@@ -547,6 +556,23 @@ const getPlanId = (plan: PlanDetails | null | undefined): string => {
         if (!selectedPlan.scheduledDate || !selectedPlan.scheduledTime) {
           Alert.alert('Missing Information', 'This group session plan is missing scheduled date/time.');
           return;
+        }
+        // Ensure consultation method is set (should be set by default, but check anyway)
+        if (!selectedConsultationMethod) {
+          if (expert?.consultationMethods && expert.consultationMethods.length > 0) {
+            const allowedMethods = expert.consultationMethods.filter(
+              (method: string) => method?.toLowerCase() !== 'chat'
+            );
+            if (allowedMethods.length > 0) {
+              setSelectedConsultationMethod(allowedMethods[0]);
+            } else {
+              Alert.alert('Missing Information', 'Please contact the expert - consultation method not available.');
+              return;
+            }
+          } else {
+            Alert.alert('Missing Information', 'Please contact the expert - consultation method not available.');
+            return;
+          }
         }
       } else {
         // For one-on-one single plans, require date/time selection
@@ -924,7 +950,7 @@ const getPlanId = (plan: PlanDetails | null | undefined): string => {
         </View>
 
         {/* Consultation Method Selection - Session Format */}
-        {availableConsultationMethods.length > 0 && (
+        {availableConsultationMethods.length > 0 && !(selectedPlan?.sessionFormat === "one-to-many") && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Session Format</Text>
             <View style={styles.optionsContainer}>
@@ -957,8 +983,29 @@ const getPlanId = (plan: PlanDetails | null | undefined): string => {
           </View>
         )}
 
+        {/* Show Session Format as read-only for group sessions */}
+        {selectedPlan?.sessionFormat === "one-to-many" && availableConsultationMethods.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Session Format</Text>
+            <View style={styles.readOnlyInfoCard}>
+              <Text style={styles.readOnlyInfoText}>
+                {selectedConsultationMethod 
+                  ? (() => {
+                      const methodLabels: Record<string, string> = {
+                        'video': 'Video Call',
+                        'audio': 'Audio Call',
+                        'in-person': 'In-Person'
+                      };
+                      return methodLabels[selectedConsultationMethod] || selectedConsultationMethod.charAt(0).toUpperCase() + selectedConsultationMethod.slice(1);
+                    })()
+                  : 'Set by expert'}
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Session Type Selection */}
-        {expert.sessionType && expert.sessionType.length > 0 && (
+        {expert.sessionType && expert.sessionType.length > 0 && !(selectedPlan?.sessionFormat === "one-to-many") && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Session Type</Text>
             <View style={styles.optionsContainer}>
@@ -993,13 +1040,29 @@ const getPlanId = (plan: PlanDetails | null | undefined): string => {
           </View>
         )}
 
+        {/* Show Session Type as read-only for group sessions */}
+        {selectedPlan?.sessionFormat === "one-to-many" && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Session Type</Text>
+            <View style={styles.readOnlyInfoCard}>
+              <Text style={styles.readOnlyInfoText}>Group Session</Text>
+            </View>
+          </View>
+        )}
+
         {/* Session Duration */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Session Duration</Text>
-          {lockedDuration ? (
-            <Text style={styles.lockedDurationText}>
-              This plan uses fixed {lockedDuration}-minute sessions.
-            </Text>
+          {lockedDuration || selectedPlan?.sessionFormat === "one-to-many" ? (
+            <View style={styles.readOnlyInfoCard}>
+              <Text style={styles.readOnlyInfoText}>
+                {selectedPlan?.sessionFormat === "one-to-many" && selectedPlan?.duration
+                  ? `${selectedPlan.duration} minutes (Set by expert)`
+                  : lockedDuration
+                  ? `This plan uses fixed ${lockedDuration}-minute sessions.`
+                  : 'Set by expert'}
+              </Text>
+            </View>
           ) : (
             <View style={styles.durationContainer}>
               {sessionDurations.map((duration) => (
@@ -1569,6 +1632,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#f1f5f9',
     padding: getResponsivePadding(12),
     borderRadius: getResponsiveBorderRadius(10),
+  },
+  readOnlyInfoCard: {
+    backgroundColor: '#f1f5f9',
+    padding: getResponsivePadding(16),
+    borderRadius: getResponsiveBorderRadius(12),
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  readOnlyInfoText: {
+    fontSize: getResponsiveFontSize(14),
+    color: '#475569',
+    fontWeight: '500',
   },
   durationCard: {
     flex: 1,
