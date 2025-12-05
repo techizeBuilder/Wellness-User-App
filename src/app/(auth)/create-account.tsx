@@ -183,7 +183,7 @@ export default function CreateAccountScreen() {
               <Text style={styles.inputLabel}>Phone Number</Text>
               <TextInput
                 style={[styles.input, phoneNumber ? styles.inputFilled : null]}
-                placeholder="(123) 456-7890"
+                placeholder="+91 98765 43210"
                 placeholderTextColor="#999"
                 value={phoneNumber}
                 onChangeText={setPhoneNumber}
