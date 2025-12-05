@@ -1553,14 +1553,6 @@ export default function ExpertAppointmentsScreen() {
         <Text style={styles.headerSubtitle}>
           Manage your appointments and availability
         </Text>
-        <Pressable
-          style={styles.groupSessionButton}
-          onPress={openGroupSessionModal}
-        >
-          <Text style={styles.groupSessionButtonText}>
-            {creatingGroupSession ? "Loading..." : "Schedule Group Session"}
-          </Text>
-        </Pressable>
       </View>
 
       {/* Search Bar */}
