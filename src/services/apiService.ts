@@ -739,6 +739,15 @@ class ApiService {
     }
     return this.request(endpoint);
   }
+
+  // Expert earnings APIs
+  async getExpertEarnings() {
+    return this.request(ENDPOINTS.PAYMENTS.EXPERT_EARNINGS);
+  }
+
+  async getExpertPayouts() {
+    return this.request(ENDPOINTS.PAYMENTS.EXPERT_PAYOUTS);
+  }
 }
 
 // Create and export a singleton instance

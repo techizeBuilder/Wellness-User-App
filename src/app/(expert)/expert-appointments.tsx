@@ -59,6 +59,8 @@ type Appointment = {
   notes?: string;
   meetingLink?: string;
   agoraChannelName?: string;
+  groupSessionId?: string;
+  planId?: string | { _id: string } | any;
   feedbackRating?: number;
   feedbackComment?: string;
   feedbackSubmittedAt?: string;
@@ -72,6 +74,19 @@ type Appointment = {
     originalName?: string;
     uploadedAt?: string;
   };
+};
+
+type GroupedSession = {
+  groupSessionId: string;
+  sessionDate: string;
+  startTime: string;
+  endTime: string;
+  duration: number;
+  consultationMethod: string;
+  status: "pending" | "confirmed" | "completed" | "cancelled" | "rejected";
+  notes?: string;
+  agoraChannelName?: string;
+  participants: Appointment[];
 };
 
 type Plan = {
@@ -234,6 +249,9 @@ export default function ExpertAppointmentsScreen() {
     "video" | "audio" | "chat" | "in-person"
   >("video");
   const [creatingGroupSession, setCreatingGroupSession] = useState(false);
+  const [showParticipantsModal, setShowParticipantsModal] = useState(false);
+  const [selectedGroupSession, setSelectedGroupSession] =
+    useState<GroupedSession | null>(null);
 
   const statusFilters = [
     "All",
@@ -580,7 +598,7 @@ export default function ExpertAppointmentsScreen() {
     }
     const { startDateTime, endDateTime } = getAppointmentDateTimes(appointment);
     const now = new Date();
-    const joinOpensAt = new Date(startDateTime.getTime() - 5 * 60 * 1000);
+    const joinOpensAt = new Date(startDateTime.getTime() - 2 * 60 * 1000); // 2 minutes before
     const joinClosesAt = new Date(endDateTime.getTime() + 15 * 60 * 1000);
 
     if (now < joinOpensAt) {
@@ -753,29 +771,773 @@ export default function ExpertAppointmentsScreen() {
     }));
   };
 
-  const filteredAppointments = appointments.filter((appointment) => {
-    const user = appointment.user;
-    const userName = `${user?.firstName || ""} ${user?.lastName || ""}`
-      .trim()
-      .toLowerCase();
-    const matchesSearch =
-      !searchQuery ||
-      userName.includes(searchQuery.toLowerCase()) ||
-      (appointment.notes || "")
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
+  // Helper to get join status for group session
+  const getGroupSessionJoinStatus = (
+    groupSession: GroupedSession
+  ): "too-early" | "available" | "ended" | "not-applicable" => {
+    if (
+      !isRealtimeConsultation(groupSession.consultationMethod) ||
+      groupSession.status !== "confirmed"
+    ) {
+      return "not-applicable";
+    }
+    const sessionDate = new Date(groupSession.sessionDate);
+    const [startHour, startMin] = groupSession.startTime.split(":").map(Number);
+    const [endHour, endMin] = groupSession.endTime.split(":").map(Number);
 
-    return matchesSearch;
+    const startDateTime = new Date(sessionDate);
+    startDateTime.setHours(startHour, startMin, 0, 0);
+
+    const endDateTime = new Date(sessionDate);
+    endDateTime.setHours(endHour, endMin, 0, 0);
+
+    const now = new Date();
+    const joinOpensAt = new Date(startDateTime.getTime() - 2 * 60 * 1000); // 2 minutes before
+    const joinClosesAt = new Date(endDateTime.getTime() + 15 * 60 * 1000);
+
+    if (now < joinOpensAt) {
+      return "too-early";
+    }
+    if (now > joinClosesAt) {
+      return "ended";
+    }
+    return "available";
+  };
+
+  const handleJoinGroupSession = async (groupSession: GroupedSession) => {
+    if (joiningId) return;
+    try {
+      setJoiningId(groupSession.groupSessionId);
+      // Use the first participant's appointment to get the token
+      const firstParticipant = groupSession.participants[0];
+      const response = await apiService.getAgoraToken(firstParticipant._id);
+      const payload = response?.data || response;
+      const agoraData = payload?.data || payload;
+
+      if (!agoraData?.token || !agoraData?.channelName || !agoraData?.appId) {
+        throw new Error("Unable to start session. Please try again.");
+      }
+
+      router.push({
+        pathname: "/video-call",
+        params: {
+          appId: encodeURIComponent(String(agoraData.appId)),
+          channelName: encodeURIComponent(String(agoraData.channelName)),
+          token: encodeURIComponent(String(agoraData.token)),
+          uid: encodeURIComponent(String(agoraData.uid ?? "")),
+          role: encodeURIComponent(String(agoraData.role || "host")),
+          displayName: encodeURIComponent("Expert"),
+          mediaType: encodeURIComponent(
+            String(
+              agoraData.mediaType || groupSession.consultationMethod || "video"
+            )
+          ),
+        },
+      });
+    } catch (error) {
+      Alert.alert("Unable to Join", handleApiError(error));
+    } finally {
+      setJoiningId(null);
+    }
+  };
+
+  // Group appointments by groupSessionId or by planId + date + time for group sessions
+  const groupAppointments = (
+    appointments: Appointment[]
+  ): (Appointment | GroupedSession)[] => {
+    const individualAppointments: Appointment[] = [];
+    const groupSessionsMap = new Map<string, Appointment[]>();
+
+    appointments.forEach((appointment) => {
+      // Check if this is a group session
+      if (appointment.sessionType === "one-to-many") {
+        let groupKey: string;
+
+        // If it has a groupSessionId, use that (expert-scheduled group sessions)
+        if (appointment.groupSessionId) {
+          groupKey = `group_${appointment.groupSessionId}`;
+        }
+        // Otherwise, group by planId + date + time (user-booked group sessions)
+        else if (appointment.planId) {
+          // Handle planId whether it's a string or populated object
+          let planIdStr: string;
+          if (
+            typeof appointment.planId === "object" &&
+            appointment.planId !== null
+          ) {
+            planIdStr =
+              (appointment.planId as any)._id?.toString() ||
+              (appointment.planId as any).toString() ||
+              String(appointment.planId);
+          } else {
+            planIdStr = String(appointment.planId);
+          }
+
+          // Normalize date and time for consistent grouping
+          // Handle both Date objects and date strings
+          let sessionDateStr = "";
+          if (appointment.sessionDate) {
+            try {
+              const dateStr = String(appointment.sessionDate);
+              const date =
+                dateStr.includes("T") || dateStr.includes("-")
+                  ? new Date(appointment.sessionDate)
+                  : new Date(appointment.sessionDate);
+              if (!isNaN(date.getTime())) {
+                sessionDateStr = date.toISOString().split("T")[0];
+              } else {
+                // Fallback to string if date parsing fails
+                sessionDateStr = dateStr.split("T")[0];
+              }
+            } catch {
+              // Fallback to string if date parsing fails
+              sessionDateStr = String(appointment.sessionDate).split("T")[0];
+            }
+          }
+
+          // Normalize time (remove seconds if present, ensure HH:MM format)
+          let startTimeStr = appointment.startTime || "";
+          if (startTimeStr.includes(":")) {
+            const parts = startTimeStr.split(":");
+            startTimeStr = `${parts[0].padStart(2, "0")}:${parts[1].padStart(
+              2,
+              "0"
+            )}`;
+          }
+
+          groupKey = `plan_${planIdStr}_${sessionDateStr}_${startTimeStr}`;
+        }
+        // Fallback: if no planId, treat as individual
+        else {
+          individualAppointments.push(appointment);
+          return;
+        }
+
+        if (!groupSessionsMap.has(groupKey)) {
+          groupSessionsMap.set(groupKey, []);
+        }
+        groupSessionsMap.get(groupKey)!.push(appointment);
+      } else {
+        // Individual appointment (one-on-one)
+        individualAppointments.push(appointment);
+      }
+    });
+
+    // Debug: Log grouping results
+    console.log("Grouping appointments:", {
+      total: appointments.length,
+      groupSessions: groupSessionsMap.size,
+      individual: individualAppointments.length,
+      groups: Array.from(groupSessionsMap.entries()).map(([key, parts]) => ({
+        key,
+        participants: parts.length,
+        participantNames: parts.map((p) =>
+          `${p.user?.firstName || ""} ${p.user?.lastName || ""}`.trim()
+        ),
+      })),
+    });
+
+    // Convert grouped appointments to GroupedSession objects
+    const groupedSessions: GroupedSession[] = Array.from(
+      groupSessionsMap.entries()
+    ).map(([groupKey, participants]) => {
+      // Use the first participant's data for session details
+      const firstParticipant = participants[0];
+
+      // Extract groupSessionId if available, otherwise generate one from the key
+      let groupSessionId: string;
+      if (firstParticipant.groupSessionId) {
+        groupSessionId = firstParticipant.groupSessionId;
+      } else {
+        // Generate a consistent ID from the grouping key
+        groupSessionId = groupKey;
+      }
+
+      return {
+        groupSessionId: groupSessionId,
+        sessionDate: firstParticipant.sessionDate,
+        startTime: firstParticipant.startTime,
+        endTime: firstParticipant.endTime,
+        duration: firstParticipant.duration,
+        consultationMethod: firstParticipant.consultationMethod,
+        status: firstParticipant.status,
+        notes: firstParticipant.notes,
+        agoraChannelName: firstParticipant.agoraChannelName,
+        participants: participants,
+      };
+    });
+
+    // Combine individual appointments and grouped sessions
+    return [...individualAppointments, ...groupedSessions];
+  };
+
+  const allAppointmentsAndSessions = useMemo(() => {
+    return groupAppointments(appointments);
+  }, [appointments]);
+
+  const filteredAppointments = allAppointmentsAndSessions.filter((item) => {
+    if ("groupSessionId" in item) {
+      // This is a GroupedSession
+      const session = item as GroupedSession;
+      const matchesSearch =
+        !searchQuery ||
+        (session.notes || "")
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase()) ||
+        session.participants.some((p) => {
+          const userName = `${p.user?.firstName || ""} ${
+            p.user?.lastName || ""
+          }`
+            .trim()
+            .toLowerCase();
+          return userName.includes(searchQuery.toLowerCase());
+        });
+      return matchesSearch;
+    } else {
+      // This is an individual Appointment
+      const appointment = item as Appointment;
+      const user = appointment.user;
+      const userName = `${user?.firstName || ""} ${user?.lastName || ""}`
+        .trim()
+        .toLowerCase();
+      const matchesSearch =
+        !searchQuery ||
+        userName.includes(searchQuery.toLowerCase()) ||
+        (appointment.notes || "")
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase());
+      return matchesSearch;
+    }
   });
 
-  // Filter appointments for today
-  // const today = new Date();
-  // today.setHours(0, 0, 0, 0);
-  // const todayAppointments = filteredAppointments.filter(apt => {
-  //   const aptDate = new Date(apt.sessionDate);
-  //   aptDate.setHours(0, 0, 0, 0);
-  //   return aptDate.getTime() === today.getTime();
-  // });
+  const renderGroupSessionCard = (groupSession: GroupedSession) => {
+    const joinStatus = getGroupSessionJoinStatus(groupSession);
+    const canJoin =
+      isRealtimeConsultation(groupSession.consultationMethod) &&
+      groupSession.status === "confirmed" &&
+      joinStatus === "available";
+    const showJoinButton =
+      isRealtimeConsultation(groupSession.consultationMethod) &&
+      groupSession.status === "confirmed" &&
+      joinStatus !== "ended";
+
+    return (
+      <View key={groupSession.groupSessionId} style={styles.appointmentCard}>
+        <View style={styles.appointmentCardPressable}>
+          <View style={styles.avatarSection}>
+            <View style={styles.groupSessionAvatar}>
+              <Ionicons name="people" size={32} color="#FFFFFF" />
+              <Text style={styles.groupSessionParticipantCount}>
+                {groupSession.participants.length}
+              </Text>
+            </View>
+            <Pressable
+              style={[
+                styles.showPatientDetailsButton,
+                styles.detailsButtonCompact,
+              ]}
+              onPress={() => {
+                console.log("Opening participants modal for group session:", {
+                  groupSessionId: groupSession.groupSessionId,
+                  participantsCount: groupSession.participants?.length || 0,
+                  participants: groupSession.participants?.map((p) => ({
+                    id: p._id,
+                    userName: buildUserDisplayName(p.user),
+                    status: p.status,
+                  })),
+                });
+                setSelectedGroupSession(groupSession);
+                setShowParticipantsModal(true);
+              }}
+            >
+              <Ionicons name="people" size={16} color="#FFFFFF" />
+              <Text style={styles.showPatientDetailsButtonText}>
+                Participants
+              </Text>
+            </Pressable>
+          </View>
+          <View style={styles.appointmentInfo}>
+            <View style={styles.appointmentHeader}>
+              <Text style={styles.patientName}>Group Session</Text>
+              <View
+                style={[
+                  styles.statusBadge,
+                  {
+                    backgroundColor:
+                      groupSession.status === "confirmed"
+                        ? "#059669"
+                        : groupSession.status === "pending"
+                        ? "#F59E0B"
+                        : groupSession.status === "completed"
+                        ? "#2196F3"
+                        : "#F44336",
+                  },
+                ]}
+              >
+                <Text style={styles.statusText}>
+                  {groupSession.status.charAt(0).toUpperCase() +
+                    groupSession.status.slice(1)}
+                </Text>
+              </View>
+            </View>
+
+            <Text style={styles.appointmentTime}>
+              {formatDate(groupSession.sessionDate)} •{" "}
+              {formatTimeRange(groupSession.startTime, groupSession.endTime)}
+            </Text>
+            <Text style={styles.appointmentType}>
+              {formatConsultationMethod(groupSession.consultationMethod)} •
+              Group
+            </Text>
+            <Text style={styles.appointmentNotes}>
+              {groupSession.participants.length} participant
+              {groupSession.participants.length !== 1 ? "s" : ""} registered
+            </Text>
+            {groupSession.notes && (
+              <Text style={styles.appointmentNotes}>{groupSession.notes}</Text>
+            )}
+
+            <View style={styles.appointmentFooter}>
+              <View style={styles.appointmentActions}>
+                {groupSession.status === "confirmed" && (
+                  <View style={styles.confirmedActions}>
+                    {showJoinButton && (
+                      <Pressable
+                        style={[
+                          styles.joinButton,
+                          (!canJoin ||
+                            joiningId === groupSession.groupSessionId) &&
+                            styles.buttonDisabled,
+                        ]}
+                        onPress={() => handleJoinGroupSession(groupSession)}
+                        disabled={
+                          !canJoin || joiningId === groupSession.groupSessionId
+                        }
+                      >
+                        {joiningId === groupSession.groupSessionId ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                          <Text style={styles.joinButtonText}>
+                            {canJoin
+                              ? getJoinCtaLabel(groupSession.consultationMethod)
+                              : "Join Opens Soon"}
+                          </Text>
+                        )}
+                      </Pressable>
+                    )}
+                    {canMarkSessionCompleted(
+                      groupSession.participants[0] as Appointment
+                    ) && (
+                      <Pressable
+                        style={[
+                          styles.completeButton,
+                          updatingId === groupSession.groupSessionId &&
+                            styles.buttonDisabled,
+                        ]}
+                        onPress={() => {
+                          // Mark all participants as completed
+                          Alert.alert(
+                            "Complete Group Session",
+                            `Are you sure you want to mark this group session as completed for all ${groupSession.participants.length} participants?`,
+                            [
+                              {
+                                text: "Cancel",
+                                style: "cancel",
+                              },
+                              {
+                                text: "Complete",
+                                onPress: async () => {
+                                  // Update all participants
+                                  for (const participant of groupSession.participants) {
+                                    await handleStatusUpdate(
+                                      participant._id,
+                                      "completed"
+                                    );
+                                  }
+                                },
+                              },
+                            ]
+                          );
+                        }}
+                        disabled={updatingId === groupSession.groupSessionId}
+                      >
+                        {updatingId === groupSession.groupSessionId ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                          <Text style={styles.completeButtonText}>
+                            Mark as Completed
+                          </Text>
+                        )}
+                      </Pressable>
+                    )}
+                  </View>
+                )}
+              </View>
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  const renderIndividualAppointmentCard = (appointment: Appointment) => {
+    const user = appointment.user;
+    const userName = buildUserDisplayName(user);
+    const userImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+      userName
+    )}&background=37b9a8&color=fff&size=128`;
+    const isUpdating = updatingId === appointment._id;
+    const prescriptionUrl = buildAbsoluteUrl(appointment.prescription?.url);
+    const prescriptionUploadedText = formatTimestamp(
+      appointment.prescription?.uploadedAt
+    );
+    const appointmentFeedbackEntries =
+      feedbackEntriesByAppointment[appointment._id] || [];
+    const feedbackCount = appointmentFeedbackEntries.length;
+    const isFeedbackExpanded = !!expandedFeedbackAppointments[appointment._id];
+    const visibleFeedbackEntries =
+      !isFeedbackExpanded && feedbackCount > FEEDBACK_PREVIEW_LIMIT
+        ? appointmentFeedbackEntries.slice(0, FEEDBACK_PREVIEW_LIMIT)
+        : appointmentFeedbackEntries;
+    const averageFeedbackRating =
+      feedbackCount > 0
+        ? appointmentFeedbackEntries.reduce(
+            (sum, entry) => sum + entry.rating,
+            0
+          ) / feedbackCount
+        : 0;
+
+    return (
+      <View key={appointment._id} style={styles.appointmentCard}>
+        <Pressable
+          style={styles.appointmentCardPressable}
+          onPress={() => handleAppointmentPress(appointment)}
+        >
+          <View style={styles.avatarSection}>
+            <Image source={{ uri: userImage }} style={styles.patientImage} />
+            <Pressable
+              style={[
+                styles.showPatientDetailsButton,
+                styles.detailsButtonCompact,
+              ]}
+              onPress={(e) => {
+                e.stopPropagation();
+                handleAppointmentPress(appointment);
+              }}
+            >
+              <Ionicons name="eye" size={16} color="#FFFFFF" />
+              <Text style={styles.showPatientDetailsButtonText}>Details</Text>
+            </Pressable>
+          </View>
+          <View style={styles.appointmentInfo}>
+            <View style={styles.appointmentHeader}>
+              <Text style={styles.patientName}>{userName}</Text>
+              <View
+                style={[
+                  styles.statusBadge,
+                  {
+                    backgroundColor:
+                      appointment.status === "confirmed"
+                        ? "#059669"
+                        : appointment.status === "pending"
+                        ? "#F59E0B"
+                        : appointment.status === "completed"
+                        ? "#2196F3"
+                        : "#F44336",
+                  },
+                ]}
+              >
+                <Text style={styles.statusText}>
+                  {appointment.status.charAt(0).toUpperCase() +
+                    appointment.status.slice(1)}
+                </Text>
+              </View>
+            </View>
+
+            <Text style={styles.appointmentTime}>
+              {formatDate(appointment.sessionDate)} •{" "}
+              {formatTimeRange(appointment.startTime, appointment.endTime)}
+            </Text>
+            <Text style={styles.appointmentType}>
+              {formatConsultationMethod(appointment.consultationMethod)} •{" "}
+              {appointment.sessionType === "one-on-one"
+                ? "One-on-One"
+                : "Group"}
+            </Text>
+            {appointment.notes && (
+              <Text style={styles.appointmentNotes}>{appointment.notes}</Text>
+            )}
+
+            {appointment.status === "completed" &&
+              !appointment.prescription?.url && (
+                <Pressable
+                  style={[
+                    styles.prescriptionActionButton,
+                    uploadingPrescriptionId === appointment._id &&
+                      styles.buttonDisabled,
+                  ]}
+                  onPress={() => handlePrescriptionUpload(appointment)}
+                  disabled={uploadingPrescriptionId === appointment._id}
+                >
+                  {uploadingPrescriptionId === appointment._id ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.prescriptionActionButtonText}>
+                      Upload Prescription (PDF)
+                    </Text>
+                  )}
+                </Pressable>
+              )}
+
+            {appointment.prescription?.url && (
+              <View style={styles.prescriptionContainer}>
+                <View style={styles.prescriptionHeader}>
+                  <Text style={styles.prescriptionTitle}>Prescription</Text>
+                  {prescriptionUrl && (
+                    <Pressable
+                      onPress={() => handleOpenPrescription(prescriptionUrl)}
+                    >
+                      <Text style={styles.prescriptionLink}>Download PDF</Text>
+                    </Pressable>
+                  )}
+                </View>
+                {appointment.prescription?.originalName && (
+                  <Text style={styles.prescriptionMeta} numberOfLines={1}>
+                    {appointment.prescription.originalName}
+                  </Text>
+                )}
+                {prescriptionUploadedText ? (
+                  <Text style={styles.prescriptionMeta}>
+                    {prescriptionUploadedText}
+                  </Text>
+                ) : null}
+                <Pressable
+                  style={[
+                    styles.replaceButton,
+                    uploadingPrescriptionId === appointment._id &&
+                      styles.buttonDisabled,
+                  ]}
+                  onPress={() => handlePrescriptionUpload(appointment)}
+                  disabled={uploadingPrescriptionId === appointment._id}
+                >
+                  {uploadingPrescriptionId === appointment._id ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.replaceButtonText}>Replace PDF</Text>
+                  )}
+                </Pressable>
+              </View>
+            )}
+
+            {feedbackCount > 0 && (
+              <View style={styles.appointmentFeedback}>
+                <View style={styles.appointmentFeedbackHeader}>
+                  <Text style={styles.appointmentFeedbackTitle}>
+                    Client feedback
+                    {feedbackCount > 1 ? ` (${feedbackCount})` : ""}
+                  </Text>
+                  {renderRatingStars(averageFeedbackRating)}
+                </View>
+                {visibleFeedbackEntries.map((entry, index) => {
+                  const cardMeta = formatFeedbackMeta(
+                    entry.sessionDate,
+                    entry.startTime,
+                    entry.endTime
+                  );
+                  const timestampLabel = formatFeedbackDateLabel(
+                    entry.createdAt || entry.sessionDate
+                  );
+
+                  return (
+                    <View
+                      key={entry.id}
+                      style={[
+                        styles.feedbackEntry,
+                        index === 0 && styles.feedbackEntryFirst,
+                      ]}
+                    >
+                      <View style={styles.feedbackEntryHeader}>
+                        <Text style={styles.feedbackEntryName}>
+                          {entry.userName}
+                        </Text>
+                        {!!timestampLabel && (
+                          <Text style={styles.feedbackEntryTimestamp}>
+                            {timestampLabel}
+                          </Text>
+                        )}
+                      </View>
+                      {renderRatingStars(entry.rating)}
+                      {entry.comment ? (
+                        <Text
+                          style={styles.appointmentFeedbackComment}
+                          numberOfLines={3}
+                        >
+                          {entry.comment}
+                        </Text>
+                      ) : (
+                        <Text style={styles.appointmentFeedbackPlaceholder}>
+                          Client rated this session {entry.rating}/5
+                        </Text>
+                      )}
+                      {!!cardMeta && (
+                        <Text style={styles.feedbackEntryMeta}>{cardMeta}</Text>
+                      )}
+                    </View>
+                  );
+                })}
+                {feedbackCount > FEEDBACK_PREVIEW_LIMIT && (
+                  <Pressable
+                    style={styles.feedbackToggleButton}
+                    onPress={() => toggleFeedbackExpansion(appointment._id)}
+                  >
+                    <Text style={styles.feedbackToggleText}>
+                      {isFeedbackExpanded
+                        ? "Show less feedback"
+                        : "View more feedback"}
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+            )}
+
+            <View style={styles.appointmentFooter}>
+              <View style={styles.appointmentActions}>
+                {appointment.status === "pending" && (
+                  <View style={styles.actionButtons}>
+                    <Pressable
+                      style={[
+                        styles.confirmButton,
+                        isUpdating && styles.buttonDisabled,
+                      ]}
+                      onPress={() =>
+                        handleStatusUpdate(appointment._id, "confirmed")
+                      }
+                      disabled={isUpdating}
+                    >
+                      {isUpdating ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : (
+                        <Text style={styles.confirmButtonText}>Confirm</Text>
+                      )}
+                    </Pressable>
+                    <Pressable
+                      style={[
+                        styles.rejectButton,
+                        isUpdating && styles.buttonDisabled,
+                      ]}
+                      onPress={() =>
+                        handleStatusUpdate(appointment._id, "rejected")
+                      }
+                      disabled={isUpdating}
+                    >
+                      {isUpdating ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : (
+                        <Text style={styles.rejectButtonText}>Reject</Text>
+                      )}
+                    </Pressable>
+                  </View>
+                )}
+                {appointment.status === "confirmed" && (
+                  <View style={styles.confirmedActions}>
+                    {(() => {
+                      const canComplete = canMarkSessionCompleted(appointment);
+                      const joinStatus = getJoinStatus(appointment);
+                      const showJoin =
+                        isRealtimeConsultation(
+                          appointment.consultationMethod
+                        ) &&
+                        !canComplete &&
+                        joinStatus !== "ended";
+
+                      return (
+                        <>
+                          {showJoin && (
+                            <Pressable
+                              style={[
+                                styles.joinButton,
+                                (joinStatus !== "available" ||
+                                  joiningId === appointment._id) &&
+                                  styles.buttonDisabled,
+                              ]}
+                              onPress={() => handleJoinSession(appointment)}
+                              disabled={
+                                joinStatus !== "available" ||
+                                joiningId === appointment._id
+                              }
+                            >
+                              {joiningId === appointment._id ? (
+                                <ActivityIndicator
+                                  size="small"
+                                  color="#FFFFFF"
+                                />
+                              ) : (
+                                <Text style={styles.joinButtonText}>
+                                  {joinStatus === "available"
+                                    ? getJoinCtaLabel(
+                                        appointment.consultationMethod
+                                      )
+                                    : "Join Opens Soon"}
+                                </Text>
+                              )}
+                            </Pressable>
+                          )}
+                          {canComplete && (
+                            <Pressable
+                              style={[
+                                styles.completeButton,
+                                isUpdating && styles.buttonDisabled,
+                              ]}
+                              onPress={() =>
+                                handleStatusUpdate(appointment._id, "completed")
+                              }
+                              disabled={isUpdating}
+                            >
+                              {isUpdating ? (
+                                <ActivityIndicator
+                                  size="small"
+                                  color="#FFFFFF"
+                                />
+                              ) : (
+                                <Text style={styles.completeButtonText}>
+                                  Mark as Completed
+                                </Text>
+                              )}
+                            </Pressable>
+                          )}
+                          {getJoinStatus(appointment) !== "ended" && (
+                            <Pressable
+                              style={[
+                                styles.cancelButton,
+                                isUpdating && styles.buttonDisabled,
+                              ]}
+                              onPress={() => handleCancelPress(appointment)}
+                              disabled={isUpdating}
+                            >
+                              {isUpdating ? (
+                                <ActivityIndicator
+                                  size="small"
+                                  color="#FFFFFF"
+                                />
+                              ) : (
+                                <Text style={styles.cancelButtonText}>
+                                  Cancel
+                                </Text>
+                              )}
+                            </Pressable>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </View>
+                )}
+              </View>
+            </View>
+          </View>
+        </Pressable>
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -907,437 +1669,160 @@ export default function ExpertAppointmentsScreen() {
               <Text style={styles.emptyStateText}>No appointments found</Text>
             </View>
           ) : (
-            filteredAppointments.map((appointment) => {
-              const user = appointment.user;
-              const userName = buildUserDisplayName(user);
-              const userImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                userName
-              )}&background=37b9a8&color=fff&size=128`;
-              const isUpdating = updatingId === appointment._id;
-              const prescriptionUrl = buildAbsoluteUrl(
-                appointment.prescription?.url
-              );
-              const prescriptionUploadedText = formatTimestamp(
-                appointment.prescription?.uploadedAt
-              );
-              const appointmentFeedbackEntries =
-                feedbackEntriesByAppointment[appointment._id] || [];
-              const feedbackCount = appointmentFeedbackEntries.length;
-              const isFeedbackExpanded =
-                !!expandedFeedbackAppointments[appointment._id];
-              const visibleFeedbackEntries =
-                !isFeedbackExpanded && feedbackCount > FEEDBACK_PREVIEW_LIMIT
-                  ? appointmentFeedbackEntries.slice(0, FEEDBACK_PREVIEW_LIMIT)
-                  : appointmentFeedbackEntries;
-              const averageFeedbackRating =
-                feedbackCount > 0
-                  ? appointmentFeedbackEntries.reduce(
-                      (sum, entry) => sum + entry.rating,
-                      0
-                    ) / feedbackCount
-                  : 0;
-
-              return (
-                <View key={appointment._id} style={styles.appointmentCard}>
-                  <Pressable
-                    style={styles.appointmentCardPressable}
-                    onPress={() => handleAppointmentPress(appointment)}
-                  >
-                    <View style={styles.avatarSection}>
-                      <Image
-                        source={{ uri: userImage }}
-                        style={styles.patientImage}
-                      />
-                      <Pressable
-                        style={[
-                          styles.showPatientDetailsButton,
-                          styles.detailsButtonCompact,
-                        ]}
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          handleAppointmentPress(appointment);
-                        }}
-                      >
-                        <Ionicons name="eye" size={16} color="#FFFFFF" />
-                        <Text style={styles.showPatientDetailsButtonText}>
-                          Details
-                        </Text>
-                      </Pressable>
-                    </View>
-                    <View style={styles.appointmentInfo}>
-                      <View style={styles.appointmentHeader}>
-                        <Text style={styles.patientName}>{userName}</Text>
-                        <View
-                          style={[
-                            styles.statusBadge,
-                            {
-                              backgroundColor:
-                                appointment.status === "confirmed"
-                                  ? "#059669"
-                                  : appointment.status === "pending"
-                                  ? "#F59E0B"
-                                  : appointment.status === "completed"
-                                  ? "#2196F3"
-                                  : "#F44336",
-                            },
-                          ]}
-                        >
-                          <Text style={styles.statusText}>
-                            {appointment.status.charAt(0).toUpperCase() +
-                              appointment.status.slice(1)}
-                          </Text>
-                        </View>
-                      </View>
-
-                      <Text style={styles.appointmentTime}>
-                        {formatDate(appointment.sessionDate)} •{" "}
-                        {formatTimeRange(
-                          appointment.startTime,
-                          appointment.endTime
-                        )}
-                      </Text>
-                      <Text style={styles.appointmentType}>
-                        {formatConsultationMethod(
-                          appointment.consultationMethod
-                        )}{" "}
-                        •{" "}
-                        {appointment.sessionType === "one-on-one"
-                          ? "One-on-One"
-                          : "Group"}
-                      </Text>
-                      {appointment.notes && (
-                        <Text style={styles.appointmentNotes}>
-                          {appointment.notes}
-                        </Text>
-                      )}
-
-                      {appointment.status === "completed" &&
-                        !appointment.prescription?.url && (
-                          <Pressable
-                            style={[
-                              styles.prescriptionActionButton,
-                              uploadingPrescriptionId === appointment._id &&
-                                styles.buttonDisabled,
-                            ]}
-                            onPress={() =>
-                              handlePrescriptionUpload(appointment)
-                            }
-                            disabled={
-                              uploadingPrescriptionId === appointment._id
-                            }
-                          >
-                            {uploadingPrescriptionId === appointment._id ? (
-                              <ActivityIndicator size="small" color="#FFFFFF" />
-                            ) : (
-                              <Text style={styles.prescriptionActionButtonText}>
-                                Upload Prescription (PDF)
-                              </Text>
-                            )}
-                          </Pressable>
-                        )}
-
-                      {appointment.prescription?.url && (
-                        <View style={styles.prescriptionContainer}>
-                          <View style={styles.prescriptionHeader}>
-                            <Text style={styles.prescriptionTitle}>
-                              Prescription
-                            </Text>
-                            {prescriptionUrl && (
-                              <Pressable
-                                onPress={() =>
-                                  handleOpenPrescription(prescriptionUrl)
-                                }
-                              >
-                                <Text style={styles.prescriptionLink}>
-                                  Download PDF
-                                </Text>
-                              </Pressable>
-                            )}
-                          </View>
-                          {appointment.prescription?.originalName && (
-                            <Text
-                              style={styles.prescriptionMeta}
-                              numberOfLines={1}
-                            >
-                              {appointment.prescription.originalName}
-                            </Text>
-                          )}
-                          {prescriptionUploadedText ? (
-                            <Text style={styles.prescriptionMeta}>
-                              {prescriptionUploadedText}
-                            </Text>
-                          ) : null}
-                          <Pressable
-                            style={[
-                              styles.replaceButton,
-                              uploadingPrescriptionId === appointment._id &&
-                                styles.buttonDisabled,
-                            ]}
-                            onPress={() =>
-                              handlePrescriptionUpload(appointment)
-                            }
-                            disabled={
-                              uploadingPrescriptionId === appointment._id
-                            }
-                          >
-                            {uploadingPrescriptionId === appointment._id ? (
-                              <ActivityIndicator size="small" color="#FFFFFF" />
-                            ) : (
-                              <Text style={styles.replaceButtonText}>
-                                Replace PDF
-                              </Text>
-                            )}
-                          </Pressable>
-                        </View>
-                      )}
-
-                      {feedbackCount > 0 && (
-                        <View style={styles.appointmentFeedback}>
-                          <View style={styles.appointmentFeedbackHeader}>
-                            <Text style={styles.appointmentFeedbackTitle}>
-                              Client feedback
-                              {feedbackCount > 1 ? ` (${feedbackCount})` : ""}
-                            </Text>
-                            {renderRatingStars(averageFeedbackRating)}
-                          </View>
-                          {visibleFeedbackEntries.map((entry, index) => {
-                            const cardMeta = formatFeedbackMeta(
-                              entry.sessionDate,
-                              entry.startTime,
-                              entry.endTime
-                            );
-                            const timestampLabel = formatFeedbackDateLabel(
-                              entry.createdAt || entry.sessionDate
-                            );
-
-                            return (
-                              <View
-                                key={entry.id}
-                                style={[
-                                  styles.feedbackEntry,
-                                  index === 0 && styles.feedbackEntryFirst,
-                                ]}
-                              >
-                                <View style={styles.feedbackEntryHeader}>
-                                  <Text style={styles.feedbackEntryName}>
-                                    {entry.userName}
-                                  </Text>
-                                  {!!timestampLabel && (
-                                    <Text style={styles.feedbackEntryTimestamp}>
-                                      {timestampLabel}
-                                    </Text>
-                                  )}
-                                </View>
-                                {renderRatingStars(entry.rating)}
-                                {entry.comment ? (
-                                  <Text
-                                    style={styles.appointmentFeedbackComment}
-                                    numberOfLines={3}
-                                  >
-                                    {entry.comment}
-                                  </Text>
-                                ) : (
-                                  <Text
-                                    style={
-                                      styles.appointmentFeedbackPlaceholder
-                                    }
-                                  >
-                                    Client rated this session {entry.rating}/5
-                                  </Text>
-                                )}
-                                {!!cardMeta && (
-                                  <Text style={styles.feedbackEntryMeta}>
-                                    {cardMeta}
-                                  </Text>
-                                )}
-                              </View>
-                            );
-                          })}
-                          {feedbackCount > FEEDBACK_PREVIEW_LIMIT && (
-                            <Pressable
-                              style={styles.feedbackToggleButton}
-                              onPress={() =>
-                                toggleFeedbackExpansion(appointment._id)
-                              }
-                            >
-                              <Text style={styles.feedbackToggleText}>
-                                {isFeedbackExpanded
-                                  ? "Show less feedback"
-                                  : "View more feedback"}
-                              </Text>
-                            </Pressable>
-                          )}
-                        </View>
-                      )}
-
-                      <View style={styles.appointmentFooter}>
-                        <View style={styles.appointmentActions}>
-                          {appointment.status === "pending" && (
-                            <View style={styles.actionButtons}>
-                              <Pressable
-                                style={[
-                                  styles.confirmButton,
-                                  isUpdating && styles.buttonDisabled,
-                                ]}
-                                onPress={() =>
-                                  handleStatusUpdate(
-                                    appointment._id,
-                                    "confirmed"
-                                  )
-                                }
-                                disabled={isUpdating}
-                              >
-                                {isUpdating ? (
-                                  <ActivityIndicator
-                                    size="small"
-                                    color="#FFFFFF"
-                                  />
-                                ) : (
-                                  <Text style={styles.confirmButtonText}>
-                                    Confirm
-                                  </Text>
-                                )}
-                              </Pressable>
-                              <Pressable
-                                style={[
-                                  styles.rejectButton,
-                                  isUpdating && styles.buttonDisabled,
-                                ]}
-                                onPress={() =>
-                                  handleStatusUpdate(
-                                    appointment._id,
-                                    "rejected"
-                                  )
-                                }
-                                disabled={isUpdating}
-                              >
-                                {isUpdating ? (
-                                  <ActivityIndicator
-                                    size="small"
-                                    color="#FFFFFF"
-                                  />
-                                ) : (
-                                  <Text style={styles.rejectButtonText}>
-                                    Reject
-                                  </Text>
-                                )}
-                              </Pressable>
-                            </View>
-                          )}
-                          {appointment.status === "confirmed" && (
-                            <View style={styles.confirmedActions}>
-                              {(() => {
-                                const canComplete =
-                                  canMarkSessionCompleted(appointment);
-                                const joinStatus = getJoinStatus(appointment);
-                                const showJoin =
-                                  isRealtimeConsultation(
-                                    appointment.consultationMethod
-                                  ) &&
-                                  !canComplete &&
-                                  joinStatus !== "ended";
-
-                                return (
-                                  <>
-                                    {showJoin && (
-                                      <Pressable
-                                        style={[
-                                          styles.joinButton,
-                                          (joinStatus !== "available" ||
-                                            joiningId === appointment._id) &&
-                                            styles.buttonDisabled,
-                                        ]}
-                                        onPress={() =>
-                                          handleJoinSession(appointment)
-                                        }
-                                        disabled={
-                                          joinStatus !== "available" ||
-                                          joiningId === appointment._id
-                                        }
-                                      >
-                                        {joiningId === appointment._id ? (
-                                          <ActivityIndicator
-                                            size="small"
-                                            color="#FFFFFF"
-                                          />
-                                        ) : (
-                                          <Text style={styles.joinButtonText}>
-                                            {joinStatus === "available"
-                                              ? getJoinCtaLabel(
-                                                  appointment.consultationMethod
-                                                )
-                                              : "Join Opens Soon"}
-                                          </Text>
-                                        )}
-                                      </Pressable>
-                                    )}
-                                    {canComplete && (
-                                      <Pressable
-                                        style={[
-                                          styles.completeButton,
-                                          isUpdating && styles.buttonDisabled,
-                                        ]}
-                                        onPress={() =>
-                                          handleStatusUpdate(
-                                            appointment._id,
-                                            "completed"
-                                          )
-                                        }
-                                        disabled={isUpdating}
-                                      >
-                                        {isUpdating ? (
-                                          <ActivityIndicator
-                                            size="small"
-                                            color="#FFFFFF"
-                                          />
-                                        ) : (
-                                          <Text
-                                            style={styles.completeButtonText}
-                                          >
-                                            Mark as Completed
-                                          </Text>
-                                        )}
-                                      </Pressable>
-                                    )}
-                                    {getJoinStatus(appointment) !== "ended" && (
-                                      <Pressable
-                                        style={[
-                                          styles.cancelButton,
-                                          isUpdating && styles.buttonDisabled,
-                                        ]}
-                                        onPress={() =>
-                                          handleCancelPress(appointment)
-                                        }
-                                        disabled={isUpdating}
-                                      >
-                                        {isUpdating ? (
-                                          <ActivityIndicator
-                                            size="small"
-                                            color="#FFFFFF"
-                                          />
-                                        ) : (
-                                          <Text style={styles.cancelButtonText}>
-                                            Cancel
-                                          </Text>
-                                        )}
-                                      </Pressable>
-                                    )}
-                                  </>
-                                );
-                              })()}
-                            </View>
-                          )}
-                        </View>
-                      </View>
-                    </View>
-                  </Pressable>
-                </View>
-              );
+            filteredAppointments.map((item) => {
+              // Check if this is a grouped session or individual appointment
+              if ("groupSessionId" in item) {
+                const groupSession = item as GroupedSession;
+                return renderGroupSessionCard(groupSession);
+              } else {
+                const appointment = item as Appointment;
+                return renderIndividualAppointmentCard(appointment);
+              }
             })
           )}
-          <View style={styles.bottomSpacer} />
         </ScrollView>
       )}
+
+      {/* Participants Modal */}
+      <Modal
+        visible={showParticipantsModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => {
+          setShowParticipantsModal(false);
+          setSelectedGroupSession(null);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.participantsModalContent}>
+            <View style={styles.patientDetailsModalHeader}>
+              <Text style={styles.modalTitle}>Group Session Participants</Text>
+              <Pressable
+                style={styles.closeModalButton}
+                onPress={() => {
+                  setShowParticipantsModal(false);
+                  setSelectedGroupSession(null);
+                }}
+              >
+                <Text style={styles.closeModalButtonText}>✕</Text>
+              </Pressable>
+            </View>
+            {selectedGroupSession ? (
+              <ScrollView
+                style={styles.patientDetailsScrollView}
+                contentContainerStyle={styles.patientDetailsScrollViewContent}
+                showsVerticalScrollIndicator={false}
+              >
+                <View style={styles.patientDetailsCard}>
+                  <Text style={styles.patientDetailsSectionTitle}>
+                    Session Details
+                  </Text>
+                  <View style={styles.patientDetailsRow}>
+                    <Text style={styles.patientDetailsLabel}>Date:</Text>
+                    <Text style={styles.patientDetailsValue}>
+                      {formatDate(selectedGroupSession.sessionDate)}
+                    </Text>
+                  </View>
+                  <View style={styles.patientDetailsRow}>
+                    <Text style={styles.patientDetailsLabel}>Time:</Text>
+                    <Text style={styles.patientDetailsValue}>
+                      {formatTimeRange(
+                        selectedGroupSession.startTime,
+                        selectedGroupSession.endTime
+                      )}
+                    </Text>
+                  </View>
+                  <View style={styles.patientDetailsRow}>
+                    <Text style={styles.patientDetailsLabel}>Method:</Text>
+                    <Text style={styles.patientDetailsValue}>
+                      {formatConsultationMethod(
+                        selectedGroupSession.consultationMethod
+                      )}
+                    </Text>
+                  </View>
+                  <View style={styles.patientDetailsRow}>
+                    <Text style={styles.patientDetailsLabel}>
+                      Participants:
+                    </Text>
+                    <Text style={styles.patientDetailsValue}>
+                      {selectedGroupSession.participants?.length || 0}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.patientDetailsSection} className="mt-4">
+                  <Text style={styles.patientDetailsSectionTitle}>
+                    Participants List
+                  </Text>
+                  {selectedGroupSession.participants &&
+                  selectedGroupSession.participants.length > 0 ? (
+                    selectedGroupSession.participants.map((participant) => {
+                      const userName = buildUserDisplayName(participant.user);
+                      const userImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                        userName
+                      )}&background=37b9a8&color=fff&size=128`;
+                      return (
+                        <View
+                          key={participant._id}
+                          style={styles.participantCard}
+                        >
+                          <Image
+                            source={{ uri: userImage }}
+                            style={styles.participantImage}
+                          />
+                          <View style={styles.participantInfo}>
+                            <Text style={styles.participantName}>
+                              {userName}
+                            </Text>
+                            {participant.user?.email && (
+                              <Text style={styles.participantEmail}>
+                                {participant.user.email}
+                              </Text>
+                            )}
+                            <View
+                              style={[
+                                styles.statusBadge,
+                                {
+                                  backgroundColor:
+                                    participant.status === "confirmed"
+                                      ? "#059669"
+                                      : participant.status === "pending"
+                                      ? "#F59E0B"
+                                      : participant.status === "completed"
+                                      ? "#2196F3"
+                                      : "#F44336",
+                                },
+                              ]}
+                            >
+                              <Text style={styles.statusText}>
+                                {participant.status
+                                  ? participant.status.charAt(0).toUpperCase() +
+                                    participant.status.slice(1)
+                                  : "Unknown"}
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
+                      );
+                    })
+                  ) : (
+                    <View style={styles.patientDetailsCard}>
+                      <Text style={styles.patientDetailsPlaceholderText}>
+                        No participants found for this group session.
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </ScrollView>
+            ) : (
+              <View style={styles.patientDetailsLoadingContainer}>
+                <Text style={styles.patientDetailsLoadingText}>
+                  Loading participants...
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
 
       {/* Patient Details Modal */}
       <Modal
@@ -2107,11 +2592,13 @@ const styles = StyleSheet.create({
     paddingVertical: getResponsiveHeight(4),
     borderRadius: getResponsiveBorderRadius(12),
     marginLeft: getResponsiveWidth(8),
+    width: getResponsiveWidth(80),
   },
   statusText: {
     color: "#FFFFFF",
     fontSize: getResponsiveFontSize(10),
     fontWeight: "600",
+    textAlign: "center",
   },
   appointmentTime: {
     fontSize: getResponsiveFontSize(12),
@@ -2478,6 +2965,16 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     flexDirection: "column",
   },
+  participantsModalContent: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: getResponsiveBorderRadius(20),
+    width: "100%",
+    maxWidth: 500,
+    height: "80%",
+    maxHeight: 700,
+    overflow: "hidden",
+    flexDirection: "column",
+  },
   patientDetailsModalBody: {
     flex: 1,
     minHeight: 400,
@@ -2557,6 +3054,7 @@ const styles = StyleSheet.create({
   },
   patientDetailsSection: {
     marginBottom: getResponsiveHeight(20),
+    marginTop: getResponsiveHeight(20),
     width: "100%",
   },
   patientDetailsSectionTitle: {
@@ -2628,5 +3126,63 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(14),
     color: "#374151",
     lineHeight: getResponsiveFontSize(20),
+  },
+  groupSessionAvatar: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: "#2da898ff",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: getResponsiveHeight(8),
+    borderWidth: 3,
+    borderColor: "#F59E0B",
+    position: "relative",
+  },
+  groupSessionParticipantCount: {
+    position: "absolute",
+    bottom: -4,
+    right: -4,
+    backgroundColor: "#F59E0B",
+    color: "#FFFFFF",
+    fontSize: getResponsiveFontSize(10),
+    fontWeight: "bold",
+    paddingHorizontal: getResponsiveWidth(6),
+    paddingVertical: getResponsiveHeight(2),
+    borderRadius: getResponsiveBorderRadius(10),
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+  },
+  participantCard: {
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
+    borderRadius: getResponsiveBorderRadius(12),
+    padding: getResponsivePadding(12),
+    marginBottom: getResponsiveMargin(12),
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    alignItems: "center",
+  },
+  participantImage: {
+    width: getResponsiveWidth(50),
+    height: getResponsiveWidth(50),
+    borderRadius: getResponsiveWidth(25),
+    marginRight: getResponsiveWidth(12),
+    borderWidth: 2,
+    borderColor: "#2da898ff",
+  },
+  participantInfo: {
+    flex: 1,
+  },
+  participantName: {
+    fontSize: getResponsiveFontSize(14),
+    fontWeight: "600",
+    color: "#1F2937",
+    marginBottom: getResponsiveHeight(4),
+  },
+  participantEmail: {
+    fontSize: getResponsiveFontSize(12),
+    color: "#6B7280",
+    marginBottom: getResponsiveHeight(4),
   },
 });

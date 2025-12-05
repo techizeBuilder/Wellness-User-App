@@ -66,6 +66,8 @@ export const ENDPOINTS = {
     CREATE_ORDER: '/payments/create-order',
     VERIFY: '/payments/verify',
     HISTORY: '/payments/history',
+    EXPERT_EARNINGS: '/payments/expert/earnings',
+    EXPERT_PAYOUTS: '/payments/expert/payouts',
   }
 };
 

@@ -36,6 +36,7 @@ export default function ExpertDashboardScreen() {
     lastName?: string;
     profileImage?: string;
     specialization?: string;
+    rating?: { average: number; count: number };
   } | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [subscriptionStats, setSubscriptionStats] = useState<{
@@ -45,6 +46,32 @@ export default function ExpertDashboardScreen() {
     renewalDate: string;
   } | null>(null);
   const [isLoadingSubscriptions, setIsLoadingSubscriptions] = useState(true);
+  const [earnings, setEarnings] = useState<{
+    daily: number;
+    weekly: number;
+    monthly: number;
+    total: number;
+  } | null>(null);
+  const [isLoadingEarnings, setIsLoadingEarnings] = useState(true);
+  const [payouts, setPayouts] = useState<{
+    lastPayout: { amount: number; date: string } | null;
+    nextPayoutDate: string;
+    pendingPayout: number;
+  } | null>(null);
+  const [isLoadingPayouts, setIsLoadingPayouts] = useState(true);
+  const [todaysAppointments, setTodaysAppointments] = useState<Array<{
+    id: string;
+    time: string;
+    client: string;
+    service: string;
+  }>>([]);
+  const [isLoadingAppointments, setIsLoadingAppointments] = useState(true);
+  const [dashboardStats, setDashboardStats] = useState<{
+    totalPatients: number;
+    totalSessionsThisMonth: number;
+    clientFeedback: string;
+  } | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   // Check account type and fetch expert profile on component mount
   useEffect(() => {
@@ -71,6 +98,7 @@ export default function ExpertDashboardScreen() {
                 resolveProfileImageUrl(response.data.expert.profileImage) ||
                 undefined,
               specialization: response.data.expert.specialization,
+              rating: response.data.expert.rating,
             });
           }
         } catch (error) {
@@ -95,6 +123,145 @@ export default function ExpertDashboardScreen() {
         } finally {
           setIsLoadingSubscriptions(false);
         }
+
+        // Fetch earnings
+        try {
+          const earningsResponse = await apiService.getExpertEarnings();
+          if (earningsResponse.success && earningsResponse.data) {
+            setEarnings({
+              daily: earningsResponse.data.daily || 0,
+              weekly: earningsResponse.data.weekly || 0,
+              monthly: earningsResponse.data.monthly || 0,
+              total: earningsResponse.data.total || 0,
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching earnings:", error);
+        } finally {
+          setIsLoadingEarnings(false);
+        }
+
+        // Fetch payouts
+        try {
+          const payoutsResponse = await apiService.getExpertPayouts();
+          if (payoutsResponse.success && payoutsResponse.data) {
+            setPayouts({
+              lastPayout: payoutsResponse.data.lastPayout,
+              nextPayoutDate: payoutsResponse.data.nextPayoutDate,
+              pendingPayout: payoutsResponse.data.pendingPayout || 0,
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching payouts:", error);
+        } finally {
+          setIsLoadingPayouts(false);
+        }
+
+        // Fetch today's appointments
+        try {
+          const today = new Date();
+          const todayStr = today.toISOString().split('T')[0];
+          const appointmentsResponse = await apiService.getExpertBookings({
+            status: 'confirmed',
+            limit: 100,
+          });
+          if (appointmentsResponse.success && appointmentsResponse.data?.appointments) {
+            const allAppointments = appointmentsResponse.data.appointments;
+            const todayAppts = allAppointments.filter((apt: any) => {
+              const aptDate = apt.sessionDate?.split('T')[0] || apt.sessionDate;
+              return aptDate === todayStr && 
+                     (apt.status === 'confirmed' || apt.status === 'pending');
+            }).sort((a: any, b: any) => {
+              const timeA = a.startTime || '00:00';
+              const timeB = b.startTime || '00:00';
+              return timeA.localeCompare(timeB);
+            });
+
+            const formattedAppts = todayAppts.map((apt: any) => {
+              // Determine service type based on sessionType or plan sessionFormat
+              let serviceType = 'Consultation';
+              
+              // Check plan sessionFormat first (if plan is populated)
+              if (apt.planId?.sessionFormat) {
+                serviceType = apt.planId.sessionFormat === 'one-to-many' 
+                  ? 'Group Session' 
+                  : 'Individual Session';
+              } 
+              // Check appointment sessionType
+              else if (apt.sessionType) {
+                serviceType = apt.sessionType === 'one-to-many' 
+                  ? 'Group Session' 
+                  : 'Individual Session';
+              }
+              // Fallback to consultation method if available
+              else if (apt.consultationMethod) {
+                serviceType = apt.consultationMethod;
+              }
+
+              return {
+                id: apt._id,
+                time: apt.startTime || 'N/A',
+                client: apt.user
+                  ? `${apt.user.firstName || ''} ${apt.user.lastName || ''}`.trim()
+                  : 'Unknown Client',
+                service: serviceType,
+              };
+            });
+            setTodaysAppointments(formattedAppts);
+          }
+        } catch (error) {
+          console.error("Error fetching appointments:", error);
+        } finally {
+          setIsLoadingAppointments(false);
+        }
+
+        // Fetch dashboard stats (total patients, sessions this month, feedback)
+        try {
+          const statsResponse = await apiService.getExpertBookings({ limit: 1000 });
+          if (statsResponse.success && statsResponse.data?.appointments) {
+            const allAppointments = statsResponse.data.appointments;
+            
+            // Calculate total unique patients
+            const uniquePatients = new Set(
+              allAppointments
+                .filter((apt: any) => apt.user?._id)
+                .map((apt: any) => apt.user._id.toString())
+            );
+            
+            // Calculate sessions this month
+            const now = new Date();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            const sessionsThisMonth = allAppointments.filter((apt: any) => {
+              const aptDate = apt.sessionDate ? new Date(apt.sessionDate) : null;
+              return aptDate && aptDate >= startOfMonth && 
+                     (apt.status === 'completed' || apt.status === 'confirmed');
+            }).length;
+
+            // Get latest feedback
+            const appointmentsWithFeedback = allAppointments
+              .filter((apt: any) => apt.feedbackComment || apt.feedbackRating)
+              .sort((a: any, b: any) => {
+                const dateA = a.feedbackSubmittedAt ? new Date(a.feedbackSubmittedAt) : new Date(0);
+                const dateB = b.feedbackSubmittedAt ? new Date(b.feedbackSubmittedAt) : new Date(0);
+                return dateB.getTime() - dateA.getTime();
+              });
+            
+            const latestFeedback = appointmentsWithFeedback.length > 0
+              ? appointmentsWithFeedback[0].feedbackComment || 
+                `Rating: ${appointmentsWithFeedback[0].feedbackRating}/5`
+              : 'No feedback yet';
+
+            setDashboardStats({
+              totalPatients: uniquePatients.size,
+              totalSessionsThisMonth: sessionsThisMonth,
+              clientFeedback: latestFeedback,
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching dashboard stats:", error);
+        } finally {
+          setIsLoadingStats(false);
+        }
       } catch (error) {
         console.error("Error checking account type:", error);
         setIsLoadingProfile(false);
@@ -104,63 +271,22 @@ export default function ExpertDashboardScreen() {
     checkAccountTypeAndFetchProfile();
   }, []);
 
-  // Dummy data for expert dashboard
-  const expertData = {
-    name: "Dr. Sarah Johnson",
-    specialization: "Mental Health Counselor",
-    rating: 4.9,
-    totalPatients: 112,
-    totalEarnings: 12500,
-    monthlyEarnings: 12450,
-    dailyEarnings: 450,
-    weeklyEarnings: 3200,
-    thisWeekEarnings: 1850,
-    appointmentsToday: 6,
-    upcomingAppointments: 3,
-    patientSatisfaction: 98,
-    profileImage:
-      "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400",
-    activeSubscribers: 34,
-    lastPayout: 4200,
-    lastPayoutDate: "29 Oct 2025",
-    nextPayoutDate: "05 Nov 2025",
-    totalSessionsThisMonth: 38,
-    clientFeedback: "amazing progress",
-  };
-
-  const todaysAppointments = [
-    {
-      id: 1,
-      time: "9:00 AM",
-      client: "Aarav Patel",
-      service: "Yoga (Prenatal)",
-    },
-    {
-      id: 2,
-      time: "11:30 AM",
-      client: "Nisha Mehra",
-      service: "Ayurveda (Lifestyle)",
-    },
-    {
-      id: 3,
-      time: "4:00 PM",
-      client: "Rohan Verma",
-      service: "Diet Plan (PCOS)",
-    },
-    {
-      id: 4,
-      time: "6:30 PM",
-      client: "Tanya Singh",
-      service: "Mental Wellness (Stress)",
-    },
-  ];
-
   const notifications = [
     { id: 1, icon: "🔔", text: "5 New Bookings" },
     { id: 2, icon: "✅", text: "2 Plan Renewals" },
     { id: 3, icon: "💬", text: "3 Unread Chat Messages" },
     { id: 4, icon: "📦", text: "1 Subscription Upgrade" },
   ];
+
+  // Format date helper
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    } catch {
+      return dateString;
+    }
+  };
 
   // Use real subscription stats if available, otherwise show empty state
   const activeSubscriptions = subscriptionStats
@@ -263,20 +389,32 @@ export default function ExpertDashboardScreen() {
                 </Text>
               </Pressable>
             </View>
-            <View style={styles.appointmentsTable}>
-              <View style={styles.tableHeader}>
-                <Text style={styles.tableHeaderText}>Time</Text>
-                <Text style={styles.tableHeaderText}>Client</Text>
-                <Text style={styles.tableHeaderText}>Service</Text>
+            {isLoadingAppointments ? (
+              <View style={styles.loadingContainer}>
+                <Text style={styles.loadingText}>Loading appointments...</Text>
               </View>
-              {todaysAppointments.map((appointment) => (
-                <View key={appointment.id} style={styles.tableRow}>
-                  <Text style={styles.tableCell}>{appointment.time}</Text>
-                  <Text style={styles.tableCell}>{appointment.client}</Text>
-                  <Text style={styles.tableCell}>{appointment.service}</Text>
+            ) : todaysAppointments.length > 0 ? (
+              <View style={styles.appointmentsTable}>
+                <View style={styles.tableHeader}>
+                  <Text style={styles.tableHeaderText}>Time</Text>
+                  <Text style={styles.tableHeaderText}>Client</Text>
+                  <Text style={styles.tableHeaderText}>Service</Text>
                 </View>
-              ))}
-            </View>
+                {todaysAppointments.map((appointment) => (
+                  <View key={appointment.id} style={styles.tableRow}>
+                    <Text style={styles.tableCell}>{appointment.time}</Text>
+                    <Text style={styles.tableCell}>{appointment.client}</Text>
+                    <Text style={styles.tableCell}>{appointment.service}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptySubscriptionsContainer}>
+                <Text style={styles.emptySubscriptionsText}>
+                  No appointments scheduled for today
+                </Text>
+              </View>
+            )}
             <View style={styles.sectionDivider} />
           </View>
 
@@ -353,31 +491,43 @@ export default function ExpertDashboardScreen() {
                 </Text>
               </Pressable>
             </View>
-            <View style={styles.earningsCard}>
-              <Text style={styles.earningsAmount}>
-                ₹
-                {earningsTimeframe === "Daily"
-                  ? expertData.dailyEarnings
-                  : earningsTimeframe === "Weekly"
-                  ? expertData.weeklyEarnings
-                  : earningsTimeframe === "Monthly"
-                  ? expertData.monthlyEarnings
-                  : expertData.totalEarnings}
-                {earningsTimeframe === "Monthly" ? " (This Month)" : ""}
-              </Text>
-              <Text style={styles.activeSubscribersText}>
-                Active Subscribers: {expertData.activeSubscribers}
-              </Text>
-              <View style={styles.payoutInfo}>
-                <Text style={styles.payoutText}>
-                  🔸 Last Payout: ₹{expertData.lastPayout} (
-                  {expertData.lastPayoutDate})
-                </Text>
-                <Text style={styles.payoutText}>
-                  🔸 Next Payout Date: {expertData.nextPayoutDate}
-                </Text>
+            {isLoadingEarnings || isLoadingPayouts ? (
+              <View style={styles.loadingContainer}>
+                <Text style={styles.loadingText}>Loading earnings...</Text>
               </View>
-            </View>
+            ) : (
+              <View style={styles.earningsCard}>
+                <Text style={styles.earningsAmount}>
+                  ₹
+                  {earningsTimeframe === "Daily"
+                    ? earnings?.daily || 0
+                    : earningsTimeframe === "Weekly"
+                    ? earnings?.weekly || 0
+                    : earningsTimeframe === "Monthly"
+                    ? earnings?.monthly || 0
+                    : earnings?.total || 0}
+                  {earningsTimeframe === "Monthly" ? " (This Month)" : ""}
+                </Text>
+                <Text style={styles.activeSubscribersText}>
+                  Active Subscribers: {subscriptionStats?.subscribers || 0}
+                </Text>
+                <View style={styles.payoutInfo}>
+                  {payouts?.lastPayout ? (
+                    <Text style={styles.payoutText}>
+                      🔸 Last Payout: ₹{payouts.lastPayout.amount} (
+                      {formatDate(payouts.lastPayout.date)})
+                    </Text>
+                  ) : (
+                    <Text style={styles.payoutText}>
+                      🔸 Last Payout: No payouts yet
+                    </Text>
+                  )}
+                  <Text style={styles.payoutText}>
+                    🔸 Next Payout Date: {payouts ? formatDate(payouts.nextPayoutDate) : 'N/A'}
+                  </Text>
+                </View>
+              </View>
+            )}
             <View style={styles.sectionDivider} />
           </View>
 
@@ -493,32 +643,38 @@ export default function ExpertDashboardScreen() {
             <Text style={styles.sectionTitle}>
               🧘‍♀ Expert Performance Summary
             </Text>
-            <View style={styles.performanceCard}>
-              <View style={styles.performanceItem}>
-                <Text style={styles.performanceIcon}>⭐</Text>
-                <Text style={styles.performanceText}>
-                  Avg Rating: {expertData.rating}
-                </Text>
+            {isLoadingStats || isLoadingProfile ? (
+              <View style={styles.loadingContainer}>
+                <Text style={styles.loadingText}>Loading performance data...</Text>
               </View>
-              <View style={styles.performanceItem}>
-                <Text style={styles.performanceIcon}>🧍</Text>
-                <Text style={styles.performanceText}>
-                  Total Clients: {expertData.totalPatients}
-                </Text>
+            ) : (
+              <View style={styles.performanceCard}>
+                <View style={styles.performanceItem}>
+                  <Text style={styles.performanceIcon}>⭐</Text>
+                  <Text style={styles.performanceText}>
+                    Avg Rating: {expertProfile?.rating?.average?.toFixed(1) || '0.0'} ({expertProfile?.rating?.count || 0} reviews)
+                  </Text>
+                </View>
+                <View style={styles.performanceItem}>
+                  <Text style={styles.performanceIcon}>🧍</Text>
+                  <Text style={styles.performanceText}>
+                    Total Clients: {dashboardStats?.totalPatients || 0}
+                  </Text>
+                </View>
+                <View style={styles.performanceItem}>
+                  <Text style={styles.performanceIcon}>🗓</Text>
+                  <Text style={styles.performanceText}>
+                    Total Sessions This Month: {dashboardStats?.totalSessionsThisMonth || 0}
+                  </Text>
+                </View>
+                <View style={styles.performanceItem}>
+                  <Text style={styles.performanceIcon}>💬</Text>
+                  <Text style={styles.performanceText}>
+                    Client Feedback: &quot;{dashboardStats?.clientFeedback || 'No feedback yet'}&quot;
+                  </Text>
+                </View>
               </View>
-              <View style={styles.performanceItem}>
-                <Text style={styles.performanceIcon}>🗓</Text>
-                <Text style={styles.performanceText}>
-                  Total Sessions This Month: {expertData.totalSessionsThisMonth}
-                </Text>
-              </View>
-              <View style={styles.performanceItem}>
-                <Text style={styles.performanceIcon}>💬</Text>
-                <Text style={styles.performanceText}>
-                  Client Feedback: &quot;{expertData.clientFeedback}&quot;
-                </Text>
-              </View>
-            </View>
+            )}
           </View>
 
           <View style={{ height: EXPERT_FOOTER_HEIGHT + 20 }} />
