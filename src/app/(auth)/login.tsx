@@ -175,6 +175,9 @@ export default function LoginScreen() {
       // Send ID token to backend
       const loginResponse = await authService.loginWithGoogle(idToken);
 
+      // DEBUG: Log full response to understand what we're getting
+      console.log("🔍 Google login full response:", JSON.stringify(loginResponse, null, 2));
+
       // Check if account selection is required (new user) or onboarding incomplete
       if (loginResponse.requiresAccountSelection) {
         const userData = loginResponse.data.user;
@@ -224,12 +227,72 @@ export default function LoginScreen() {
 
       // Existing user - proceed to dashboard
       if (loginResponse.success && loginResponse.data.token) {
-        const accountType = loginResponse.data.accountType || "User";
+        // Get accountType from response, with multiple fallbacks
+        const responseAccountType = loginResponse.data?.accountType;
+        const responseUserType = loginResponse.data?.user?.userType || loginResponse.userType;
+        
+        // DEBUG: Log what we're getting from response
+        console.log("🔍 Response data:", {
+          accountType: responseAccountType,
+          userType: responseUserType,
+          fullData: loginResponse.data
+        });
+        
+        // Determine account type: prefer accountType, fallback to userType, default to User
+        // IMPORTANT: Default to "User" for safety - only set to Expert if explicitly confirmed
+        let accountType = "User";
+        
+        // Only trust accountType if it's explicitly "Expert" or "User"
+        if (responseAccountType === "Expert") {
+          accountType = "Expert";
+        } else if (responseAccountType === "User") {
+          accountType = "User";
+        } else if (responseUserType === "expert") {
+          // Only trust userType if accountType is missing
+          console.warn("⚠️ accountType missing, using userType 'expert'");
+          accountType = "Expert";
+        } else if (responseUserType === "user") {
+          accountType = "User";
+        }
+        // If neither is set or unclear, accountType remains "User" (safe default)
+        
+        // Verify stored accountType matches what we determined
+        const storedAccountType = await authService.getAccountType();
+        console.log("🔍 Account type determination:", {
+          determined: accountType,
+          fromResponseAccountType: responseAccountType,
+          fromResponseUserType: responseUserType,
+          storedInAsyncStorage: storedAccountType
+        });
+        
+        // Double-check: if stored type is Expert but we determined User, log warning and fix
+        if (storedAccountType === "Expert" && accountType === "User") {
+          console.error("❌ MISMATCH: Stored accountType is Expert but determined User! Overriding stored value.");
+          await authService.setAccountType("User");
+          accountType = "User";
+        }
+        
+        // FINAL VERIFICATION: Verify accountType against backend to catch any database inconsistencies
+        try {
+          const verifiedAccountType = await authService.verifyAndCorrectAccountType();
+          if (verifiedAccountType && verifiedAccountType !== accountType) {
+            console.error("❌ FINAL VERIFICATION MISMATCH: Backend says", verifiedAccountType, "but we determined", accountType);
+            console.log("✅ Using backend value:", verifiedAccountType);
+            accountType = verifiedAccountType;
+          }
+        } catch (error) {
+          console.warn("⚠️ Could not verify accountType with backend, using determined value:", accountType);
+        }
+        
         showSuccessToast("Success", `${accountType} login successful!`);
 
+        // CRITICAL: Only redirect to expert routes if accountType is EXPLICITLY "Expert"
+        // Default to user dashboard for ANY other case (null, undefined, "User", or any other value)
         if (accountType === "Expert") {
+          console.log("✅ Redirecting to Expert dashboard");
           router.replace("/(expert)/expert-dashboard");
         } else {
+          console.log("✅ Redirecting to User dashboard (accountType:", accountType, ")");
           router.replace("/(user)/dashboard");
         }
       }

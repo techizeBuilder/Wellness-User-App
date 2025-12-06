@@ -15,8 +15,28 @@ export default function ExpertLayout() {
     try {
       const isAuthenticatedUser = await authService.isAuthenticated();
       const accountType = await authService.getAccountType();
-      // Only allow Expert account type AND authenticated users
-      setIsAuthenticated(isAuthenticatedUser && accountType === 'Expert');
+      
+      // DEBUG: Log what we're checking
+      console.log('🔍 ExpertLayout - Auth check:', {
+        isAuthenticated: isAuthenticatedUser,
+        accountType: accountType,
+        pathname: pathname
+      });
+      
+      // CRITICAL: Only allow Expert account type AND authenticated users
+      // If accountType is not explicitly "Expert", deny access
+      const isExpert = accountType === 'Expert';
+      
+      if (isAuthenticatedUser && !isExpert) {
+        console.error('❌ ExpertLayout: User is authenticated but accountType is not Expert! accountType:', accountType);
+        // Safety: Clear potentially incorrect accountType if it's not null but also not "Expert" or "User"
+        if (accountType && accountType !== 'User' && accountType !== 'Expert') {
+          console.warn('⚠️ ExpertLayout: Clearing invalid accountType:', accountType);
+          await authService.setAccountType('User');
+        }
+      }
+      
+      setIsAuthenticated(isAuthenticatedUser && isExpert);
     } catch (error) {
       console.error('Auth check failed:', error);
       setIsAuthenticated(false);

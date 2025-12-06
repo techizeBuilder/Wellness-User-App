@@ -64,6 +64,8 @@ export default function PublicLayout() {
 
   // If user is authenticated and onboarding complete, redirect to appropriate dashboard
   if (isAuthenticated) {
+    // Only redirect to expert routes if accountType is explicitly "Expert"
+    // Default to user dashboard for safety (handles null, undefined, "User", or any other value)
     if (accountType === 'Expert') {
       return <Redirect href="/(expert)/expert-dashboard" />;
     } else {

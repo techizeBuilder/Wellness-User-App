@@ -35,6 +35,14 @@ export default function ProfileScreen() {
   } | null>(null);
   const [expertData, setExpertData] = useState<any>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [stats, setStats] = useState<{
+    patients?: number;
+    sessions?: number;
+    rating?: number;
+    hours?: number;
+    experts?: number;
+  } | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
   const params = useLocalSearchParams();
 
   const formatProfileImage = (value?: string | null) => {
@@ -84,6 +92,128 @@ export default function ProfileScreen() {
     };
 
     checkAccountTypeAndFetchProfile();
+  }, []);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      let accountType: string | null = null;
+      try {
+        setIsLoadingStats(true);
+        
+        // Check account type fresh each time
+        accountType = await authService.getAccountType();
+        
+        if (accountType === 'Expert') {
+          // Fetch expert stats
+          try {
+            // Get expert profile for rating
+            const profileResponse = await apiService.getCurrentExpertProfile();
+            const rating = profileResponse.success && profileResponse.data?.expert?.rating?.average
+              ? parseFloat(profileResponse.data.expert.rating.average.toFixed(1))
+              : 0;
+
+            // Get bookings to calculate patients and sessions
+            const bookingsResponse = await apiService.getExpertBookings({ limit: 1000 });
+            if (bookingsResponse.success && bookingsResponse.data?.appointments) {
+              const appointments = bookingsResponse.data.appointments;
+              
+              // Calculate unique patients
+              const uniquePatients = new Set(
+                appointments
+                  .filter((apt: any) => apt.user?._id)
+                  .map((apt: any) => apt.user._id.toString())
+              );
+
+              // Calculate total sessions (completed + confirmed)
+              const totalSessions = appointments.filter((apt: any) =>
+                apt.status === 'completed' || apt.status === 'confirmed'
+              ).length;
+
+              setStats({
+                patients: uniquePatients.size,
+                sessions: totalSessions,
+                rating: rating,
+              });
+            } else {
+              // Fallback if bookings fail
+              setStats({
+                patients: 0,
+                sessions: 0,
+                rating: rating,
+              });
+            }
+          } catch (error) {
+            console.error('Error fetching expert stats:', error);
+            setStats({
+              patients: 0,
+              sessions: 0,
+              rating: 0,
+            });
+          }
+        } else {
+          // Fetch user stats
+          try {
+            const bookingsResponse = await apiService.getUserBookings({ limit: 1000 });
+            if (bookingsResponse.success && bookingsResponse.data?.appointments) {
+              const appointments = bookingsResponse.data.appointments;
+              
+              // Calculate total sessions (completed + confirmed)
+              const totalSessions = appointments.filter((apt: any) =>
+                apt.status === 'completed' || apt.status === 'confirmed'
+              ).length;
+
+              // Calculate total hours (sum of durations in minutes, convert to hours)
+              const totalMinutes = appointments
+                .filter((apt: any) => apt.status === 'completed' || apt.status === 'confirmed')
+                .reduce((sum: number, apt: any) => sum + (apt.duration || 0), 0);
+              const totalHours = Math.round(totalMinutes / 60);
+
+              // Calculate unique experts
+              const uniqueExperts = new Set(
+                appointments
+                  .filter((apt: any) => apt.expert?._id)
+                  .map((apt: any) => apt.expert._id.toString())
+              );
+
+              setStats({
+                sessions: totalSessions,
+                hours: totalHours,
+                experts: uniqueExperts.size,
+              });
+            } else {
+              setStats({
+                sessions: 0,
+                hours: 0,
+                experts: 0,
+              });
+            }
+          } catch (error) {
+            console.error('Error fetching user stats:', error);
+            setStats({
+              sessions: 0,
+              hours: 0,
+              experts: 0,
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+        // Use accountType if available, otherwise default to user stats
+        setStats(accountType === 'Expert' ? {
+          patients: 0,
+          sessions: 0,
+          rating: 0,
+        } : {
+          sessions: 0,
+          hours: 0,
+          experts: 0,
+        });
+      } finally {
+        setIsLoadingStats(false);
+      }
+    };
+
+    fetchStats();
   }, []);
 
   const handleBackPress = () => {
@@ -436,34 +566,46 @@ export default function ProfileScreen() {
             {isExpert ? (
               <>
                 <View style={styles.statItem}>
-                  <Text style={styles.statNumber}>89</Text>
+                  <Text style={styles.statNumber}>
+                    {isLoadingStats ? '...' : (stats?.patients ?? 0)}
+                  </Text>
                   <Text style={styles.statLabel}>Patients</Text>
                 </View>
                 <View style={styles.statDivider} />
                 <View style={styles.statItem}>
-                  <Text style={styles.statNumber}>420</Text>
+                  <Text style={styles.statNumber}>
+                    {isLoadingStats ? '...' : (stats?.sessions ?? 0)}
+                  </Text>
                   <Text style={styles.statLabel}>Sessions</Text>
                 </View>
                 <View style={styles.statDivider} />
                 <View style={styles.statItem}>
-                  <Text style={styles.statNumber}>4.9</Text>
+                  <Text style={styles.statNumber}>
+                    {isLoadingStats ? '...' : (stats?.rating?.toFixed(1) ?? '0.0')}
+                  </Text>
                   <Text style={styles.statLabel}>Rating</Text>
                 </View>
               </>
             ) : (
               <>
                 <View style={styles.statItem}>
-                  <Text style={styles.statNumber}>24</Text>
+                  <Text style={styles.statNumber}>
+                    {isLoadingStats ? '...' : (stats?.sessions ?? 0)}
+                  </Text>
                   <Text style={styles.statLabel}>Sessions</Text>
                 </View>
                 <View style={styles.statDivider} />
                 <View style={styles.statItem}>
-                  <Text style={styles.statNumber}>156</Text>
+                  <Text style={styles.statNumber}>
+                    {isLoadingStats ? '...' : (stats?.hours ?? 0)}
+                  </Text>
                   <Text style={styles.statLabel}>Hours</Text>
                 </View>
                 <View style={styles.statDivider} />
                 <View style={styles.statItem}>
-                  <Text style={styles.statNumber}>3</Text>
+                  <Text style={styles.statNumber}>
+                    {isLoadingStats ? '...' : (stats?.experts ?? 0)}
+                  </Text>
                   <Text style={styles.statLabel}>Experts</Text>
                 </View>
               </>

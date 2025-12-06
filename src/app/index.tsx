@@ -94,9 +94,12 @@ export default function Index() {
 
           // Onboarding complete - redirect to appropriate dashboard
           const accountType = await authService.getAccountType();
+          // Only redirect to expert routes if accountType is explicitly "Expert"
+          // Default to user dashboard for safety
           if (accountType === 'Expert') {
             router.replace('/(expert)/expert-dashboard');
           } else {
+            // Default to user dashboard (handles null, undefined, "User", or any other value)
             router.replace('/(user)/dashboard');
           }
         } else {

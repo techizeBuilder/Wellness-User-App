@@ -279,9 +279,59 @@ class AuthService {
   async getAccountType(): Promise<string | null> {
     try {
       const accountType = await AsyncStorage.getItem('accountType');
+      console.log('🔍 getAccountType from AsyncStorage:', accountType);
       return accountType;
     } catch (error) {
       console.error('❌ Error retrieving account type:', error);
+      return null;
+    }
+  }
+
+  // Verify accountType against backend and correct if mismatch
+  async verifyAndCorrectAccountType(): Promise<string | null> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        return null;
+      }
+
+      // Fetch user profile to get actual userType from backend
+      const response = await this.makeRequest<{
+        success: boolean;
+        data: {
+          user: {
+            userType?: 'user' | 'expert';
+          };
+        };
+      }>(API_URLS.AUTH.GET_USER, {
+        method: 'GET',
+      });
+
+      if (!response.success || !response.data?.user) {
+        return null;
+      }
+
+      const backendUserType = response.data.user.userType || 'user';
+      const backendAccountType = backendUserType === 'expert' ? 'Expert' : 'User';
+      const storedAccountType = await this.getAccountType();
+
+      console.log('🔍 verifyAndCorrectAccountType:', {
+        backendUserType,
+        backendAccountType,
+        storedAccountType
+      });
+
+      // If there's a mismatch, correct it
+      if (storedAccountType !== backendAccountType) {
+        console.warn('⚠️ AccountType mismatch detected! Backend:', backendAccountType, 'Stored:', storedAccountType);
+        console.log('✅ Correcting stored accountType to:', backendAccountType);
+        await this.storeAccountType(backendAccountType);
+        return backendAccountType;
+      }
+
+      return storedAccountType;
+    } catch (error) {
+      console.error('❌ Error verifying account type:', error);
       return null;
     }
   }
@@ -483,7 +533,40 @@ class AuthService {
     // Only store token if account selection is not required
     if (response.success && !response.requiresAccountSelection && response.data.token) {
       await this.storeToken(response.data.token);
-      const accountType = response.data.accountType || 'User';
+      
+      // Determine account type with multiple fallbacks for safety
+      // CRITICAL: Default to 'User' for safety - only set to Expert if explicitly confirmed
+      let accountType = 'User'; // Default to User for safety
+      const responseAccountType = response.data?.accountType;
+      const responseUserType = response.data?.user?.userType || response.userType;
+      
+      console.log('🔍 authService - Determining accountType:', {
+        responseAccountType,
+        responseUserType,
+        fullData: response.data
+      });
+      
+      // Only trust accountType if it's explicitly "Expert" or "User"
+      if (responseAccountType === 'Expert') {
+        accountType = 'Expert';
+      } else if (responseAccountType === 'User') {
+        accountType = 'User';
+      } else if (responseUserType === 'expert') {
+        // Only trust userType if accountType is missing
+        console.warn('⚠️ authService: accountType missing, using userType "expert"');
+        accountType = 'Expert';
+      } else if (responseUserType === 'user') {
+        accountType = 'User';
+      }
+      // If neither is set or unclear, accountType remains 'User' (safe default)
+      
+      // Safety check: Never store "Expert" unless we're absolutely sure
+      if (accountType === 'Expert' && !responseAccountType && responseUserType !== 'expert') {
+        console.error('❌ authService: Safety check failed - preventing Expert storage');
+        accountType = 'User';
+      }
+      
+      console.log('✅ authService - Storing accountType:', accountType, 'from responseAccountType:', responseAccountType, 'responseUserType:', responseUserType);
       await this.storeAccountType(accountType);
     }
 
