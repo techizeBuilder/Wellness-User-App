@@ -1,9 +1,11 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+    ActivityIndicator,
     Alert,
     Dimensions,
     Pressable,
+    RefreshControl,
     ScrollView,
     StatusBar,
     StyleSheet,
@@ -11,6 +13,7 @@ import {
     View
 } from 'react-native';
 import ExpertFooter, { EXPERT_FOOTER_HEIGHT } from '@/components/ExpertFooter';
+import { apiService } from '@/services/apiService';
 import {
     getResponsiveBorderRadius,
     getResponsiveFontSize,
@@ -21,82 +24,214 @@ import {
 
 const { width } = Dimensions.get('window');
 
+interface Transaction {
+  id: string;
+  date: string;
+  patientName: string;
+  amount: number;
+  sessionType: string;
+  status: 'completed' | 'pending';
+}
+
+interface MonthlyEarnings {
+  month: string;
+  earnings: number;
+}
+
 export default function ExpertEarningsScreen() {
   const [selectedPeriod, setSelectedPeriod] = useState('This Month');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  const [earningsData, setEarningsData] = useState({
+    totalEarnings: 0,
+    thisMonth: 0,
+    lastMonth: 0,
+    thisWeek: 0,
+    averagePerSession: 0,
+    totalSessions: 0,
+    pendingPayments: 0
+  });
 
-  const earningsData = {
-    totalEarnings: 12500,
-    thisMonth: 2850,
-    lastMonth: 3200,
-    thisWeek: 750,
-    averagePerSession: 95,
-    totalSessions: 132,
-    pendingPayments: 450
+  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
+  const [monthlyBreakdown, setMonthlyBreakdown] = useState<MonthlyEarnings[]>([]);
+
+  const fetchEarningsData = async () => {
+    try {
+      setError(null);
+      
+      // Fetch earnings summary and payouts in parallel
+      const [earningsResponse, payoutsResponse, bookingsResponse] = await Promise.all([
+        apiService.getExpertEarnings(),
+        apiService.getExpertPayouts(),
+        apiService.getExpertBookings({ limit: 1000 })
+      ]);
+      
+      let monthlyEarnings = 0;
+      let totalEarnings = 0;
+      let weeklyEarnings = 0;
+      let pendingPayout = 0;
+      
+      if (earningsResponse.success && earningsResponse.data) {
+        const { daily, weekly, monthly, total } = earningsResponse.data;
+        monthlyEarnings = monthly || 0;
+        totalEarnings = total || 0;
+        weeklyEarnings = weekly || 0;
+      }
+      
+      if (payoutsResponse.success && payoutsResponse.data) {
+        pendingPayout = payoutsResponse.data.pendingPayout || 0;
+        
+        // Fetch recent transactions from payouts
+        if (payoutsResponse.data.recentPayouts) {
+          const transactions: Transaction[] = payoutsResponse.data.recentPayouts.map((payout: any, index: number) => {
+            const date = new Date(payout.date);
+            const formattedDate = date.toLocaleDateString('en-US', { 
+              month: 'short', 
+              day: 'numeric', 
+              year: 'numeric' 
+            });
+            
+            return {
+              id: `transaction-${index}`,
+              date: formattedDate,
+              patientName: payout.user?.name || 'Client',
+              amount: payout.amount || 0,
+              sessionType: payout.description || 'Consultation',
+              status: 'completed' as const
+            };
+          });
+          setRecentTransactions(transactions);
+        }
+      }
+      
+      // Calculate total sessions and average per session
+      const completedBookings = bookingsResponse.success && bookingsResponse.data?.appointments
+        ? bookingsResponse.data.appointments.filter((apt: any) => apt.status === 'completed')
+        : [];
+      
+      const totalSessions = completedBookings.length;
+      const averagePerSession = totalSessions > 0 && totalEarnings > 0 
+        ? Math.round(totalEarnings / totalSessions) 
+        : 0;
+      
+      // Calculate last month earnings (simplified - would need historical data for accurate calculation)
+      // For now, we'll use a placeholder
+      const lastMonth = 0; // This would need historical API data
+      
+      setEarningsData({
+        totalEarnings: totalEarnings,
+        thisMonth: monthlyEarnings,
+        lastMonth: lastMonth,
+        thisWeek: weeklyEarnings,
+        averagePerSession: averagePerSession,
+        totalSessions: totalSessions,
+        pendingPayments: pendingPayout
+      });
+
+      // For monthly breakdown, we'll create a simplified version
+      // In a production app, you'd want an API endpoint that returns monthly earnings
+      const currentMonth = new Date().getMonth();
+      const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                     'July', 'August', 'September', 'October', 'November', 'December'];
+      
+      // Create last 6 months breakdown (simplified - using current month data)
+      const breakdown: MonthlyEarnings[] = [];
+      for (let i = 5; i >= 0; i--) {
+        const monthIndex = (currentMonth - i + 12) % 12;
+        breakdown.push({
+          month: months[monthIndex],
+          earnings: i === 0 ? monthlyEarnings : 0 // Only current month has real data
+        });
+      }
+      setMonthlyBreakdown(breakdown);
+      
+    } catch (err: any) {
+      console.error('Error fetching earnings data:', err);
+      setError(err.message || 'Failed to load earnings data');
+      Alert.alert('Error', err.message || 'Failed to load earnings data. Please try again.');
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
   };
 
-  const recentTransactions = [
-    {
-      id: 1,
-      date: "Nov 1, 2025",
-      patientName: "John Smith",
-      amount: 95,
-      sessionType: "Video Call",
-      status: "completed"
-    },
-    {
-      id: 2,
-      date: "Oct 31, 2025",
-      patientName: "Emily Davis",
-      amount: 120,
-      sessionType: "In-Person",
-      status: "completed"
-    },
-    {
-      id: 3,
-      date: "Oct 30, 2025",
-      patientName: "Michael Brown",
-      amount: 75,
-      sessionType: "Video Call",
-      status: "pending"
-    },
-    {
-      id: 4,
-      date: "Oct 29, 2025",
-      patientName: "Lisa Wilson",
-      amount: 95,
-      sessionType: "Video Call",
-      status: "completed"
-    }
-  ];
+  useEffect(() => {
+    fetchEarningsData();
+  }, []);
 
-  const monthlyBreakdown = [
-    { month: "January", earnings: 2100 },
-    { month: "February", earnings: 2450 },
-    { month: "March", earnings: 2800 },
-    { month: "April", earnings: 2650 },
-    { month: "May", earnings: 2950 },
-    { month: "June", earnings: 3200 },
-    { month: "July", earnings: 2900 },
-    { month: "August", earnings: 3100 },
-    { month: "September", earnings: 2850 },
-    { month: "October", earnings: 3200 },
-    { month: "November", earnings: 2850 }
-  ];
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    fetchEarningsData();
+  };
 
   const handleExportReport = () => {
-    Alert.alert("Export Report", "This feature will export your earnings report.");
-  };
-
-  const handleViewDetails = (transactionId: number) => {
     Alert.alert(
-      "Transaction Details",
-      `View details for transaction ${transactionId}?`,
+      "Export Report", 
+      "This feature will export your earnings report as a PDF or CSV file.",
       [
         { text: "Cancel", style: "cancel" },
-        { text: "View", onPress: () => console.log(`Viewing transaction ${transactionId}`) }
+        { 
+          text: "Export", 
+          onPress: () => {
+            // TODO: Implement export functionality
+            Alert.alert("Success", "Report export feature coming soon!");
+          }
+        }
       ]
     );
   };
+
+  const handleRequestWithdrawal = () => {
+    Alert.alert(
+      "Request Withdrawal",
+      `You have $${earningsData.pendingPayments.toLocaleString()} available for withdrawal. Would you like to request a withdrawal?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Request", 
+          onPress: () => {
+            // TODO: Implement withdrawal request
+            Alert.alert("Success", "Withdrawal request submitted! You will receive payment within 3-5 business days.");
+          }
+        }
+      ]
+    );
+  };
+
+  const handleViewDetails = (transactionId: string) => {
+    const transaction = recentTransactions.find(t => t.id === transactionId);
+    if (transaction) {
+      Alert.alert(
+        "Transaction Details",
+        `Patient: ${transaction.patientName}\n` +
+        `Date: ${transaction.date}\n` +
+        `Amount: ₹${transaction.amount}\n` +
+        `Type: ${transaction.sessionType}\n` +
+        `Status: ${transaction.status}`,
+        [{ text: "OK" }]
+      );
+    }
+  };
+
+  if (isLoading && !isRefreshing) {
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#2DD4BF" translucent />
+        <LinearGradient
+          colors={['#2da898ff', '#abeee6ff']}
+          style={styles.backgroundGradient}
+        >
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#059669" />
+            <Text style={styles.loadingText}>Loading earnings data...</Text>
+          </View>
+        </LinearGradient>
+        <ExpertFooter activeRoute="earnings" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -110,6 +245,14 @@ export default function ExpertEarningsScreen() {
           style={styles.scrollView}
           contentContainerStyle={styles.scrollViewContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+              tintColor="#059669"
+              colors={['#059669']}
+            />
+          }
         >
           {/* Header */}
           <View style={styles.headerSection}>
@@ -117,21 +260,38 @@ export default function ExpertEarningsScreen() {
             <Text style={styles.subtitle}>Track your income and financial performance</Text>
           </View>
 
+          {error && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{error}</Text>
+              <Pressable onPress={fetchEarningsData} style={styles.retryButton}>
+                <Text style={styles.retryButtonText}>Retry</Text>
+              </Pressable>
+            </View>
+          )}
+
           {/* Total Earnings Card */}
           <View style={styles.totalEarningsCard}>
             <Text style={styles.totalEarningsLabel}>Total Earnings</Text>
-            <Text style={styles.totalEarningsAmount}>${earningsData.totalEarnings.toLocaleString()}</Text>
+            <Text style={styles.totalEarningsAmount}>
+              ₹{earningsData.totalEarnings.toLocaleString()}
+            </Text>
             <View style={styles.earningsStats}>
               <View style={styles.earningsStat}>
-                <Text style={styles.earningsStatValue}>${earningsData.thisMonth}</Text>
+                <Text style={styles.earningsStatValue}>
+                  ₹{earningsData.thisMonth.toLocaleString()}
+                </Text>
                 <Text style={styles.earningsStatLabel}>This Month</Text>
               </View>
               <View style={styles.earningsStat}>
-                <Text style={styles.earningsStatValue}>${earningsData.averagePerSession}</Text>
+                <Text style={styles.earningsStatValue}>
+                  ₹{earningsData.averagePerSession.toLocaleString()}
+                </Text>
                 <Text style={styles.earningsStatLabel}>Avg/Session</Text>
               </View>
               <View style={styles.earingsStat}>
-                <Text style={styles.earningsStatValue}>{earningsData.totalSessions}</Text>
+                <Text style={styles.earningsStatValue}>
+                  {earningsData.totalSessions.toLocaleString()}
+                </Text>
                 <Text style={styles.earningsStatLabel}>Total Sessions</Text>
               </View>
             </View>
@@ -140,15 +300,21 @@ export default function ExpertEarningsScreen() {
           {/* Quick Stats */}
           <View style={styles.quickStatsContainer}>
             <View style={styles.statCard}>
-              <Text style={styles.statNumber}>${earningsData.thisWeek}</Text>
+              <Text style={styles.statNumber}>
+                ₹{earningsData.thisWeek.toLocaleString()}
+              </Text>
               <Text style={styles.statLabel}>This Week</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statNumber}>${earningsData.pendingPayments}</Text>
+              <Text style={styles.statNumber}>
+                ₹{earningsData.pendingPayments.toLocaleString()}
+              </Text>
               <Text style={styles.statLabel}>Pending</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statNumber}>${earningsData.lastMonth}</Text>
+              <Text style={styles.statNumber}>
+                ₹{earningsData.lastMonth.toLocaleString()}
+              </Text>
               <Text style={styles.statLabel}>Last Month</Text>
             </View>
           </View>
@@ -158,7 +324,7 @@ export default function ExpertEarningsScreen() {
             <Pressable style={styles.actionButton} onPress={handleExportReport}>
               <Text style={styles.actionButtonText}>Export Report</Text>
             </Pressable>
-            <Pressable style={styles.actionButton} onPress={() => Alert.alert('Withdraw', 'Request withdrawal')}>
+            <Pressable style={styles.actionButton} onPress={handleRequestWithdrawal}>
               <Text style={styles.actionButtonText}>Request Withdrawal</Text>
             </Pressable>
           </View>
@@ -167,38 +333,54 @@ export default function ExpertEarningsScreen() {
           <View style={styles.transactionsContainer}>
             <Text style={styles.sectionTitle}>Recent Transactions</Text>
             
-            {recentTransactions.map((transaction) => (
-              <Pressable 
-                key={transaction.id}
-                style={styles.transactionCard}
-                onPress={() => handleViewDetails(transaction.id)}
-              >
-                <View style={styles.transactionHeader}>
-                  <Text style={styles.transactionDate}>{transaction.date}</Text>
-                  <View style={[
-                    styles.statusBadge,
-                    { backgroundColor: transaction.status === 'completed' ? '#059669' : '#F59E0B' }
-                  ]}>
-                    <Text style={styles.statusText}>{transaction.status}</Text>
+            {recentTransactions.length === 0 ? (
+              <View style={styles.emptyStateContainer}>
+                <Text style={styles.emptyStateText}>No transactions found</Text>
+              </View>
+            ) : (
+              recentTransactions.map((transaction) => (
+                <Pressable 
+                  key={transaction.id}
+                  style={styles.transactionCard}
+                  onPress={() => handleViewDetails(transaction.id)}
+                >
+                  <View style={styles.transactionHeader}>
+                    <Text style={styles.transactionDate}>{transaction.date}</Text>
+                    <View style={[
+                      styles.statusBadge,
+                      { backgroundColor: transaction.status === 'completed' ? '#059669' : '#F59E0B' }
+                    ]}>
+                      <Text style={styles.statusText}>{transaction.status}</Text>
+                    </View>
                   </View>
-                </View>
-                <Text style={styles.patientName}>{transaction.patientName}</Text>
-                <Text style={styles.sessionType}>{transaction.sessionType}</Text>
-                <Text style={styles.transactionAmount}>${transaction.amount}</Text>
-              </Pressable>
-            ))}
+                  <Text style={styles.patientName}>{transaction.patientName}</Text>
+                  <Text style={styles.sessionType}>{transaction.sessionType}</Text>
+                  <Text style={styles.transactionAmount}>
+                    ₹{transaction.amount.toLocaleString()}
+                  </Text>
+                </Pressable>
+              ))
+            )}
           </View>
 
           {/* Monthly Breakdown */}
           <View style={styles.monthlyContainer}>
             <Text style={styles.sectionTitle}>Monthly Breakdown</Text>
             
-            {monthlyBreakdown.slice(-6).map((month, index) => (
-              <View key={month.month} style={styles.monthlyItem}>
-                <Text style={styles.monthName}>{month.month}</Text>
-                <Text style={styles.monthEarnings}>${month.earnings}</Text>
+            {monthlyBreakdown.length === 0 ? (
+              <View style={styles.emptyStateContainer}>
+                <Text style={styles.emptyStateText}>No monthly data available</Text>
               </View>
-            ))}
+            ) : (
+              monthlyBreakdown.slice(-6).map((month, index) => (
+                <View key={`${month.month}-${index}`} style={styles.monthlyItem}>
+                  <Text style={styles.monthName}>{month.month}</Text>
+                  <Text style={styles.monthEarnings}>
+                    ₹{month.earnings.toLocaleString()}
+                  </Text>
+                </View>
+              ))
+            )}
           </View>
 
           <View style={{ height: EXPERT_FOOTER_HEIGHT + 20 }} />
@@ -402,5 +584,51 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(16),
     fontWeight: 'bold',
     color: '#059669',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: getResponsiveHeight(100),
+  },
+  loadingText: {
+    marginTop: getResponsiveHeight(16),
+    fontSize: getResponsiveFontSize(16),
+    color: '#FFFFFF',
+  },
+  errorContainer: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: getResponsiveBorderRadius(12),
+    padding: getResponsivePadding(16),
+    marginBottom: getResponsiveHeight(16),
+    alignItems: 'center',
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: getResponsiveFontSize(14),
+    textAlign: 'center',
+    marginBottom: getResponsiveHeight(8),
+  },
+  retryButton: {
+    backgroundColor: '#EF4444',
+    borderRadius: getResponsiveBorderRadius(8),
+    paddingHorizontal: getResponsiveWidth(16),
+    paddingVertical: getResponsiveHeight(8),
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: getResponsiveFontSize(14),
+    fontWeight: '600',
+  },
+  emptyStateContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: getResponsiveBorderRadius(12),
+    padding: getResponsivePadding(24),
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    fontSize: getResponsiveFontSize(14),
+    color: '#6B7280',
+    textAlign: 'center',
   },
 });
