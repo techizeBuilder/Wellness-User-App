@@ -327,12 +327,12 @@ export default function SessionsScreen() {
     const { startDateTime, endDateTime } = getAppointmentDateTimes(appointment);
     const now = new Date();
     const joinOpensAt = new Date(startDateTime.getTime() - 5 * 60 * 1000);
-    const joinClosesAt = new Date(endDateTime.getTime() + 15 * 60 * 1000);
     
     if (now < joinOpensAt) {
       return 'too-early';
     }
-    if (now > joinClosesAt) {
+    // Session has ended if current time is after the end time
+    if (now > endDateTime) {
       return 'ended';
     }
     return 'available';
@@ -618,17 +618,10 @@ export default function SessionsScreen() {
           <View style={styles.actionButtons}>
             {isUpcoming && (
               <>
-                {isRealtimeConsultation(appointment.consultationMethod) && appointment.status === 'confirmed' && (
+                {isRealtimeConsultation(appointment.consultationMethod) && appointment.status === 'confirmed' && getJoinStatus(appointment) !== 'ended' && (
                   <View style={styles.joinSection}>
                     {(() => {
                       const joinStatus = getJoinStatus(appointment);
-                      if (joinStatus === 'ended') {
-                        return (
-                          <View style={[styles.joinButton, styles.joinButtonDisabled]}>
-                            <Text style={styles.joinButtonText}>Session Ended</Text>
-                          </View>
-                        );
-                      }
                       return (
                         <>
                           <Pressable 

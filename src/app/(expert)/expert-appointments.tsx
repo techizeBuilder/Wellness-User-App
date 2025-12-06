@@ -599,12 +599,12 @@ export default function ExpertAppointmentsScreen() {
     const { startDateTime, endDateTime } = getAppointmentDateTimes(appointment);
     const now = new Date();
     const joinOpensAt = new Date(startDateTime.getTime() - 2 * 60 * 1000); // 2 minutes before
-    const joinClosesAt = new Date(endDateTime.getTime() + 15 * 60 * 1000);
 
     if (now < joinOpensAt) {
       return "too-early";
     }
-    if (now > joinClosesAt) {
+    // Session has ended if current time is after the end time
+    if (now > endDateTime) {
       return "ended";
     }
     return "available";
@@ -614,8 +614,10 @@ export default function ExpertAppointmentsScreen() {
     if (appointment.status !== "confirmed") {
       return false;
     }
-    const { startDateTime } = getAppointmentDateTimes(appointment);
-    return new Date() >= startDateTime;
+    const { startDateTime, endDateTime } = getAppointmentDateTimes(appointment);
+    const now = new Date();
+    // Can mark as completed only after the session end time has passed
+    return now > endDateTime;
   };
 
   const handleStatusUpdate = async (
@@ -793,12 +795,12 @@ export default function ExpertAppointmentsScreen() {
 
     const now = new Date();
     const joinOpensAt = new Date(startDateTime.getTime() - 2 * 60 * 1000); // 2 minutes before
-    const joinClosesAt = new Date(endDateTime.getTime() + 15 * 60 * 1000);
 
     if (now < joinOpensAt) {
       return "too-early";
     }
-    if (now > joinClosesAt) {
+    // Session has ended if current time is after the end time
+    if (now > endDateTime) {
       return "ended";
     }
     return "available";
@@ -1443,11 +1445,11 @@ export default function ExpertAppointmentsScreen() {
                     {(() => {
                       const canComplete = canMarkSessionCompleted(appointment);
                       const joinStatus = getJoinStatus(appointment);
+                      // Show join button if session hasn't ended (regardless of canComplete status)
                       const showJoin =
                         isRealtimeConsultation(
                           appointment.consultationMethod
                         ) &&
-                        !canComplete &&
                         joinStatus !== "ended";
 
                       return (
