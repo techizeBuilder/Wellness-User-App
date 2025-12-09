@@ -314,7 +314,7 @@ export default function SessionsScreen() {
     }
     const { startDateTime, endDateTime } = getAppointmentDateTimes(appointment);
     const now = new Date();
-    const joinOpensAt = new Date(startDateTime.getTime() - 5 * 60 * 1000);
+    const joinOpensAt = new Date(startDateTime.getTime() - 2 * 60 * 1000); // 2 minutes before
     const joinClosesAt = new Date(endDateTime.getTime() + 15 * 60 * 1000);
     return now >= joinOpensAt && now <= joinClosesAt;
   };
@@ -326,7 +326,7 @@ export default function SessionsScreen() {
     }
     const { startDateTime, endDateTime } = getAppointmentDateTimes(appointment);
     const now = new Date();
-    const joinOpensAt = new Date(startDateTime.getTime() - 5 * 60 * 1000);
+    const joinOpensAt = new Date(startDateTime.getTime() - 2 * 60 * 1000); // 2 minutes before
     
     if (now < joinOpensAt) {
       return 'too-early';
@@ -641,7 +641,7 @@ export default function SessionsScreen() {
                             )}
                           </Pressable>
                           {joinStatus === 'too-early' && (
-                            <Text style={styles.joinHint}>Join link unlocks 5 min before start</Text>
+                            <Text style={styles.joinHint}>Join link unlocks 2 min before start</Text>
                           )}
                         </>
                       );
