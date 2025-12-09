@@ -565,11 +565,21 @@ export default function ExpertAppointmentsScreen() {
     const [startHour, startMin] = appointment.startTime.split(":").map(Number);
     const [endHour, endMin] = appointment.endTime.split(":").map(Number);
 
-    const startDateTime = new Date(sessionDate);
-    startDateTime.setHours(startHour, startMin, 0, 0);
-
-    const endDateTime = new Date(sessionDate);
-    endDateTime.setHours(endHour, endMin, 0, 0);
+    // IST offset: UTC+5:30 = 5.5 hours = 330 minutes
+    const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+    
+    // Extract date components (interpret in IST)
+    const year = sessionDate.getUTCFullYear();
+    const month = sessionDate.getUTCMonth();
+    const day = sessionDate.getUTCDate();
+    
+    // Create date assuming times are in IST, then convert to UTC for comparison
+    const startDateTimeIST = new Date(Date.UTC(year, month, day, startHour, startMin, 0, 0));
+    const endDateTimeIST = new Date(Date.UTC(year, month, day, endHour, endMin, 0, 0));
+    
+    // Convert IST to UTC by subtracting the offset
+    const startDateTime = new Date(startDateTimeIST.getTime() - IST_OFFSET_MS);
+    const endDateTime = new Date(endDateTimeIST.getTime() - IST_OFFSET_MS);
 
     return { startDateTime, endDateTime };
   };
@@ -787,11 +797,21 @@ export default function ExpertAppointmentsScreen() {
     const [startHour, startMin] = groupSession.startTime.split(":").map(Number);
     const [endHour, endMin] = groupSession.endTime.split(":").map(Number);
 
-    const startDateTime = new Date(sessionDate);
-    startDateTime.setHours(startHour, startMin, 0, 0);
-
-    const endDateTime = new Date(sessionDate);
-    endDateTime.setHours(endHour, endMin, 0, 0);
+    // IST offset: UTC+5:30 = 5.5 hours = 330 minutes
+    const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+    
+    // Extract date components (interpret in IST)
+    const year = sessionDate.getUTCFullYear();
+    const month = sessionDate.getUTCMonth();
+    const day = sessionDate.getUTCDate();
+    
+    // Create date assuming times are in IST, then convert to UTC for comparison
+    const startDateTimeIST = new Date(Date.UTC(year, month, day, startHour, startMin, 0, 0));
+    const endDateTimeIST = new Date(Date.UTC(year, month, day, endHour, endMin, 0, 0));
+    
+    // Convert IST to UTC by subtracting the offset
+    const startDateTime = new Date(startDateTimeIST.getTime() - IST_OFFSET_MS);
+    const endDateTime = new Date(endDateTimeIST.getTime() - IST_OFFSET_MS);
 
     const now = new Date();
     const joinOpensAt = new Date(startDateTime.getTime() - 2 * 60 * 1000); // 2 minutes before
