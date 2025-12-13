@@ -820,10 +820,14 @@ export default function SessionsScreen() {
           ) : (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateIcon}>📅</Text>
-              <Text style={styles.emptyStateTitle}>No {selectedTab} sessions</Text>
+              <Text style={styles.emptyStateTitle}>
+                {selectedTab === 'upcoming' 
+                  ? "You haven't booked any wellness session yet." 
+                  : `No ${selectedTab} sessions found.`}
+              </Text>
               <Text style={styles.emptyStateText}>
                 {selectedTab === 'upcoming' 
-                  ? 'Book a session with an expert to get started!' 
+                  ? 'Your journey toward better health starts here.' 
                   : `No ${selectedTab} sessions found.`}
               </Text>
               {selectedTab === 'upcoming' && (

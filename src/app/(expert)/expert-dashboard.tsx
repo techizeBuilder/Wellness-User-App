@@ -404,7 +404,7 @@ export default function ExpertDashboardScreen() {
                   <View key={appointment.id} style={styles.tableRow}>
                     <Text style={styles.tableCell}>{appointment.time}</Text>
                     <Text style={styles.tableCell}>{appointment.client}</Text>
-                    <Text style={styles.tableCell}>{appointment.service}</Text>
+                    <Text style={[styles.tableCell, styles.tableCellService]}>{appointment.service}</Text>
                   </View>
                 ))}
               </View>
@@ -513,18 +513,27 @@ export default function ExpertDashboardScreen() {
                 </Text>
                 <View style={styles.payoutInfo}>
                   {payouts?.lastPayout ? (
-                    <Text style={styles.payoutText}>
-                      🔸 Last Payout: ₹{payouts.lastPayout.amount} (
-                      {formatDate(payouts.lastPayout.date)})
-                    </Text>
+                    <View style={styles.payoutRow}>
+                      <Text style={styles.payoutIcon}>💸</Text>
+                      <Text style={styles.payoutText}>
+                        Last Payout: ₹{payouts.lastPayout.amount} (
+                        {formatDate(payouts.lastPayout.date)})
+                      </Text>
+                    </View>
                   ) : (
-                    <Text style={styles.payoutText}>
-                      🔸 Last Payout: No payouts yet
-                    </Text>
+                    <View style={styles.payoutRow}>
+                      <Text style={styles.payoutIcon}>💸</Text>
+                      <Text style={styles.payoutText}>
+                        Last Payout: No payouts yet
+                      </Text>
+                    </View>
                   )}
-                  <Text style={styles.payoutText}>
-                    🔸 Next Payout Date: {payouts ? formatDate(payouts.nextPayoutDate) : 'N/A'}
-                  </Text>
+                  <View style={styles.payoutRow}>
+                    <Text style={styles.payoutIcon}>📅</Text>
+                    <Text style={styles.payoutText}>
+                      Next Payout Date: {payouts ? formatDate(payouts.nextPayoutDate) : 'N/A'}
+                    </Text>
+                  </View>
                 </View>
               </View>
             )}
@@ -794,7 +803,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   expertName: {
-    fontSize: getResponsiveFontSize(18),
+    fontSize: getResponsiveFontSize(20),
     fontWeight: "bold",
     color: "#FFFFFF",
     marginBottom: getResponsiveHeight(2),
@@ -805,11 +814,12 @@ const styles = StyleSheet.create({
   },
   profileButton: {
     backgroundColor: "rgba(255, 255, 255, 0.2)",
-    paddingHorizontal: getResponsiveWidth(16),
+    paddingHorizontal: getResponsiveWidth(18),
     paddingVertical: getResponsiveHeight(8),
     borderRadius: getResponsiveBorderRadius(20),
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.3)",
+    marginLeft: getResponsiveWidth(8),
   },
   profileButtonText: {
     color: "#FFFFFF",
@@ -853,6 +863,10 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(13),
     color: "#1F2937",
     textAlign: "center",
+  },
+  tableCellService: {
+    color: "#6B7280",
+    fontWeight: "500",
   },
   quickActionsContainer: {
     marginBottom: getResponsiveHeight(24),
@@ -905,10 +919,19 @@ const styles = StyleSheet.create({
   payoutInfo: {
     marginTop: getResponsiveHeight(12),
   },
+  payoutRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: getResponsiveHeight(6),
+  },
+  payoutIcon: {
+    fontSize: getResponsiveFontSize(16),
+    marginRight: getResponsiveWidth(8),
+  },
   payoutText: {
     fontSize: getResponsiveFontSize(13),
     color: "#4B5563",
-    marginBottom: getResponsiveHeight(6),
+    flex: 1,
   },
   notificationsContainer: {
     marginBottom: getResponsiveHeight(24),

@@ -313,6 +313,10 @@ export default function ManageAvailabilityScreen() {
 
           {/* Instructions */}
           <View style={styles.instructionsCard}>
+            <View style={styles.instructionsHeader}>
+              <Text style={styles.calendarIcon}>📅</Text>
+              <Text style={styles.instructionsTitle}>Weekly Availability</Text>
+            </View>
             <Text style={styles.instructionsText}>
               Set your weekly availability. Toggle each day on/off and add time
               ranges when open. Tap on the time fields to select your
@@ -329,7 +333,10 @@ export default function ManageAvailabilityScreen() {
             <>
               {/* Days List */}
               {availability.map((day, dayIndex) => (
-                <View key={day.day} style={styles.dayCard}>
+                <View key={day.day} style={[
+                  styles.dayCard,
+                  !day.isOpen && styles.dayCardClosed
+                ]}>
                   <View style={styles.dayHeader}>
                     <View style={styles.dayHeaderLeft}>
                       <View
@@ -347,7 +354,10 @@ export default function ManageAvailabilityScreen() {
                           {day.dayName}
                         </Text>
                       </View>
-                      <Text style={styles.dayName}>{day.day}</Text>
+                      <Text style={[
+                        styles.dayName,
+                        !day.isOpen && styles.dayNameClosed
+                      ]}>{day.day}</Text>
                     </View>
                     <Switch
                       value={day.isOpen}
@@ -372,11 +382,12 @@ export default function ManageAvailabilityScreen() {
                               }}
                               android_ripple={{ color: "#E5E7EB" }}
                             >
+                              <Text style={styles.timePickerIconLeft}>🕐</Text>
                               <Text style={styles.timePickerButtonText}>
                                 {formatTimeForDisplay(range.startTime) ||
                                   "Select time"}
                               </Text>
-                              <Text style={styles.timePickerIcon}>🕐</Text>
+                              <Text style={styles.timePickerIcon}>→</Text>
                             </Pressable>
                           </View>
 
@@ -390,11 +401,12 @@ export default function ManageAvailabilityScreen() {
                               }}
                               android_ripple={{ color: "#E5E7EB" }}
                             >
+                              <Text style={styles.timePickerIconLeft}>🕐</Text>
                               <Text style={styles.timePickerButtonText}>
                                 {formatTimeForDisplay(range.endTime) ||
                                   "Select time"}
                               </Text>
-                              <Text style={styles.timePickerIcon}>🕐</Text>
+                              <Text style={styles.timePickerIcon}>→</Text>
                             </Pressable>
                           </View>
 
@@ -415,8 +427,9 @@ export default function ManageAvailabilityScreen() {
                         style={styles.addTimeRangeButton}
                         onPress={() => addTimeRange(dayIndex)}
                       >
+                        <Text style={styles.addTimeRangeButtonIcon}>+</Text>
                         <Text style={styles.addTimeRangeButtonText}>
-                          + Add Time Range
+                          Add Time Range
                         </Text>
                       </Pressable>
                     </View>
@@ -569,6 +582,20 @@ const styles = StyleSheet.create({
     padding: getResponsivePadding(16),
     marginBottom: getResponsiveHeight(20),
   },
+  instructionsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: getResponsiveHeight(8),
+  },
+  calendarIcon: {
+    fontSize: getResponsiveFontSize(20),
+    marginRight: getResponsiveWidth(8),
+  },
+  instructionsTitle: {
+    fontSize: getResponsiveFontSize(16),
+    fontWeight: "700",
+    color: "#1F2937",
+  },
   instructionsText: {
     fontSize: getResponsiveFontSize(14),
     color: "#4B5563",
@@ -576,14 +603,20 @@ const styles = StyleSheet.create({
   },
   dayCard: {
     backgroundColor: "rgba(255, 255, 255, 0.95)",
-    borderRadius: getResponsiveBorderRadius(12),
-    padding: getResponsivePadding(16),
+    borderRadius: getResponsiveBorderRadius(16),
+    padding: getResponsivePadding(18),
     marginBottom: getResponsiveHeight(16),
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  dayCardClosed: {
+    backgroundColor: "#F9FAFB",
+    borderColor: "#E5E7EB",
   },
   dayHeader: {
     flexDirection: "row",
@@ -620,6 +653,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#1F2937",
   },
+  dayNameClosed: {
+    color: "#9CA3AF",
+  },
   closedText: {
     fontSize: getResponsiveFontSize(14),
     color: "#9CA3AF",
@@ -634,10 +670,11 @@ const styles = StyleSheet.create({
     borderTopColor: "#E5E7EB",
   },
   timeRangesLabel: {
-    fontSize: getResponsiveFontSize(14),
-    fontWeight: "600",
-    color: "#374151",
+    fontSize: getResponsiveFontSize(15),
+    fontWeight: "700",
+    color: "#1F2937",
     marginBottom: getResponsiveHeight(12),
+    letterSpacing: 0.3,
   },
   timeRangeRow: {
     flexDirection: "row",
@@ -667,9 +704,17 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(14),
     color: "#1F2937",
     fontWeight: "500",
+    flex: 1,
+    textAlign: "center",
+  },
+  timePickerIconLeft: {
+    fontSize: getResponsiveFontSize(16),
+    marginRight: getResponsiveWidth(8),
   },
   timePickerIcon: {
-    fontSize: getResponsiveFontSize(16),
+    fontSize: getResponsiveFontSize(18),
+    color: "#6B7280",
+    marginLeft: getResponsiveWidth(8),
   },
   modalOverlay: {
     flex: 1,
@@ -742,18 +787,31 @@ const styles = StyleSheet.create({
   },
   addTimeRangeButton: {
     backgroundColor: "#F0FDF4",
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: "#10B981",
-    borderStyle: "dashed",
-    borderRadius: getResponsiveBorderRadius(8),
-    padding: getResponsivePadding(12),
+    borderStyle: "solid",
+    borderRadius: getResponsiveBorderRadius(10),
+    padding: getResponsivePadding(14),
     alignItems: "center",
     marginTop: getResponsiveHeight(8),
+    flexDirection: "row",
+    justifyContent: "center",
+    shadowColor: "#10B981",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  addTimeRangeButtonIcon: {
+    fontSize: getResponsiveFontSize(18),
+    color: "#10B981",
+    fontWeight: "bold",
+    marginRight: getResponsiveWidth(6),
   },
   addTimeRangeButtonText: {
     fontSize: getResponsiveFontSize(14),
     color: "#10B981",
-    fontWeight: "600",
+    fontWeight: "700",
   },
   saveButton: {
     backgroundColor: "#10B981",

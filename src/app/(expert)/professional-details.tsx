@@ -471,6 +471,7 @@ export default function ProfessionalDetailsScreen() {
 
             {/* Session Types Section */}
             <View style={styles.card}>
+              <View style={styles.sectionDividerTop} />
               <Text style={styles.label}>Session Types</Text>
               <Text style={styles.labelHint}>
                 Select the types of sessions you offer (you can select multiple)
@@ -500,6 +501,9 @@ export default function ProfessionalDetailsScreen() {
                             <Text style={styles.checkmark}>✓</Text>
                           )}
                         </View>
+                        <Text style={styles.sessionTypeIcon}>
+                          {type === "video" ? "📹" : "🎤"}
+                        </Text>
                         <Text
                           style={[
                             styles.sessionTypeOptionText,
@@ -517,6 +521,7 @@ export default function ProfessionalDetailsScreen() {
 
             {/* Session Format Section */}
             <View style={styles.card}>
+              <View style={styles.sectionDividerTop} />
               <Text style={styles.label}>Session Format</Text>
               <Text style={styles.labelHint}>
                 Select whether you offer one-on-one sessions, group sessions, or both
@@ -547,6 +552,9 @@ export default function ProfessionalDetailsScreen() {
                             <Text style={styles.checkmark}>✓</Text>
                           )}
                         </View>
+                        <Text style={styles.sessionTypeIcon}>
+                          {format === "one-on-one" ? "👤" : "👥"}
+                        </Text>
                         <Text
                           style={[
                             styles.sessionTypeOptionText,
@@ -574,7 +582,7 @@ export default function ProfessionalDetailsScreen() {
                   style={styles.numberInput}
                   value={perSessionCost}
                   onChangeText={handlePerSessionCostChange}
-                  placeholder="0"
+                  placeholder="10000"
                   placeholderTextColor="#9CA3AF"
                   keyboardType="decimal-pad"
                 />
@@ -582,20 +590,23 @@ export default function ProfessionalDetailsScreen() {
               <Text style={styles.inputHint}>
                 Minimum: ₹0 | Maximum: ₹1,00,000
               </Text>
+              <Text style={styles.microText}>
+                Most experts charge ₹800 – ₹2,000 per session
+              </Text>
             </View>
 
             {/* Save Button */}
-            <Pressable
-              style={[styles.saveButton, loading && styles.saveButtonDisabled]}
-              onPress={handleSave}
-              disabled={loading}
-            >
-              <Text style={styles.saveButtonText}>
-                {loading ? "Saving..." : "Save Changes"}
-              </Text>
-            </Pressable>
+              <Pressable
+                style={[styles.saveButton, loading && styles.saveButtonDisabled]}
+                onPress={handleSave}
+                disabled={loading}
+              >
+                <Text style={styles.saveButtonText}>
+                  {loading ? "Saving..." : "Save Changes"}
+                </Text>
+              </Pressable>
 
-            {/* <View style={{ height: EXPERT_FOOTER_HEIGHT + 100 }} /> */}
+            <View style={{ height: getResponsiveHeight(100) }} />
           </ScrollView>
         </LinearGradient>
       </KeyboardAvoidingView>
@@ -722,18 +733,41 @@ const styles = StyleSheet.create({
     color: "#6B7280",
     marginTop: getResponsiveHeight(8),
   },
+  microText: {
+    fontSize: getResponsiveFontSize(11),
+    color: "#9CA3AF",
+    marginTop: getResponsiveHeight(6),
+    fontStyle: "italic",
+  },
+  sectionDividerTop: {
+    height: getResponsiveHeight(1),
+    backgroundColor: "#E5E7EB",
+    marginBottom: getResponsiveHeight(16),
+    marginTop: getResponsiveHeight(-4),
+  },
+  saveButtonContainer: {
+    position: "sticky",
+    bottom: 0,
+    backgroundColor: "rgba(255, 255, 255, 0.98)",
+    paddingTop: getResponsiveHeight(16),
+    paddingBottom: getResponsiveHeight(20),
+    marginTop: getResponsiveHeight(8),
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
+  },
   saveButton: {
     backgroundColor: "#059669",
     borderRadius: getResponsiveBorderRadius(12),
-    padding: getResponsivePadding(16),
+    padding: getResponsivePadding(18),
     alignItems: "center",
-    marginTop: getResponsiveHeight(8),
-    marginBottom: getResponsiveHeight(20),
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 6,
   },
   saveButtonDisabled: {
     backgroundColor: "#9CA3AF",
@@ -752,16 +786,32 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#D1D5DB",
     borderRadius: getResponsiveBorderRadius(12),
-    padding: getResponsivePadding(16),
+    padding: getResponsivePadding(18),
     backgroundColor: "#FFFFFF",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   sessionTypeOptionSelected: {
     borderColor: "#059669",
     backgroundColor: "#F0FDF4",
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
   checkboxContainer: {
     flexDirection: "row",
     alignItems: "center",
+    width: "100%",
+  },
+  sessionTypeIcon: {
+    fontSize: getResponsiveFontSize(20),
+    marginLeft: getResponsiveWidth(8),
+    marginRight: getResponsiveWidth(8),
   },
   checkbox: {
     width: getResponsiveWidth(24),

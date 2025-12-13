@@ -186,7 +186,7 @@ export default function ExpertEarningsScreen() {
   const handleRequestWithdrawal = () => {
     Alert.alert(
       "Request Withdrawal",
-      `You have $${earningsData.pendingPayments.toLocaleString()} available for withdrawal. Would you like to request a withdrawal?`,
+      `You have ₹${earningsData.pendingPayments.toLocaleString()} available for withdrawal. Would you like to request a withdrawal?`,
       [
         { text: "Cancel", style: "cancel" },
         { 
@@ -435,14 +435,15 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   totalEarningsLabel: {
-    fontSize: getResponsiveFontSize(16),
+    fontSize: getResponsiveFontSize(14),
     color: '#6B7280',
     marginBottom: getResponsiveHeight(8),
+    fontWeight: '600',
   },
   totalEarningsAmount: {
     fontSize: getResponsiveFontSize(36),
     fontWeight: 'bold',
-    color: '#059669',
+    color: '#10B981',
     marginBottom: getResponsiveHeight(16),
   },
   earningsStats: {
@@ -458,6 +459,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1F2937',
     marginBottom: getResponsiveHeight(4),
+    textAlign: 'center',
   },
   earningsStatLabel: {
     fontSize: getResponsiveFontSize(12),
@@ -516,7 +518,7 @@ const styles = StyleSheet.create({
   transactionCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: getResponsiveBorderRadius(12),
-    padding: getResponsivePadding(16),
+    padding: getResponsivePadding(14),
     marginBottom: getResponsiveHeight(12),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -583,7 +585,7 @@ const styles = StyleSheet.create({
   monthEarnings: {
     fontSize: getResponsiveFontSize(16),
     fontWeight: 'bold',
-    color: '#059669',
+    color: '#10B981',
   },
   loadingContainer: {
     flex: 1,

@@ -215,7 +215,9 @@ export default function ContactInfoScreen() {
             <View style={styles.profileCard}>
               <View style={styles.profileImageContainer}>
                 <View style={styles.profileImagePlaceholder}>
-                  <Text style={styles.profileImageText}>👤</Text>
+                  <Text style={styles.profileImageText}>
+                    {fullName ? fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '👤'}
+                  </Text>
                 </View>
                 {isEditing && (
                   <Pressable style={styles.changePhotoButton}>
@@ -232,6 +234,7 @@ export default function ContactInfoScreen() {
             {/* Contact Details Section */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Contact Details</Text>
+              <View style={styles.sectionTitleSpacer} />
 
               {/* Full Name Card */}
               <View style={styles.infoCard}>
@@ -258,7 +261,7 @@ export default function ContactInfoScreen() {
               {/* Email Card */}
               <View style={styles.infoCard}>
                 <View style={styles.infoHeader}>
-                  <Text style={styles.infoIcon}>📧</Text>
+                  <Text style={styles.infoIcon}>✉️</Text>
                   <Text style={styles.infoLabel}>Email Address</Text>
                 </View>
                 <Text style={[styles.infoValue, styles.infoValueMuted]}>
@@ -358,18 +361,23 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   editButton: {
-    paddingHorizontal: getResponsivePadding(16),
-    paddingVertical: getResponsivePadding(8),
-    borderRadius: getResponsiveBorderRadius(20),
-    backgroundColor: 'rgba(255, 215, 0, 0.3)',
+    paddingHorizontal: getResponsivePadding(20),
+    paddingVertical: getResponsivePadding(12),
+    borderRadius: getResponsiveBorderRadius(25),
+    backgroundColor: 'rgba(255, 215, 0, 0.4)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
   editButtonDisabled: {
     opacity: 0.6,
   },
   editButtonText: {
-    fontSize: fontSizes.sm,
+    fontSize: fontSizes.md,
     color: colors.white,
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
   scrollView: {
     flex: 1,
@@ -395,27 +403,38 @@ const styles = StyleSheet.create({
   profileCard: {
     backgroundColor: colors.white,
     borderRadius: getResponsiveBorderRadius(20),
-    padding: getResponsivePadding(24),
+    padding: getResponsivePadding(20),
     alignItems: 'center',
-    marginBottom: getResponsiveMargin(24),
+    marginBottom: getResponsiveMargin(16),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
   },
   profileImageContainer: {
     position: 'relative',
-    marginBottom: getResponsiveMargin(16),
+    marginBottom: getResponsiveMargin(10),
   },
   profileImagePlaceholder: {
-    width: getResponsiveWidth(120),
-    height: getResponsiveHeight(120),
-    borderRadius: getResponsiveBorderRadius(60),
+    width: getResponsiveWidth(100),
+    height: getResponsiveHeight(100),
+    borderRadius: getResponsiveBorderRadius(50),
     backgroundColor: '#E8F5F4',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: '#2da898ff',
+    shadowColor: '#2da898ff',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   profileImageText: {
-    fontSize: getResponsiveFontSize(50),
+    fontSize: getResponsiveFontSize(42),
     color: '#2da898ff',
+    fontWeight: '700',
   },
   changePhotoButton: {
     position: 'absolute',
@@ -442,23 +461,27 @@ const styles = StyleSheet.create({
   },
   profileSubtitle: {
     fontSize: fontSizes.md,
-    color: '#F59E0B',
+    color: 'rgba(45, 168, 152, 0.85)',
     textAlign: 'center',
+    fontWeight: '500',
   },
   section: {
-    marginBottom: getResponsiveMargin(24),
+    marginBottom: getResponsiveMargin(18),
   },
   sectionTitle: {
     fontSize: fontSizes.lg,
     fontWeight: 'bold',
     color: colors.white,
-    marginBottom: getResponsiveMargin(12),
+    marginBottom: getResponsiveMargin(4),
+  },
+  sectionTitleSpacer: {
+    height: getResponsiveHeight(12),
   },
   infoCard: {
     backgroundColor: colors.white,
-    borderRadius: getResponsiveBorderRadius(16),
-    padding: getResponsivePadding(20),
-    marginBottom: getResponsiveMargin(16),
+    borderRadius: getResponsiveBorderRadius(18),
+    padding: getResponsivePadding(18),
+    marginBottom: getResponsiveMargin(12),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
@@ -482,12 +505,13 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     fontSize: fontSizes.md,
-    color: '#F59E0B',
+    color: 'rgba(45, 168, 152, 0.9)',
     lineHeight: getResponsiveHeight(22),
     marginLeft: getResponsiveMargin(36),
+    fontWeight: '600',
   },
   infoValueMuted: {
-    color: '#F59E0B',
+    color: 'rgba(45, 168, 152, 0.75)',
   },
   editInput: {
     backgroundColor: '#F8F9FA',
@@ -519,28 +543,38 @@ const styles = StyleSheet.create({
   },
   privacyCard: {
     flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.white,
-    borderRadius: getResponsiveBorderRadius(16),
-    padding: getResponsivePadding(20),
-    marginBottom: getResponsiveMargin(20),
+    borderRadius: getResponsiveBorderRadius(18),
+    padding: getResponsivePadding(18),
+    marginBottom: getResponsiveMargin(16),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   privacyIcon: {
-    fontSize: getResponsiveFontSize(24),
-    marginRight: getResponsiveMargin(16),
+    fontSize: getResponsiveFontSize(28),
+    marginRight: getResponsiveMargin(14),
+    alignSelf: 'flex-start',
+    marginTop: getResponsiveMargin(2),
   },
   privacyContent: {
     flex: 1,
+    alignSelf: 'center',
   },
   privacyTitle: {
     fontSize: fontSizes.md,
     fontWeight: 'bold',
     color: '#2da898ff',
-    marginBottom: getResponsiveMargin(8),
+    marginBottom: getResponsiveMargin(6),
   },
   privacyText: {
     fontSize: fontSizes.sm,
-    color: '#F59E0B',
-    lineHeight: getResponsiveHeight(18),
+    color: 'rgba(45, 168, 152, 0.9)',
+    lineHeight: getResponsiveHeight(20),
+    fontWeight: '500',
   },
   saveButton: {
     backgroundColor: '#2da898ff',

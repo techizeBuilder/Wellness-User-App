@@ -46,14 +46,16 @@ export default function NotificationsScreen() {
                 <Text style={styles.settingTitle}>Enable Notifications</Text>
                 <Text style={styles.settingDescription}>Turn all app notifications on or off</Text>
               </View>
-              <Switch
-                value={notificationsEnabled}
-                onValueChange={setNotificationsEnabled}
-                trackColor={{ false: '#E5E7EB', true: '#10B981' }}
-                thumbColor="#FFFFFF"
-                ios_backgroundColor="#E5E7EB"
-                style={styles.switch}
-              />
+              <View style={styles.switchContainer}>
+                <Switch
+                  value={notificationsEnabled}
+                  onValueChange={setNotificationsEnabled}
+                  trackColor={{ false: '#E5E7EB', true: '#10B981' }}
+                  thumbColor="#FFFFFF"
+                  ios_backgroundColor="#E5E7EB"
+                  style={styles.switch}
+                />
+              </View>
             </View>
           </LinearGradient>
         </View>
@@ -192,6 +194,11 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: getResponsiveHeight(40),
+  },
+  switchContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingLeft: getResponsivePadding(8),
   },
   switch: {
     transform: [{ scaleX: 1.1 }, { scaleY: 1.1 }],

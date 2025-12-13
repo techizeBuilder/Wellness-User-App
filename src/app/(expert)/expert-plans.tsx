@@ -438,6 +438,7 @@ export default function ExpertPlansScreen() {
                       key={option.id}
                       style={[
                         styles.chip,
+                        styles.chipEqualWidth,
                         formState.sessionFormat === option.id &&
                           styles.chipActive,
                       ]}
@@ -817,89 +818,106 @@ export default function ExpertPlansScreen() {
                 </Pressable>
               </View>
             ) : (
-              plans.map((plan) => (
-                <View key={plan._id} style={styles.planCard}>
-                  <View style={styles.planHeader}>
-                    <View style={styles.planTitleRow}>
+              plans.map((plan, index) => (
+                <View key={plan._id}>
+                  {index > 0 && <View style={styles.planSeparator} />}
+                  <View style={styles.planCard}>
+                    <View style={styles.planHeader}>
                       <Text style={styles.planName}>{plan.name}</Text>
-                      <Text
-                        style={[
-                          styles.planTypeBadge,
-                          plan.type === "monthly"
-                            ? styles.planBadgeMonthly
-                            : styles.planBadgeSingle,
-                        ]}
-                      >
-                        {plan.type === "monthly" ? "Subscription" : "Single"}
-                      </Text>
+                      <View style={styles.badgesRow}>
+                        <Text
+                          style={[
+                            styles.planTypeBadge,
+                            plan.type === "monthly"
+                              ? styles.planBadgeMonthly
+                              : styles.planBadgeSingle,
+                          ]}
+                        >
+                          {plan.type === "monthly" ? "Subscription" : "Single"}
+                        </Text>
+                        <Pressable
+                          style={[
+                            styles.statusBadge,
+                            plan.isActive
+                              ? styles.statusBadgeActive
+                              : styles.statusBadgeInactive,
+                          ]}
+                          onPress={() => handleToggleActive(plan)}
+                        >
+                          <Text
+                            style={[
+                              styles.statusBadgeText,
+                              plan.isActive
+                                ? styles.statusBadgeTextActive
+                                : styles.statusBadgeTextInactive,
+                            ]}
+                          >
+                            {plan.isActive ? "Active" : "Paused"}
+                          </Text>
+                        </Pressable>
+                      </View>
                     </View>
-                    <Pressable
-                      style={[
-                        styles.statusBadge,
-                        plan.isActive
-                          ? styles.statusBadgeActive
-                          : styles.statusBadgeInactive,
-                      ]}
-                      onPress={() => handleToggleActive(plan)}
-                    >
-                      <Text
-                        style={[
-                          styles.statusBadgeText,
-                          plan.isActive
-                            ? styles.statusBadgeTextActive
-                            : styles.statusBadgeTextInactive,
-                        ]}
+
+                    {plan.description && (
+                      <Text style={styles.planDescription}>{plan.description}</Text>
+                    )}
+
+                    <View style={styles.planMetaRow}>
+                      <View style={styles.planMetaItem}>
+                        <Text style={styles.planMetaIcon}>₹</Text>
+                        <Text style={styles.planMeta}>{renderPlanPrice(plan)}</Text>
+                      </View>
+                      <View style={styles.planMetaItem}>
+                        <Text style={styles.planMetaIcon}>⏱</Text>
+                        <Text style={styles.planMeta}>{renderPlanMeta(plan)}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.planMetaRow}>
+                      {plan.sessionClassType && (
+                        <View style={styles.planMetaItem}>
+                          <Text style={styles.planMetaIcon}>🧘</Text>
+                          <Text style={styles.planMeta}>
+                            {plan.sessionClassType}
+                          </Text>
+                        </View>
+                      )}
+                      {plan.sessionFormat && (
+                        <View style={styles.planMetaItem}>
+                          <Text style={styles.planMetaIcon}>
+                            {plan.sessionFormat === "one-on-one" ? "👤" : "👥"}
+                          </Text>
+                          <Text style={styles.planMeta}>
+                            {plan.sessionFormat === "one-on-one"
+                              ? "1:1 format"
+                              : "Group format"}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+
+                    <View style={styles.actionRow}>
+                      <Pressable
+                        style={styles.actionButton}
+                        onPress={() => handleEditPlan(plan)}
                       >
-                        {plan.isActive ? "Active" : "Paused"}
-                      </Text>
-                    </Pressable>
-                  </View>
-
-                  {plan.description && (
-                    <Text style={styles.planDescription}>{plan.description}</Text>
-                  )}
-
-                  <View style={styles.planMetaRow}>
-                    <Text style={styles.planMeta}>{renderPlanPrice(plan)}</Text>
-                    <Text style={styles.planMeta}>{renderPlanMeta(plan)}</Text>
-                  </View>
-
-                  <View style={styles.planMetaRow}>
-                    {plan.sessionClassType && (
-                      <Text style={styles.planMeta}>
-                        {plan.sessionClassType}
-                      </Text>
-                    )}
-                    {plan.sessionFormat && (
-                      <Text style={styles.planMeta}>
-                        {plan.sessionFormat === "one-on-one"
-                          ? "1:1 format"
-                          : "Group format"}
-                      </Text>
-                    )}
-                  </View>
-
-                  <View style={styles.actionRow}>
-                    <Pressable
-                      style={styles.actionButton}
-                      onPress={() => handleEditPlan(plan)}
-                    >
-                      <Text style={styles.actionButtonText}>Edit</Text>
-                    </Pressable>
-                    <Pressable
-                      style={styles.actionButton}
-                      onPress={() => handleToggleActive(plan)}
-                    >
-                      <Text style={styles.actionButtonText}>
-                        {plan.isActive ? "Pause" : "Activate"}
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      style={styles.deleteButton}
-                      onPress={() => handleDeletePlan(plan)}
-                    >
-                      <Text style={styles.deleteButtonText}>Delete</Text>
-                    </Pressable>
+                        <Text style={styles.actionButtonText}>Edit</Text>
+                      </Pressable>
+                      <Pressable
+                        style={styles.actionButton}
+                        onPress={() => handleToggleActive(plan)}
+                      >
+                        <Text style={styles.actionButtonText}>
+                          {plan.isActive ? "Pause" : "Activate"}
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        style={styles.deleteButton}
+                        onPress={() => handleDeletePlan(plan)}
+                      >
+                        <Text style={styles.deleteButtonText}>Delete</Text>
+                      </Pressable>
+                    </View>
                   </View>
                 </View>
               ))
@@ -947,10 +965,10 @@ const styles = StyleSheet.create({
     marginTop: getResponsiveHeight(6),
   },
   sectionCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    backgroundColor: "rgba(255, 255, 255, 0.98)",
     borderRadius: getResponsiveBorderRadius(20),
-    padding: getResponsivePadding(20),
-    marginBottom: getResponsiveHeight(20),
+    padding: getResponsivePadding(24),
+    marginBottom: getResponsiveHeight(24),
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,
@@ -994,8 +1012,8 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(14),
     color: "#0f172a",
     fontWeight: "600",
-    marginTop: getResponsiveHeight(16),
-    marginBottom: getResponsiveHeight(6),
+    marginTop: getResponsiveHeight(20),
+    marginBottom: getResponsiveHeight(8),
   },
   input: {
     borderWidth: 1,
@@ -1023,9 +1041,18 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveBorderRadius(20),
     backgroundColor: "#F8FAFC",
   },
+  chipEqualWidth: {
+    flex: 1,
+    minWidth: (getResponsiveWidth(100) - getResponsiveWidth(10)) / 2,
+  },
   chipActive: {
     backgroundColor: "#0f766e",
     borderColor: "#0f766e",
+    shadowColor: "#0f766e",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   chipText: {
     color: "#475569",
@@ -1040,15 +1067,22 @@ const styles = StyleSheet.create({
   durationChip: {
     marginRight: getResponsiveWidth(10),
     paddingHorizontal: getResponsivePadding(16),
-    paddingVertical: getResponsivePadding(10),
+    paddingVertical: getResponsivePadding(12),
     borderRadius: getResponsiveBorderRadius(12),
     borderWidth: 1,
     borderColor: "#CBD5F5",
     backgroundColor: "#FFFFFF",
+    minWidth: getResponsiveWidth(80),
+    alignItems: "center",
   },
   durationChipActive: {
     borderColor: "#0f766e",
     backgroundColor: "#d1fae5",
+    shadowColor: "#0f766e",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   durationChipText: {
     color: "#475569",
@@ -1141,11 +1175,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FFFFFF",
-    borderWidth: 1.5,
+    borderWidth: 2,
     borderColor: "#E2E8F0",
     borderRadius: getResponsiveBorderRadius(12),
-    padding: getResponsivePadding(12),
-    minHeight: getResponsiveHeight(70),
+    padding: getResponsivePadding(16),
+    minHeight: getResponsiveHeight(80),
   },
   dateTimeCardSelected: {
     borderColor: "#0f766e",
@@ -1231,32 +1265,41 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E2E8F0",
     borderRadius: getResponsiveBorderRadius(16),
-    padding: getResponsivePadding(16),
-    marginBottom: getResponsiveHeight(14),
+    padding: getResponsivePadding(20),
+    marginBottom: getResponsiveHeight(20),
     backgroundColor: "#FFFFFF",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  planSeparator: {
+    height: getResponsiveHeight(16),
   },
   planHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: getResponsiveHeight(8),
+    marginBottom: getResponsiveHeight(12),
   },
-  planTitleRow: {
+  badgesRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: getResponsiveWidth(10),
+    marginTop: getResponsiveHeight(8),
   },
   planName: {
-    fontSize: getResponsiveFontSize(18),
-    fontWeight: "700",
+    fontSize: getResponsiveFontSize(22),
+    fontWeight: "800",
     color: "#0f172a",
+    letterSpacing: 0.3,
   },
   planTypeBadge: {
-    paddingHorizontal: getResponsivePadding(10),
-    paddingVertical: getResponsivePadding(4),
-    borderRadius: getResponsiveBorderRadius(12),
-    fontSize: getResponsiveFontSize(12),
-    fontWeight: "600",
+    paddingHorizontal: getResponsivePadding(12),
+    paddingVertical: getResponsivePadding(6),
+    borderRadius: getResponsiveBorderRadius(16),
+    fontSize: getResponsiveFontSize(11),
+    fontWeight: "700",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
   planBadgeSingle: {
     backgroundColor: "#E0F2FE",
@@ -1267,10 +1310,10 @@ const styles = StyleSheet.create({
     color: "#9D174D",
   },
   statusBadge: {
-    paddingHorizontal: getResponsivePadding(12),
-    paddingVertical: getResponsivePadding(4),
+    paddingHorizontal: getResponsivePadding(14),
+    paddingVertical: getResponsivePadding(6),
     borderRadius: getResponsiveBorderRadius(20),
-    borderWidth: 1,
+    borderWidth: 1.5,
   },
   statusBadgeActive: {
     borderColor: "#10B981",
@@ -1281,8 +1324,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#FEF2F2",
   },
   statusBadgeText: {
-    fontSize: getResponsiveFontSize(12),
-    fontWeight: "600",
+    fontSize: getResponsiveFontSize(11),
+    fontWeight: "700",
+    letterSpacing: 0.3,
   },
   statusBadgeTextActive: {
     color: "#047857",
@@ -1298,11 +1342,21 @@ const styles = StyleSheet.create({
   planMetaRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: getResponsiveHeight(6),
+    marginBottom: getResponsiveHeight(10),
+    gap: getResponsiveWidth(12),
+  },
+  planMetaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  planMetaIcon: {
+    fontSize: getResponsiveFontSize(16),
+    marginRight: getResponsiveWidth(6),
   },
   planMeta: {
     fontSize: getResponsiveFontSize(13),
-    color: "#0f172a",
+    color: "#475569",
     fontWeight: "600",
   },
   actionRow: {
@@ -1313,15 +1367,17 @@ const styles = StyleSheet.create({
   actionButton: {
     flex: 1,
     marginRight: getResponsiveWidth(8),
-    paddingVertical: getResponsivePadding(10),
-    borderRadius: getResponsiveBorderRadius(10),
-    borderWidth: 1,
+    paddingVertical: getResponsivePadding(8),
+    borderRadius: getResponsiveBorderRadius(8),
+    borderWidth: 1.5,
     borderColor: "#CBD5F5",
     alignItems: "center",
+    backgroundColor: "#FFFFFF",
   },
   actionButtonText: {
     color: "#0f172a",
     fontWeight: "600",
+    fontSize: getResponsiveFontSize(13),
   },
   deleteButton: {
     paddingVertical: getResponsivePadding(10),

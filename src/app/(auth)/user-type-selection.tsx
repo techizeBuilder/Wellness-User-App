@@ -376,13 +376,17 @@ const styles = StyleSheet.create({
     width: getResponsiveWidth(screenData.isSmall ? 60 : 70),
     height: getResponsiveHeight(screenData.isSmall ? 60 : 70),
     borderRadius: getResponsiveBorderRadius(screenData.isSmall ? 30 : 35),
-    backgroundColor: '#F59E0B',
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: getResponsiveMargin(16),
+    borderWidth: 2,
+    borderColor: 'rgba(245, 158, 11, 0.3)',
   },
   selectedIconContainer: {
     backgroundColor: '#2da898ff',
+    borderColor: '#2da898ff',
+    borderWidth: 3,
   },
   optionTitle: {
     fontSize: screenData.isSmall ? 20 : 22,
